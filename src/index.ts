@@ -2,6 +2,8 @@ import { useState, useCallback } from "react";
 import { flattenSchema, setValue } from "./helpers";
 import { NestedSchema, InferType } from "./types";
 
+export type { NestedSchema, InferType } from "./types";
+
 export function useStandardSchema<T extends NestedSchema>(schema: T) {
   type Values = InferType<T>;
   const flatSchema = flattenSchema(schema);
@@ -78,7 +80,7 @@ export function useStandardSchema<T extends NestedSchema>(schema: T) {
       label: field.label,
       description: field.description,
       value: flatValues[path],
-      error: errors[path],
+      error: getErrorMessage(path),
       onChange: (
         e: React.ChangeEvent<
           HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -98,9 +100,57 @@ export function useStandardSchema<T extends NestedSchema>(schema: T) {
     };
   };
 
+  const getError = (path?: string) => {
+    if (path) {
+      return errors[path];
+    }
+    return Object.entries(errors).reduce(
+      (acc, [key, error]) => ({ ...acc, [key]: error }),
+      {}
+    );
+  };
+
+  // a function that will return only a string contain all the errors for a given path or the entire form if no path is provided
+  // the errors are in this format [ { "code": "too_small", "minimum": 2, "type": "string", "inclusive": true, "exact": false, "message": "Too short", "path": [] } ], [ { "code": "too_small", "minimum": 2, "type": "string", "inclusive": true, "exact": false, "message": "Too short", "path": [] } ], [ { "code": "custom", "message": "Select A State", "path": [] } ]
+  // convert the format to a single string with each error on a new line
+  const getErrorMessage = (path?: string) => {
+    if (path) {
+      return errors[path] || "";
+    }
+    const res = Object.entries(errors)
+      .map(([key, error]) => `${key}: ${error}`)
+      .join("\n");
+
+    const updated = Object.entries(res).reduce((acc, [key, error]) => {
+      if (error) {
+        acc[key] = error;
+      }
+      return acc;
+    }, {} as Record<string, string>);
+    return updated;
+  };
+
+  const getValue = (path: string) => {
+    if (!path) return values;
+    return flatValues[path];
+  };
+
+  const isDirty = useCallback(
+    (path: string) => {
+      if (!path)
+        return Object.keys(flatValues).some(
+          (key) => flatValues[key] !== initialValues[key]
+        );
+      return flatValues[path] !== initialValues[path];
+    },
+    [flatValues, initialValues]
+  );
+
   return {
-    values,
-    errors,
+    isDirty,
+    getErrorMessage,
+    getError,
+    getValue,
     validate,
     reset,
     getForm,
