@@ -11,15 +11,15 @@ export type NestedSchema = {
   [key: string]: FieldDefinition | NestedSchema | NestedSchema[];
 };
 
-export type InferValues<T extends NestedSchema> = {
+export type InferType<T extends NestedSchema> = {
   [K in keyof T]: T[K] extends FieldDefinition
     ? T[K]["default"] extends undefined
       ? any
       : T[K]["default"]
     : T[K] extends NestedSchema[]
-    ? InferValues<T[K][number]>[]
+    ? InferType<T[K][number]>[]
     : T[K] extends NestedSchema
-    ? InferValues<T[K]>
+    ? InferType<T[K]>
     : never;
 };
 

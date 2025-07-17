@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
 import { flattenSchema, setValue } from "./helpers";
-import { NestedSchema, InferValues } from "./types";
+import { NestedSchema, InferType } from "./types";
 
-export function useStandardForm<T extends NestedSchema>(schema: T) {
-  type Values = InferValues<T>;
+export function useStandardSchema<T extends NestedSchema>(schema: T) {
+  type Values = InferType<T>;
   const flatSchema = flattenSchema(schema);
 
   const initialValues = Object.fromEntries(
