@@ -1,159 +1,133 @@
-import { useState, useCallback } from "react";
-import { flattenSchema, setValue } from "./helpers";
-import { NestedSchema, InferType } from "./types";
+import { useState, useCallback, FormEvent, FocusEvent, useMemo } from "react";
+import { StandardSchemaV1 } from "@standard-schema/spec";
 
-export type { NestedSchema, InferType } from "./types";
-
-export function useStandardSchema<T extends NestedSchema>(schema: T) {
-  type Values = InferType<T>;
-  const flatSchema = flattenSchema(schema);
-
-  const initialValues = Object.fromEntries(
-    Object.entries(flatSchema).map(([key, def]) => [key, def.default ?? ""])
-  );
-
-  const [flatValues, setFlatValues] =
-    useState<Record<string, any>>(initialValues);
-  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
-
-  const values = Object.keys(flatValues).reduce((acc, path) => {
-    return setValue(acc, path, flatValues[path]);
-  }, {} as Values);
-
-  const handleChange = useCallback(
-    (path: string, value: any) => {
-      setFlatValues((prev) => ({ ...prev, [path]: value }));
-      try {
-        flatSchema[path].schema.parse(value);
-        setErrors((prev) => ({ ...prev, [path]: undefined }));
-      } catch (err: any) {
-        setErrors((prev) => ({
-          ...prev,
-          [path]: err?.message || "Invalid value",
-        }));
-      }
-    },
-    [flatSchema]
-  );
-
-  const handleFocus = useCallback((path: string) => {
-    setErrors((prev) => ({ ...prev, [path]: undefined }));
-  }, []);
-
-  const validate = useCallback(() => {
-    const newErrors: Record<string, string> = {};
-    for (const path in flatSchema) {
-      try {
-        flatSchema[path].schema.parse(flatValues[path]);
-      } catch (err: any) {
-        newErrors[path] = err?.message || "Invalid value";
-      }
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [flatSchema, flatValues]);
-
-  const reset = useCallback(() => {
-    setFlatValues(initialValues);
-    setErrors({});
-  }, [initialValues]);
-
-  function getForm(onValid: (data: Values) => void) {
-    return {
-      onSubmit: (e: React.FormEvent) => {
-        e.preventDefault();
-        if (validate()) {
-          onValid(values);
-        }
-      },
-      onReset: (e: React.FormEvent) => {
-        e.preventDefault();
-        reset();
-      },
-    };
+export type SchemaMap = Record<
+  string,
+  {
+    label: string;
+    description: string;
+    defaultValue: string;
+    schema: StandardSchemaV1;
   }
+>;
 
-  const getField = (path: string) => {
-    const field = flatSchema[path];
-    return {
-      name: path,
-      label: field.label,
-      description: field.description,
-      value: flatValues[path],
-      error: getErrorMessage(path),
-      onChange: (
-        e: React.ChangeEvent<
-          HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-        >
-      ) => handleChange(path, e.target.value),
-      onFocus: () => handleFocus(path),
-      onBlur: () => {
-        try {
-          field.schema.parse(flatValues[path]);
-        } catch (err: any) {
-          setErrors((prev) => ({
-            ...prev,
-            [path]: err?.message || "Invalid value",
-          }));
-        }
-      },
-    };
-  };
+export function defineSchema<T extends SchemaMap>(schema: T) {
+  return schema;
+}
 
-  const getError = (path?: string) => {
-    if (path) {
-      return errors[path];
-    }
-    return Object.entries(errors).reduce(
-      (acc, [key, error]) => ({ ...acc, [key]: error }),
-      {}
-    );
-  };
+export function useStandardSchema<T extends SchemaMap>(schemaMap: T) {
+  type Errors = { [K in keyof T]?: string };
+  type Flags = { [K in keyof T]?: boolean };
+  type FormValues = { [K in keyof T]: T[K]["defaultValue"] };
 
-  // a function that will return only a string contain all the errors for a given path or the entire form if no path is provided
-  // the errors are in this format [ { "code": "too_small", "minimum": 2, "type": "string", "inclusive": true, "exact": false, "message": "Too short", "path": [] } ], [ { "code": "too_small", "minimum": 2, "type": "string", "inclusive": true, "exact": false, "message": "Too short", "path": [] } ], [ { "code": "custom", "message": "Select A State", "path": [] } ]
-  // convert the format to a single string with each error on a new line
-  const getErrorMessage = (path?: string) => {
-    if (path) {
-      return errors[path] || "";
-    }
-    const res = Object.entries(errors)
-      .map(([key, error]) => `${key}: ${error}`)
-      .join("\n");
+  const initialData = useMemo(() => {
+    return Object.fromEntries(
+      Object.entries(schemaMap).map(([k, v]) => [k, v.defaultValue])
+    ) as FormValues;
+  }, [schemaMap]);
 
-    const updated = Object.entries(res).reduce((acc, [key, error]) => {
-      if (error) {
-        acc[key] = error;
-      }
-      return acc;
-    }, {} as Record<string, string>);
-    return updated;
-  };
+  const [data, setData] = useState<FormValues>(initialData);
+  const [errors, setErrors] = useState<Errors>({});
+  const [touched, setTouched] = useState<Flags>({});
+  const [dirty, setDirty] = useState<Flags>({});
 
-  const getValue = (path: string) => {
-    if (!path) return values;
-    return flatValues[path];
-  };
+  const validateField = useCallback(
+    async (key: keyof T, value: any, force = false) => {
+      const result = await schemaMap[key].schema["~standard"].validate(
+        value.trim()
+      );
 
-  const isDirty = useCallback(
-    (path: string) => {
-      if (!path)
-        return Object.keys(flatValues).some(
-          (key) => flatValues[key] !== initialValues[key]
-        );
-      return flatValues[path] !== initialValues[path];
+      const message = result?.issues?.[0]?.message ?? "";
+
+      setErrors((prev) => {
+        const isFieldDirty = dirty[key] || force;
+        return isFieldDirty ? { ...prev, [key]: message } : prev;
+      });
     },
-    [flatValues, initialValues]
+    [schemaMap, dirty]
+  );
+
+  const getForm = useCallback(
+    (onSubmitHandler: (data: FormValues) => void) => {
+      const onSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+        const newErrors: Errors = {};
+
+        await Promise.all(
+          (Object.keys(schemaMap) as (keyof T)[]).map(async (key) => {
+            const result = await schemaMap[key].schema["~standard"].validate(
+              data[key]
+            );
+            if (result && result.issues) {
+              newErrors[key] = result.issues[0]?.message ?? "Validation error";
+            } else {
+              newErrors[key] = "";
+            }
+          })
+        );
+
+        setErrors(newErrors);
+
+        const hasError = Object.values(newErrors).some((msg) => msg !== "");
+        if (hasError) return;
+
+        onSubmitHandler(data);
+      };
+
+      const onFocus = (e: FocusEvent) => {
+        const target = e.target;
+        if (!(target instanceof HTMLInputElement)) return;
+
+        const field = target.name as keyof T;
+        if (!field || !(field in schemaMap)) return;
+
+        setTouched((prev) => ({ ...prev, [field]: true }));
+        setErrors((prev) => ({ ...prev, [field]: "" }));
+      };
+
+      const onBlur = async (e: FocusEvent) => {
+        const target = e.target;
+        if (!(target instanceof HTMLInputElement)) return;
+
+        const field = target.name as keyof T;
+        if (!field || !(field in schemaMap)) return;
+
+        const value = target.value;
+        const isDirty = value !== initialData[field];
+
+        setTouched((prev) => ({ ...prev, [field]: true }));
+        setData((prev) => ({ ...prev, [field]: value }));
+
+        if (isDirty) {
+          setDirty((prev) => ({ ...prev, [field]: true }));
+          await validateField(field, value, true); // Force validation since dirty isn't updated yet
+        }
+      };
+
+      return { onSubmit, onFocus, onBlur };
+    },
+    [schemaMap, data, validateField]
+  );
+
+  const getField = useCallback(
+    <K extends keyof FormValues>(name: K) => {
+      return {
+        ...schemaMap[name],
+        name,
+        defaultValue: data[name],
+        error: errors[name] ?? "",
+        touched: !!touched[name],
+        dirty: !!dirty[name],
+      };
+    },
+    [data, errors, touched, dirty, schemaMap]
   );
 
   return {
-    isDirty,
-    getErrorMessage,
-    getError,
-    getValue,
-    validate,
-    reset,
     getForm,
     getField,
+    errors,
+    dirty,
+    touched,
   };
 }

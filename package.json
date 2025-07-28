@@ -1,7 +1,7 @@
 {
-  "name": "usestandardschema",
+  "name": "use-standard-schema",
   "version": "0.1.0",
-  "description": "A React hook for managing form state using standard-schema with no additional dependencies",
+  "description": "A React hook for managing form state using any standard schema compliant validation library.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
