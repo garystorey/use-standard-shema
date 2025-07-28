@@ -1,7 +1,5 @@
 # useStandard Schema
 
-<!-- markdownlint-disable MD033 -->
-
 <div style="max-width:80ch">
 
 [![License](https://img.shields.io/badge/license-MIT-%230172ad)](https://github.com/garystorey/usezodform/blob/master/LICENSE.md)
