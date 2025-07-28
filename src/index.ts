@@ -104,5 +104,5 @@ export function useStandardSchema<T extends SchemaMap>(schemaMap: T) {
     values: data,
   };
 }
-
+export { defineSchema } from "./helpers";
 export { SchemaMap } from "./types";
