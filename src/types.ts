@@ -18,3 +18,15 @@ export type DotPaths<T, Prev extends string = ""> = {
     ? DotPaths<T[K], `${Prev}${K & string}.`>
     : never;
 }[keyof T];
+
+type DotPathsToValues<T, Prev extends string = ""> = {
+  [K in keyof T]: T[K] extends SchemaField
+    ? { [P in `${Prev}${K & string}`]: T[K]["defaultValue"] }
+    : T[K] extends SchemaMap
+    ? DotPathsToValues<T[K], `${Prev}${K & string}.`>
+    : {};
+}[keyof T];
+
+export type FormValues<T extends SchemaMap> = {
+  [K in keyof DotPathsToValues<T>]: DotPathsToValues<T>[K];
+};
