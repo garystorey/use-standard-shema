@@ -1,6 +1,6 @@
-import { SchemaField, SchemaMap } from "./types"
+import { SchemaField, Schema } from "./types"
 
-export function defineSchema<T extends SchemaMap>(schema: T): T {
+export function defineSchema<T extends Schema>(schema: T): T {
   return schema
 }
 
@@ -8,7 +8,7 @@ export function isSchemaField(obj: unknown): obj is SchemaField {
   return typeof obj === "object" && obj !== null && "label" in obj && "defaultValue" in obj && "schema" in obj
 }
 
-export function flattenSchema(map: SchemaMap, prefix = ""): Record<string, SchemaField> {
+export function flattenSchema(map: Schema, prefix = ""): Record<string, SchemaField> {
   const result: Record<string, SchemaField> = {}
 
   for (const key in map) {
@@ -25,7 +25,7 @@ export function flattenSchema(map: SchemaMap, prefix = ""): Record<string, Schem
   return result
 }
 
-export function flattenDefaults(map: SchemaMap, prefix = ""): Record<string, string> {
+export function flattenDefaults(map: Schema, prefix = ""): Record<string, string> {
   const result: Record<string, string> = {}
 
   for (const key in map) {

@@ -1,5 +1,5 @@
 import { useState, useCallback, FormEvent, FocusEvent, useMemo } from "react"
-import { SchemaField, SchemaMap, DotPaths } from "./types"
+import { SchemaField, Schema, DotPaths } from "./types"
 import { flattenDefaults, flattenSchema, defineSchema } from "./helpers"
 
 /**
@@ -9,7 +9,7 @@ import { flattenDefaults, flattenSchema, defineSchema } from "./helpers"
  * @param schemaMap - The schema map defining the structure and validation of the form.
  * @returns An object containing methods and state for managing the form.
  */
-function useStandardSchema<T extends SchemaMap>(schemaMap: T) {
+function useStandardSchema<T extends Schema>(schemaMap: T) {
   type FieldKey = DotPaths<T>
   type FormValues = Record<string, string>
   type Flags = Record<string, boolean>
@@ -142,10 +142,19 @@ function useStandardSchema<T extends SchemaMap>(schemaMap: T) {
     setDirty((prev) => ({ ...prev, [field]: true }))
   }
 
+  const getErrors = useCallback(() => {
+    const newErrors: Errors = {}
+    Object.keys(flatSchemaMap).forEach((key) => {
+      if (errors[key]) newErrors[key] = errors[key]
+    })
+    return newErrors
+  }, [flatSchemaMap, errors])
+
   return {
     resetForm,
     getForm,
     getField,
+    getErrors,
     validate,
     __setField,
     errors: Object.freeze(errors),
@@ -155,4 +164,4 @@ function useStandardSchema<T extends SchemaMap>(schemaMap: T) {
 }
 
 export { useStandardSchema, defineSchema }
-export type { FormValues, SchemaMap } from "./types"
+export type { TypeFromSchema, Schema } from "./types"

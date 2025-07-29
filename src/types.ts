@@ -7,8 +7,8 @@ export interface SchemaField {
   schema: StandardSchemaV1
 }
 
-export type SchemaMap = {
-  [key: string]: SchemaField | SchemaMap
+export type Schema = {
+  [key: string]: SchemaField | Schema
 }
 
 export type DotPaths<T, Prev extends string = ""> = {
@@ -22,11 +22,11 @@ export type DotPaths<T, Prev extends string = ""> = {
 type DotPathsToValues<T, Prev extends string = ""> = {
   [K in keyof T]: T[K] extends SchemaField
     ? { [P in `${Prev}${K & string}`]: T[K]["defaultValue"] }
-    : T[K] extends SchemaMap
+    : T[K] extends Schema
       ? DotPathsToValues<T[K], `${Prev}${K & string}.`>
       : {}
 }[keyof T]
 
-export type FormValues<T extends SchemaMap> = {
+export type TypeFromSchema<T extends Schema> = {
   [K in keyof DotPathsToValues<T>]: DotPathsToValues<T>[K]
 }
