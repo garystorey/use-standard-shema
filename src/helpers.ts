@@ -1,55 +1,43 @@
-import { SchemaField, SchemaMap } from "./types";
+import { SchemaField, SchemaMap } from "./types"
 
 export function defineSchema<T extends SchemaMap>(schema: T): T {
-  return schema;
+  return schema
 }
 
 export function isSchemaField(obj: unknown): obj is SchemaField {
-  return (
-    typeof obj === "object" &&
-    obj !== null &&
-    "label" in obj &&
-    "defaultValue" in obj &&
-    "schema" in obj
-  );
+  return typeof obj === "object" && obj !== null && "label" in obj && "defaultValue" in obj && "schema" in obj
 }
 
-export function flattenSchema(
-  map: SchemaMap,
-  prefix = ""
-): Record<string, SchemaField> {
-  const result: Record<string, SchemaField> = {};
+export function flattenSchema(map: SchemaMap, prefix = ""): Record<string, SchemaField> {
+  const result: Record<string, SchemaField> = {}
 
   for (const key in map) {
-    const value = map[key];
-    const path = prefix ? `${prefix}.${key}` : key;
+    const value = map[key]
+    const path = prefix ? `${prefix}.${key}` : key
 
     if (isSchemaField(value)) {
-      result[path] = value;
+      result[path] = value
     } else {
-      Object.assign(result, flattenSchema(value, path));
+      Object.assign(result, flattenSchema(value, path))
     }
   }
 
-  return result;
+  return result
 }
 
-export function flattenDefaults(
-  map: SchemaMap,
-  prefix = ""
-): Record<string, string> {
-  const result: Record<string, string> = {};
+export function flattenDefaults(map: SchemaMap, prefix = ""): Record<string, string> {
+  const result: Record<string, string> = {}
 
   for (const key in map) {
-    const value = map[key];
-    const path = prefix ? `${prefix}.${key}` : key;
+    const value = map[key]
+    const path = prefix ? `${prefix}.${key}` : key
 
     if (isSchemaField(value)) {
-      result[path] = value.defaultValue;
+      result[path] = value.defaultValue
     } else {
-      Object.assign(result, flattenDefaults(value, path));
+      Object.assign(result, flattenDefaults(value, path))
     }
   }
 
-  return result;
+  return result
 }

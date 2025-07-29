@@ -10,7 +10,8 @@
   ],
   "scripts": {
     "build": "tsup ./src/index.ts --format cjs,esm --dts",
-    "lint": "tsc"
+    "lint": "tsc",
+    "format": "prettier --write ./src/**/*.ts"
   },
   "keywords": [
     "zod",
@@ -41,6 +42,8 @@
   "devDependencies": {
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "globals": "^16.3.0",
+    "prettier": "^3.6.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "tsup": "^8.5.0",
