@@ -2,8 +2,13 @@ import { useState, useCallback, FormEvent, FocusEvent, useMemo } from "react"
 import { SchemaField, SchemaMap, DotPaths } from "./types"
 import { flattenDefaults, flattenSchema, defineSchema } from "./helpers"
 
-export type { FormValues, SchemaMap } from "./types"
-
+/**
+ * Custom hook to manage forms based on a schema map.
+ * Provides methods to validate fields, reset the form, and get field definitions.
+ *
+ * @param schemaMap - The schema map defining the structure and validation of the form.
+ * @returns An object containing methods and state for managing the form.
+ */
 function useStandardSchema<T extends SchemaMap>(schemaMap: T) {
   type FieldKey = DotPaths<T>
   type FormValues = Record<string, string>
@@ -23,6 +28,7 @@ function useStandardSchema<T extends SchemaMap>(schemaMap: T) {
     const result = await schema.schema["~standard"].validate(value)
     const message = result?.issues?.[0]?.message ?? ""
     setErrors((prev) => ({ ...prev, [field]: message }))
+    return Boolean(message === "")
   }
 
   async function validateForm() {
@@ -34,13 +40,14 @@ function useStandardSchema<T extends SchemaMap>(schemaMap: T) {
       }),
     )
     setErrors(newErrors)
+    return Object.values(newErrors).every((msg) => msg === "")
   }
 
   async function validate(name?: FieldKey) {
     if (name) {
-      await validateField(name, data[name])
+      return await validateField(name, data[name])
     } else {
-      await validateForm()
+      return await validateForm()
     }
   }
 
@@ -127,22 +134,20 @@ function useStandardSchema<T extends SchemaMap>(schemaMap: T) {
     [flatSchemaMap, data, errors, touched, dirty],
   )
 
-  const setField = useCallback(
-    (name: FieldKey, value: string) => {
-      setData((prev) => ({ ...prev, [name]: value }))
-      setDirty((prev) => ({ ...prev, [name]: true }))
-      setTouched((prev) => ({ ...prev, [name]: true }))
-      validateField(name, value)
-    },
-    [validateField],
-  )
+  async function __setField(name: FieldKey, value: string) {
+    const field = name as string
+    const result = await validateField(field, value)
+    if (result) setData((prev) => ({ ...prev, [field]: value }))
+    setTouched((prev) => ({ ...prev, [field]: true }))
+    setDirty((prev) => ({ ...prev, [field]: true }))
+  }
 
   return {
     resetForm,
     getForm,
     getField,
     validate,
-    setField,
+    __setField,
     errors: Object.freeze(errors),
     touched: Object.freeze(touched),
     dirty: Object.freeze(dirty),
@@ -150,3 +155,4 @@ function useStandardSchema<T extends SchemaMap>(schemaMap: T) {
 }
 
 export { useStandardSchema, defineSchema }
+export type { FormValues, SchemaMap } from "./types"
