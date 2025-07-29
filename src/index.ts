@@ -143,9 +143,9 @@ function useStandardSchema<T extends SchemaMap>(schemaMap: T) {
     getField,
     validate,
     setField,
-    errors,
-    touched,
-    dirty,
+    errors: Object.freeze(errors),
+    touched: Object.freeze(touched),
+    dirty: Object.freeze(dirty),
   }
 }
 
