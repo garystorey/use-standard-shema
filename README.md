@@ -1,4 +1,4 @@
-# useStandard Schema
+# use-standard-schema
 
 <div style="max-width:80ch">
 
@@ -17,17 +17,13 @@ A React hook that provides a simple way to manage form state using any [standard
 
 ## Installation
 
-To install `useStandardSchema`, use your preferred package manager, such as `npm`, `pnpm`, `bun` or `yarn`. The example below uses `npm`.
+To install `use-standard-schema`, use your preferred package manager, such as `npm`, `pnpm`, `bun` or `yarn`. The example below uses `npm`.
 
 ```bash
 npm install use-standard-schema
 ```
 
 ## Quick start
-
-Follow the steps below to get started with `useStandardSchema`.
-
-### Define your schema
 
 The first step is to define your schema using your validator of choice. In this example, using [zod](https://zod.dev), and a schema that has two fields: `firstName` and `lastName`. Both fields are required and must be at least two character long.
 
