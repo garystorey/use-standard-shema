@@ -35,7 +35,7 @@ import type { TypeFromSchema } from "use-standard-schema"
 import { defineSchema, useStandardSchema } from "use-standard-schema"
 import * as z from 'zod'
 
-const stringSchema = z.string().min(2, "Too short")
+const stringSchema = z.string().min(2, "Too short").max(100, "too long")
 
 // define the schmea 
 // nested objects are supported
@@ -49,12 +49,12 @@ const nameSchema = defineSchema({
     label: "Last Name",
     description : "Enter your surname"
     defaultValue: "",
-    schema: stringSchema.maxLength(100, "Too long"),
+    schema: stringSchema,
   },
 })
 
 // call the hook with the schema
-const { getForm, getField } = useStandardSchema(schema);
+const { getForm, getField, resetForm } = useStandardSchema(schema);
 
 // get field data
 const firstName = getField("firstName");
@@ -64,7 +64,10 @@ const lastName = getField("lastName");
 type NameFormData = TypeFromSchema<typeof nameSchema>;
 
 // submit handler
-const handleSubmit = (data: NameFormData) => console.log(data);
+const handleSubmit = (data: NameFormData) => {
+  console.log(data);
+  resetForm();
+}
 
 // get form data, accepts a submit handler.
 const form = getForm(handleSubmit)
@@ -106,5 +109,35 @@ const lastNameDescription = `${lastName.name}-description`
 ```
 
 </div>
+
+## Update example to work with Valibot
+
+To update the above example to use a different validation library is straightforward. The following code is all the changes necessary to use [Valibot](https://valibot.dev/).
+
+```ts
+import * as v from 'valibot'
+
+const formData = defineSchema({
+  firstName: {
+    //... same as above
+    schema: v.pipe(
+      v.string(),
+      v.minLength(2, "Too short"),
+      v.maxLength(10, "Too long")
+    ),
+  },
+  lastName: {
+    //... same as above
+    schema: v.pipe(
+      v.string(),
+      v.minLength(2, "Too short"),
+      v.maxLength(10, "Too long")
+    ),
+  }
+});
+
+```
+
+That's it!
 
 </div>
