@@ -1,30 +1,57 @@
-# use-standard-schema
+
+# useStandardSchema
 
 <div style="max-width:80ch">
 
+*A React hook for managing form state using any Standard Schema‑compliant validator.*
+
 [![License](https://img.shields.io/badge/license-MIT-%230172ad)](https://github.com/garystorey/usezodform/blob/master/LICENSE.md)
+![NPM Version](https://img.shields.io/npm/v/us-standard-schema)
 
-<!-- ![NPM Version](https://img.shields.io/npm/v/usezodform) -->
-
-A React hook that provides a simple way to manage form state using any [standard schema](https://standardschema.dev) compliant validator including zod, valibot and ArkType.
+---
 
 ## Table of contents
 
+- [Overview](#overview)
 - [Installation](#installation)
-- [Quick start](#quick-start)
-<!-- - [Documentation](#documentation)
-- [Upgrade Guide](#upgrade-guide)
-- [License](#license) -->
+- [Usage](#usage)
+- [Documentation](#documentation)
+- [License](#license)
+
+## Overview
+
+`useStandardSchema` wraps a [Standard Schema](https://standardschema.dev)–compliant schema (e.g. Zod, Valibot, ArkType) into a React hook for form handling. It streamlines validation, state, error handling, and submission—all with type safety via the Standard Schema interface.
+
+---
+
+### Why useStandardSchema?
+
+- Works with **any validator that implements the Standard Schema spec**
+- Provides **consistent form APIs** regardless of validation library
+- Built with **TypeScript support**, ensuring type‑safe validation and form usage
+- Integrates easily into React workflows
+
+---
+
+### Prerequisites
+
+- React v18+
+- TypeScript (optional, but recommended)
+- One or more validators implementing the Standard Schema V1 interface (e.g. Zod ≥3.24.0, ArkType v2+, etc.)
+
+---
 
 ## Installation
 
-To install `use-standard-schema`, use your preferred package manager, such as `npm`, `pnpm`, `bun` or `yarn`. The example below uses `npm`.
-
 ```bash
-npm install use-standard-schema
+npm install use-standard-shema
+# or
+yarn add use-standard-shema
 ```
 
-## Quick start
+---
+
+## Usage
 
 In this example, using [zod](https://zod.dev), and a schema that has two fields: `firstName` and `lastName`. Both fields are required and must be at least two character long.
 
@@ -110,7 +137,7 @@ const lastNameDescription = `${lastName.name}-description`
 
 </div>
 
-## Update example to work with Valibot
+### Update example to work with Valibot
 
 To update the above example to use a different validation library is straightforward. The following code is all the changes necessary to use [Valibot](https://valibot.dev/).
 
@@ -138,6 +165,30 @@ const formData = defineSchema({
 
 ```
 
-That's it!
+---
+
+## Documentation
+
+| Hook                | Description                                                                 |
+|---------------------|-----------------------------------------------------------------------------|
+| `useStandardSchema(schema)` | Initialize form state and validation with a Standard Schema |
+| `getForm` | returns the event handlers for the form for managing form state. accepts a submit handler function. |
+| `getField` | returns information for the given field |
+| `resetForm` | re4sets form state |
+| `errors` | read only Errors mapped by field name |
+| `touched` | read only Touched mapped by field name |
+| `dirty` | read only Dirty mapped by field name |
+
+---
+
+## Feedback & Support
+
+If you encounter issues or have feature requests, [open an issue](https://github.com/garystorey/use-standard-shema/issues) on GitHub
+
+---
+
+## License
+
+[MIT License](./LICENSE)
 
 </div>
