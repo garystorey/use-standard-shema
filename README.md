@@ -26,7 +26,7 @@ npm install use-standard-schema
 
 ## Quick start
 
-The first step is to define your schema using your validator of choice. In this example, using [zod](https://zod.dev), and a schema that has two fields: `firstName` and `lastName`. Both fields are required and must be at least two character long.
+In this example, using [zod](https://zod.dev), and a schema that has two fields: `firstName` and `lastName`. Both fields are required and must be at least two character long.
 
 <div style="width:100ch;margin:auto;">
 
