@@ -51,13 +51,6 @@ function useStandardSchema<T extends Schema>(schemaMap: T) {
     }
   }
 
-  function resetForm() {
-    setData(initialValues)
-    setErrors({})
-    setTouched({})
-    setDirty({})
-  }
-
   const getForm = useCallback(
     (onSubmitHandler: (data: FormValues) => void) => {
       const onSubmit = async (e: FormEvent) => {
@@ -103,19 +96,19 @@ function useStandardSchema<T extends Schema>(schemaMap: T) {
         }
       }
 
-      const onReset = () => reset()
-
-      const reset = () => {
-        setData(initialValues)
-        setErrors({})
-        setTouched({})
-        setDirty({})
-      }
+      const onReset = () => resetForm()
 
       return { onSubmit, onFocus, onBlur, onReset }
     },
     [flatSchemaMap, data, initialValues, validateField],
   )
+
+  const resetForm = () => {
+    setData(initialValues)
+    setErrors({})
+    setTouched({})
+    setDirty({})
+  }
 
   const getField = useCallback(
     (name: FieldKey) => {
@@ -164,4 +157,4 @@ function useStandardSchema<T extends Schema>(schemaMap: T) {
 }
 
 export { useStandardSchema, defineSchema }
-export type { TypeFromSchema, Schema } from "./types"
+export { TypeFromSchema, Schema, SchemaField } from "./types"

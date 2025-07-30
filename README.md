@@ -28,7 +28,7 @@ npm install use-standard-schema
 
 The first step is to define your schema using your validator of choice. In this example, using [zod](https://zod.dev), and a schema that has two fields: `firstName` and `lastName`. Both fields are required and must be at least two character long.
 
-<div style="width:120ch">
+<div style="width:100ch;margin:auto;">
 
 ```ts
 import type { TypeFromSchema } from "use-standard-schema"
@@ -37,11 +37,13 @@ import * as z from 'zod'
 
 const stringSchema = z.string().min(2, "Too short")
 
+// define the schmea 
+// nested objects are supported
 const nameSchema = defineSchema({
   firstName: {
-    label: "First Name",
-    description : "Enter your given name"
-    schema: stringSchema,
+    label: "First Name",  // required
+    schema: stringSchema,  // required
+    description: "Enter your given name"
   },
   lastName: {
     label: "Last Name",
@@ -51,12 +53,6 @@ const nameSchema = defineSchema({
   },
 })
 
-// get the type from the schema
-type NameFormData = TypeFromSchema<typeof nameSchema>;
-
-// submit handler
-const handleSubmit = (data: NameFormData) => console.log(data);
-
 // call the hook with the schema
 const { getForm, getField } = useStandardSchema(schema);
 
@@ -64,13 +60,21 @@ const { getForm, getField } = useStandardSchema(schema);
 const firstName = getField("firstName");
 const lastName = getField("lastName");
 
+// get the type from the schema
+type NameFormData = TypeFromSchema<typeof nameSchema>;
+
+// submit handler
+const handleSubmit = (data: NameFormData) => console.log(data);
+
+// get form data, accepts a submit handler.
+const form = getForm(handleSubmit)
+
 // aria-describedby field name
 const firstNameDescription = `${firstName.name}-description`
 const lastNameDescription = `${lastName.name}-description`
 
   return (
-  <div className="App">
-    <form {...getForm(handleSubmit)}>
+    <form {...form}>
       <div>
         <label>{firstName.label}</label>
         <input name={firstName.name}
@@ -78,8 +82,8 @@ const lastNameDescription = `${lastName.name}-description`
           aria-describedby={firstNameDescription}
         />
         <p id={firstNameDescription}>{firstName.description}</p>
-        {firstName.error && (
-          <div style={{ color: "red" }}>{firstName.error}</div>
+        {firstName.error !== "" && (
+          <div class="error">{firstName.error}</div>
         )}
       </div>
 
@@ -90,14 +94,13 @@ const lastNameDescription = `${lastName.name}-description`
           aria-describedby={lastNameDescription}
         />
         <p id={lastNameDescription}>{lastName.description}</p>
-        {lastName.error && (
-          <div style={{ color: "red" }}>{lastName.error}</div>
+        {lastName.error !== "" && (
+          <div class="error">{lastName.error}</div>
         )}
       </div>
 
       <button type="submit">Submit</button>
     </form>
-  </div>
 );
 
 ```
