@@ -1,6 +1,6 @@
 import { type FocusEvent, type FormEvent, useCallback, useMemo, useState } from "react"
 import { defineSchema, flattenDefaults, flattenSchema } from "./helpers"
-import type { DotPaths, Schema, SchemaField } from "./types"
+import type { DotPaths, Errors, Flags, FormValues, Schema, SchemaField } from "./types"
 
 /** * Custom hook to manage form state based on a schema.
  * @param schemaMap - The schema definition for the form.
@@ -9,9 +9,6 @@ import type { DotPaths, Schema, SchemaField } from "./types"
 
 function useStandardSchema<T extends Schema>(schemaMap: T) {
 	type FieldKey = DotPaths<T>
-	type FormValues = Record<string, string>
-	type Flags = Record<string, boolean>
-	type Errors = Record<string, string>
 
 	const flatSchemaMap = useMemo(() => flattenSchema(schemaMap), [schemaMap]) as Record<string, SchemaField>
 	const initialValues = useMemo(() => flattenDefaults(schemaMap), [schemaMap])

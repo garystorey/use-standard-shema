@@ -1,5 +1,9 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec"
 
+export type FormValues = Record<string, string>
+export type Flags = Record<string, boolean>
+export type Errors = Record<string, string>
+
 export interface SchemaField {
 	label: string
 	description?: string
