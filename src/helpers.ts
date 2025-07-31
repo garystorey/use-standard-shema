@@ -1,4 +1,4 @@
-import type { Schema, SchemaField } from "./types"
+import type { FormValues, Schema, SchemaField } from "./types"
 
 export function defineSchema<T extends Schema>(schema: T): T {
 	return schema
@@ -6,6 +6,16 @@ export function defineSchema<T extends Schema>(schema: T): T {
 
 export function isSchemaField(obj: unknown): obj is SchemaField {
 	return typeof obj === "object" && obj !== null && "label" in obj && "defaultValue" in obj && "schema" in obj
+}
+
+export function toFormData(data: FormValues) {
+	const formData = new FormData()
+	Object.entries(data).forEach(([key, value]) => {
+		if (value !== undefined && value !== null) {
+			formData.append(key, String(value))
+		}
+	})
+	return formData
 }
 
 export function flattenSchema(map: Schema, prefix = ""): Record<string, SchemaField> {
