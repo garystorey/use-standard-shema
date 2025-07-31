@@ -10,7 +10,6 @@
   ],
   "scripts": {
     "build": "tsup ./src/index.ts --format cjs,esm --dts",
-    "lint": "tsc",
     "format": "biome format --write",
     "fix": "tsc --noEmit && biome check --fix"
   },
