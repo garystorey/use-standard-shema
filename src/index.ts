@@ -1,14 +1,12 @@
-import { useState, useCallback, FormEvent, FocusEvent, useMemo } from "react"
-import { SchemaField, Schema, DotPaths } from "./types"
-import { flattenDefaults, flattenSchema, defineSchema } from "./helpers"
+import { type FocusEvent, type FormEvent, useCallback, useMemo, useState } from "react"
+import { defineSchema, flattenDefaults, flattenSchema } from "./helpers"
+import type { DotPaths, Schema, SchemaField } from "./types"
 
-/**
- * Custom hook to manage forms based on a schema map.
- * Provides methods to validate fields, reset the form, and get field definitions.
- *
- * @param schemaMap - The schema map defining the structure and validation of the form.
+/** * Custom hook to manage form state based on a schema.
+ * @param schemaMap - The schema definition for the form.
  * @returns An object containing methods and state for managing the form.
  */
+
 function useStandardSchema<T extends Schema>(schemaMap: T) {
   type FieldKey = DotPaths<T>
   type FormValues = Record<string, string>
@@ -23,13 +21,16 @@ function useStandardSchema<T extends Schema>(schemaMap: T) {
   const [touched, setTouched] = useState<Flags>({})
   const [dirty, setDirty] = useState<Flags>({})
 
-  async function validateField(field: string, value: string) {
-    const schema = flatSchemaMap[field]
-    const result = await schema.schema["~standard"].validate(value)
-    const message = result?.issues?.[0]?.message ?? ""
-    setErrors((prev) => ({ ...prev, [field]: message }))
-    return Boolean(message === "")
-  }
+  const validateField = useCallback(
+    async (field: string, value: string) => {
+      const schema = flatSchemaMap[field]
+      const result = await schema.schema["~standard"].validate(value)
+      const message = result?.issues?.[0]?.message ?? ""
+      setErrors((prev) => ({ ...prev, [field]: message }))
+      return Boolean(message === "")
+    },
+    [flatSchemaMap],
+  )
 
   async function validateForm() {
     const newErrors: Errors = {}
@@ -50,6 +51,12 @@ function useStandardSchema<T extends Schema>(schemaMap: T) {
       return await validateForm()
     }
   }
+  const resetForm = useCallback(() => {
+    setData(initialValues)
+    setErrors({})
+    setTouched({})
+    setDirty({})
+  }, [initialValues])
 
   const getForm = useCallback(
     (onSubmitHandler: (data: FormValues) => void) => {
@@ -100,20 +107,13 @@ function useStandardSchema<T extends Schema>(schemaMap: T) {
 
       return { onSubmit, onFocus, onBlur, onReset }
     },
-    [flatSchemaMap, data, initialValues, validateField],
+    [flatSchemaMap, data, initialValues, resetForm, validateField],
   )
-
-  const resetForm = () => {
-    setData(initialValues)
-    setErrors({})
-    setTouched({})
-    setDirty({})
-  }
 
   const getField = useCallback(
     (name: FieldKey) => {
       const key = name as string
-      const { schema, ...fieldDef } = flatSchemaMap[key]
+      const { schema: _schema, ...fieldDef } = flatSchemaMap[key]
 
       return {
         ...fieldDef,
@@ -157,4 +157,4 @@ function useStandardSchema<T extends Schema>(schemaMap: T) {
 }
 
 export { useStandardSchema, defineSchema }
-export { TypeFromSchema, Schema, SchemaField } from "./types"
+export { Schema, SchemaField, TypeFromSchema } from "./types"
