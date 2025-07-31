@@ -174,7 +174,7 @@ const formData = defineSchema({
 | `useStandardSchema(schema)` | Initialize form state and validation with a Standard Schema |
 | `getForm` | returns the event handlers for the form for managing form state. accepts a submit handler function. |
 | `getField` | returns information for the given field |
-| `resetForm` | re4sets form state |
+| `resetForm` | resets form state |
 | `errors` | read only Errors mapped by field name |
 | `touched` | read only Touched mapped by field name |
 | `dirty` | read only Dirty mapped by field name |
