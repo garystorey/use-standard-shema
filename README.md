@@ -6,7 +6,7 @@
 *A React hook for managing form state using any Standard Schema‑compliant validator.*
 
 [![License](https://img.shields.io/badge/license-MIT-%230172ad)](https://github.com/garystorey/usezodform/blob/master/LICENSE.md)
-![NPM Version](https://img.shields.io/npm/v/us-standard-schema)
+![NPM Version](https://img.shields.io/npm/v/use-standard-schema)
 
 ---
 
@@ -58,8 +58,7 @@ In this example, using [zod](https://zod.dev), and a schema that has two fields:
 <div style="width:100ch;margin:auto;">
 
 ```ts
-import type { TypeFromSchema } from "use-standard-schema"
-import { defineSchema, useStandardSchema } from "use-standard-schema"
+import { defineSchema, useStandardSchema, type TypeFromSchema } from "use-standard-schema"
 import * as z from 'zod'
 
 const stringSchema = z.string().min(2, "Too short").max(100, "too long")
@@ -81,7 +80,7 @@ const nameSchema = defineSchema({
 })
 
 // call the hook with the schema
-const { getForm, getField, resetForm } = useStandardSchema(schema);
+const { getForm, getField, resetForm, /** errors, touched, dirty */ } = useStandardSchema(schema);
 
 // get field data
 const firstName = getField("firstName");
@@ -150,7 +149,7 @@ const formData = defineSchema({
     schema: v.pipe(
       v.string(),
       v.minLength(2, "Too short"),
-      v.maxLength(10, "Too long")
+      v.maxLength(100, "Too long")
     ),
   },
   lastName: {
@@ -158,7 +157,7 @@ const formData = defineSchema({
     schema: v.pipe(
       v.string(),
       v.minLength(2, "Too short"),
-      v.maxLength(10, "Too long")
+      v.maxLength(100, "Too long")
     ),
   }
 });
@@ -172,12 +171,16 @@ const formData = defineSchema({
 | Hook                | Description                                                                 |
 |---------------------|-----------------------------------------------------------------------------|
 | `useStandardSchema(schema)` | Initialize form state and validation with a Standard Schema |
-| `getForm` | returns the event handlers for the form for managing form state. accepts a submit handler function. |
+| `getForm` | returns the event handlers for the form for managing form state; accepts a submit handler function |
 | `getField` | returns information for the given field |
 | `resetForm` | resets form state |
 | `errors` | read only Errors mapped by field name |
 | `touched` | read only Touched mapped by field name |
 | `dirty` | read only Dirty mapped by field name |
+| `toFormData` | helper function to convert returned data to web standard FormData |
+| `getErrors` | helper function to get all current errors |
+| `validate` | helper function to manually call validation for the form or a field |
+|`__setField` | helper function to set a given fields value; value will be validated. |
 
 ---
 
