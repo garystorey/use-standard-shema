@@ -80,7 +80,7 @@ const nameSchema = defineSchema({
 })
 
 // call the hook with the schema
-const { getForm, getField, resetForm, /** errors, touched, dirty */ } = useStandardSchema(schema);
+const { getForm, getField, resetForm, /* errors, touched, dirty */ } = useStandardSchema(schema);
 
 // get field data
 const firstName = getField("firstName");
