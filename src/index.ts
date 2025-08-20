@@ -136,6 +136,12 @@ function useStandardSchema<T extends FormDefinition>(schemaMap: T) {
     (name: FieldKey) => {
       const key = name as string;
       const { validate: _validate, ...fieldDef } = flatSchemaMap[key];
+      const describedById = `${key}-description`;
+      const errorId = `${key}-error`;
+
+      if (!fieldDef) {
+        throw new Error(`Field "${key}" does not exist in the schema.`);
+      }
 
       return {
         ...fieldDef,
@@ -144,6 +150,8 @@ function useStandardSchema<T extends FormDefinition>(schemaMap: T) {
         error: errors[key] ?? "",
         touched: !!touched[key],
         dirty: !!dirty[key],
+        describedById: describedById,
+        errorId,
       };
     },
     [flatSchemaMap, data, errors, touched, dirty]

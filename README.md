@@ -1,7 +1,7 @@
 
 # useStandardSchema
 
-<div style="max-width:80ch">
+<div style="max-width:100ch">
 
 *A React hook for managing form state using any Standard Schema‑compliant validator.*
 
@@ -37,104 +37,106 @@
 
 - React v18+
 - TypeScript (optional, but recommended)
-- One or more validators implementing the Standard Schema V1 interface (e.g. Zod ≥3.24.0, ArkType v2+, etc.)
+- A validator that implements the [Standard Schema v1 interface](https://standardschema.dev/#what-schema-libraries-implement-the-spec)
 
 ---
 
 ## Installation
 
 ```bash
-npm install use-standard-shema
+npm install use-standard-schema  # zod, valibot, ArkType, etc 
 # or
-yarn add use-standard-shema
+yarn add use-standard-schema
+# or
+pnpm add use-standard-schema
 ```
 
 ---
 
 ## Usage
 
-In this example, using [zod](https://zod.dev), and a schema that has two fields: `firstName` and `lastName`. Both fields are required and must be at least two character long.
-
-<div style="width:100ch;margin:auto;">
+In this example, using [zod](https://zod.dev), and a form definition that has two fields: `firstName` and `lastName`. Both fields are required and must be at least two character long.
 
 ```ts
-import { defineSchema, useStandardSchema, type TypeFromSchema } from "use-standard-schema"
+import { defineForm, useStandardSchema, type TypeFromDefinition } from "use-standard-schema"
 import * as z from 'zod'
 
 const stringSchema = z.string().min(2, "Too short").max(100, "too long")
 
-// define the schmea 
-// nested objects are supported
-const nameSchema = defineForm({
+// define the form 
+// nested objects (address.street1) are supported
+const nameForm = defineForm({
   firstName: {
+    validate: stringSchema,  // required
     label: "First Name",  // required
-    schema: stringSchema,  // required
     description: "Enter your given name"
   },
   lastName: {
-    label: "Last Name",
-    description : "Enter your surname"
-    defaultValue: "",
-    schema: stringSchema,
+    validate: stringSchema,
+    label: "Last Name", // or i18n('user.lastName'), etc
+    description: "Enter your surname"
+    defaultValue: "",  // an initial value can be supplied
   },
 })
 
-// call the hook with the schema
-const { getForm, getField, resetForm, /* errors, touched, dirty */ } = useStandardSchema(schema);
+// get the type from the form definition
+type NameFormData = TypeFromDefinition<typeof nameSchema>;
 
-// get field data
-const firstName = getField("firstName");
-const lastName = getField("lastName");
+export function App() {
+  // call the hook with the form definition
+  const { getForm, getField, resetForm  } = useStandardSchema(nameForm);
 
-// get the type from the schema
-type NameFormData = TypeFromSchema<typeof nameSchema>;
+  // submit handler only called with valid data
+  // it will match the type from the definition
+  const handleSubmit = (data: NameFormData) => {
+    console.log(data);
+    resetForm();
+  }
 
-// submit handler
-const handleSubmit = (data: NameFormData) => {
-  console.log(data);
-  resetForm();
-}
-
-// get form data, accepts a submit handler.
-const form = getForm(handleSubmit)
-
-// aria-describedby field name
-const firstNameDescription = `${firstName.name}-description`
-const lastNameDescription = `${lastName.name}-description`
+  // get form/field data
+  const form = getForm(handleSubmit)
+  const firstName = getField("firstName");
+  const lastName = getField("lastName");
 
   return (
     <form {...form}>
-      <div>
-        <label>{firstName.label}</label>
+
+      <div className="field">
+        <label htmlFor={firstName.name}>{firstName.label}</label>
         <input name={firstName.name}
           defaultValue={firstName.defaultValue}
-          aria-describedby={firstNameDescription}
+          aria-describedby={firstName.describedById}
+          aria-errormessage={firstName.errorId}
         />
-        <p id={firstNameDescription}>{firstName.description}</p>
-        {firstName.error !== "" && (
-          <div class="error">{firstName.error}</div>
-        )}
+        <p id={firstName.describedById} className="description">
+          {firstName.description}
+        </p>
+        <p id={firstName.errorId} className="error">
+          {firstName.error}
+        </p>
       </div>
 
-      <div>
-        <label>{lastName.label}</label>
+      <div className="field">
+        <label htmlFor={lastName.name}>{lastName.label}</label>
         <input name={lastName.name}
           defaultValue={lastName.defaultValue}
-          aria-describedby={lastNameDescription}
+          aria-describedby={lastName.describedBy}
+          aria-errormessage={lastName.errorId}
         />
-        <p id={lastNameDescription}>{lastName.description}</p>
-        {lastName.error !== "" && (
-          <div class="error">{lastName.error}</div>
-        )}
+        <p id={lastName.describedById} className="description">
+          {lastName.description}
+        </p>
+        <p id={lastName.errorId} className="error">
+          {lastName.error}
+        </p>
       </div>
 
       <button type="submit">Submit</button>
     </form>
 );
+}
 
 ```
-
-</div>
 
 ### Update example to work with Valibot
 
@@ -143,10 +145,10 @@ To update the above example to use a different validation library is straightfor
 ```ts
 import * as v from 'valibot'
 
-const formData = defineSchema({
+const formData = defineForm({
   firstName: {
     //... same as above
-    schema: v.pipe(
+    validate: v.pipe(
       v.string(),
       v.minLength(2, "Too short"),
       v.maxLength(100, "Too long")
@@ -154,7 +156,7 @@ const formData = defineSchema({
   },
   lastName: {
     //... same as above
-    schema: v.pipe(
+    validate: v.pipe(
       v.string(),
       v.minLength(2, "Too short"),
       v.maxLength(100, "Too long")
