@@ -4,19 +4,19 @@ export type FormValues = Record<string, string>;
 export type Flags = Record<string, boolean>;
 export type Errors = Record<string, string>;
 
-export interface SchemaField {
+export interface FieldDefinition {
   label: string;
   description?: string;
   defaultValue?: string;
   schema: StandardSchemaV1;
 }
 
-export type Schema = {
-  [key: string]: SchemaField | Schema;
+export type FormDefinition = {
+  [key: string]: FieldDefinition | FormDefinition;
 };
 
 export type DotPaths<T, Prev extends string = ""> = {
-  [K in keyof T]: T[K] extends SchemaField
+  [K in keyof T]: T[K] extends FieldDefinition
     ? `${Prev}${K & string}`
     : T[K] extends object
     ? DotPaths<T[K], `${Prev}${K & string}.`>
@@ -24,13 +24,13 @@ export type DotPaths<T, Prev extends string = ""> = {
 }[keyof T];
 
 type DotPathsToValues<T, Prev extends string = ""> = {
-  [K in keyof T]: T[K] extends SchemaField
+  [K in keyof T]: T[K] extends FieldDefinition
     ? { [P in `${Prev}${K & string}`]: T[K]["defaultValue"] }
-    : T[K] extends Schema
+    : T[K] extends FormDefinition
     ? DotPathsToValues<T[K], `${Prev}${K & string}.`>
     : never;
 }[keyof T];
 
-export type TypeFromSchema<T extends Schema> = {
+export type TypeFromDefinition<T extends FormDefinition> = {
   [K in keyof DotPathsToValues<T>]: DotPathsToValues<T>[K];
 };

@@ -1,10 +1,10 @@
-import type { FormValues, Schema, SchemaField } from "./types";
+import type { FieldDefinition, FormDefinition, FormValues } from "./types";
 
-export function defineSchema<T extends Schema>(schema: T): T {
+export function defineForm<T extends FormDefinition>(schema: T): T {
   return schema;
 }
 
-export function isSchemaField(obj: unknown): obj is SchemaField {
+export function isSchemaField(obj: unknown): obj is FieldDefinition {
   return (
     typeof obj === "object" &&
     obj !== null &&
@@ -25,10 +25,10 @@ export function toFormData(data: FormValues) {
 }
 
 export function flattenSchema(
-  map: Schema,
+  map: FormDefinition,
   prefix = ""
-): Record<string, SchemaField> {
-  const result: Record<string, SchemaField> = {};
+): Record<string, FieldDefinition> {
+  const result: Record<string, FieldDefinition> = {};
 
   for (const key in map) {
     const value = map[key];
@@ -45,7 +45,7 @@ export function flattenSchema(
 }
 
 export function flattenDefaults(
-  map: Schema,
+  map: FormDefinition,
   prefix = ""
 ): Record<string, string> {
   const result: Record<string, string> = {};
