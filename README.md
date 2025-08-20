@@ -20,7 +20,7 @@
 
 ## Overview
 
-`useStandardSchema` wraps a [Standard Schema](https://standardschema.dev)–compliant schema (e.g. Zod, Valibot, ArkType) into a React hook for form handling. It streamlines validation, state, error handling, and submission—all with type safety via the Standard Schema interface.
+`useStandardSchema` wraps a [Standard Schema](https://standardschema.dev)–compliant schema (e.g. Zod, Valibot, ArkType, etc.) into a React hook for form handling. It streamlines validation, state, error handling, and submission—all with type safety via the Standard Schema interface.
 
 ---
 
@@ -65,7 +65,7 @@ const stringSchema = z.string().min(2, "Too short").max(100, "too long")
 
 // define the schmea 
 // nested objects are supported
-const nameSchema = defineSchema({
+const nameSchema = defineForm({
   firstName: {
     label: "First Name",  // required
     schema: stringSchema,  // required

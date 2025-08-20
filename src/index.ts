@@ -42,7 +42,7 @@ function useStandardSchema<T extends FormDefinition>(schemaMap: T) {
   const validateField = useCallback(
     async (field: string, value: string) => {
       const schema = flatSchemaMap[field];
-      const result = await schema.schema["~standard"].validate(value);
+      const result = await schema.validate["~standard"].validate(value);
       const message = result?.issues?.[0]?.message ?? "";
       setErrors((prev) => ({ ...prev, [field]: message }));
       return Boolean(message === "");
@@ -54,7 +54,7 @@ function useStandardSchema<T extends FormDefinition>(schemaMap: T) {
     const newErrors: Errors = {};
     await Promise.all(
       Object.keys(flatSchemaMap).map(async (key) => {
-        const result = await flatSchemaMap[key].schema["~standard"].validate(
+        const result = await flatSchemaMap[key].validate["~standard"].validate(
           data[key]
         );
         newErrors[key] = result?.issues?.[0]?.message ?? "";
@@ -86,7 +86,7 @@ function useStandardSchema<T extends FormDefinition>(schemaMap: T) {
 
         await Promise.all(
           Object.keys(flatSchemaMap).map(async (key) => {
-            const result = await flatSchemaMap[key].schema[
+            const result = await flatSchemaMap[key].validate[
               "~standard"
             ].validate(data[key]);
             newErrors[key] = result?.issues?.[0]?.message ?? "";
@@ -135,7 +135,7 @@ function useStandardSchema<T extends FormDefinition>(schemaMap: T) {
   const getField = useCallback(
     (name: FieldKey) => {
       const key = name as string;
-      const { schema: _schema, ...fieldDef } = flatSchemaMap[key];
+      const { validate: _validate, ...fieldDef } = flatSchemaMap[key];
 
       return {
         ...fieldDef,

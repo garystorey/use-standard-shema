@@ -8,7 +8,7 @@ export interface FieldDefinition {
   label: string;
   description?: string;
   defaultValue?: string;
-  schema: StandardSchemaV1;
+  validate: StandardSchemaV1;
 }
 
 export type FormDefinition = {
