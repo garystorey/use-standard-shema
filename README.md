@@ -63,8 +63,8 @@ import * as z from 'zod'
 
 const stringSchema = z.string().min(2, "Too short").max(100, "too long")
 
-// define the form 
-// nested objects (address.street1) are supported
+// create the form definition
+// nested objects are supported (address.street1)
 const nameForm = defineForm({
   firstName: {
     validate: stringSchema,  // required
@@ -74,7 +74,7 @@ const nameForm = defineForm({
   lastName: {
     validate: stringSchema,
     label: "Last Name", // or i18n('user.lastName'), etc
-    description: "Enter your surname"
+    description: "Enter your surname",
     defaultValue: "",  // an initial value can be supplied
   },
 })
@@ -84,7 +84,7 @@ type NameFormData = TypeFromDefinition<typeof nameSchema>;
 
 export function App() {
   // call the hook with the form definition
-  const { getForm, getField, resetForm  } = useStandardSchema(nameForm);
+  const { getForm, getField, resetForm, getErrors  } = useStandardSchema(nameForm);
 
   // submit handler only called with valid data
   // it will match the type from the definition
@@ -93,15 +93,24 @@ export function App() {
     resetForm();
   }
 
-  // get form/field data
+  // get form events
   const form = getForm(handleSubmit)
+  
+  // get field definitions
   const firstName = getField("firstName");
   const lastName = getField("lastName");
-
+ 
   return (
     <form {...form}>
 
-      <div className="field">
+      /* show all errors */
+      {getErrors() !== "" ? (
+        <div className="all-error-messages" role="alert">
+          {getErrors()}
+        </div>
+      ) : ""}
+
+      <div className={`field ${firstName.error !== "has-error": ""}`}>
         <label htmlFor={firstName.name}>{firstName.label}</label>
         <input name={firstName.name}
           defaultValue={firstName.defaultValue}
@@ -111,12 +120,13 @@ export function App() {
         <p id={firstName.describedById} className="description">
           {firstName.description}
         </p>
+        /* an error message for a single field*/
         <p id={firstName.errorId} className="error">
           {firstName.error}
         </p>
       </div>
 
-      <div className="field">
+      <div className={`field ${lastName.error !== "has-error": ""}`}>
         <label htmlFor={lastName.name}>{lastName.label}</label>
         <input name={lastName.name}
           defaultValue={lastName.defaultValue}
@@ -126,6 +136,7 @@ export function App() {
         <p id={lastName.describedById} className="description">
           {lastName.description}
         </p>
+        /* an error message for a single field*/
         <p id={lastName.errorId} className="error">
           {lastName.error}
         </p>
