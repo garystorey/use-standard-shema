@@ -137,16 +137,19 @@ function useStandardSchema<T extends FormDefinition>(schemaMap: T) {
         [flatSchemaMap, data, initialValues, resetForm, validateField]
     );
 
+    // index.ts (inside getField)
     const getField = useCallback(
         (name: FieldKey) => {
             const key = name as string;
-            const { validate: _validate, ...fieldDef } = flatSchemaMap[key];
-            const describedById = `${key}-description`;
-            const errorId = `${key}-error`;
 
-            if (!fieldDef) {
+            const def = flatSchemaMap[key];
+            if (!def) {
                 throw new Error(`Field "${key}" does not exist in the schema.`);
             }
+
+            const { validate: _validate, ...fieldDef } = def;
+            const describedById = `${key}-description`;
+            const errorId = `${key}-error`;
 
             return {
                 ...fieldDef,
