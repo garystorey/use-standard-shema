@@ -203,6 +203,13 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ---
 
+## ChangeLog
+
+- v0.2.2 - fix recursion error in `flattenSchema`
+- v0.2.1 - rename `defineSchema` to `defineForm`. rename `schema` to `validate`.
+- v0.2.0 - Add nested object support
+- v0.1.0 - Initial release
+
 ## License
 
 [MIT License](./LICENSE)
