@@ -53,7 +53,10 @@ function applyFlattening<T>(
 }
 
 /** Flatten a nested FormDefinition into a flat map of dot-notated paths to FieldDefinitions */
-export function flattenFormDefinition(formDefinition: FormDefinition, parentPath = ""): Record<string, FieldDefinition> {
+export function flattenFormDefinition(
+	formDefinition: FormDefinition,
+	parentPath = "",
+): Record<string, FieldDefinition> {
 	const flattened: Record<string, FieldDefinition> = {}
 
 	for (const [propertyKey, propertyValue] of Object.entries(formDefinition as Record<string, unknown>)) {
@@ -64,7 +67,7 @@ export function flattenFormDefinition(formDefinition: FormDefinition, parentPath
 			propertyValue,
 			fullPath,
 			(fieldDef: FieldDefinition) => fieldDef,
-			(subSchema: FormDefinition, path:string) => flattenFormDefinition(subSchema, path),
+			(subSchema: FormDefinition, path: string) => flattenFormDefinition(subSchema, path),
 		)
 	}
 
@@ -83,7 +86,7 @@ export function flattenDefaults(formDefinition: FormDefinition, parentPath = "")
 			propertyValue,
 			fullPath,
 			(fieldDef: FieldDefinition) => fieldDef.defaultValue ?? "",
-			(subSchema:FormDefinition, path:string) => flattenDefaults(subSchema, path),
+			(subSchema: FormDefinition, path: string) => flattenDefaults(subSchema, path),
 		)
 	}
 
