@@ -16,7 +16,6 @@
 - [Usage](#usage)
 - [Examples](#examples)
 - [API](#api)
-- [Accessibility](#accessibility)
 - [Best Practices](#best-practices)
 - [Feedback & Support](#feedback--support)
 - [ChangeLog](#changelog)
@@ -64,18 +63,18 @@ Example using [zod](https://zod.dev). This form has two fields: `firstName` and 
 import { defineForm, useStandardSchema, type TypeFromDefinition } from "use-standard-schema"
 import * as z from "zod"
 
-const stringSchema = z.string().min(2, "Too short").max(100, "Too long")
+const validString = z.string().min(2, "Too short").max(100, "Too long")
 
 // create the form definition
 // nested objects are supported (e.g. address.street1)
 const nameForm = defineForm({
   firstName: {
-    validate: stringSchema,  // required
+    validate: validString,  // required
     label: "First Name",     // required
     description: "Enter your given name"
   },
   lastName: {
-    validate: stringSchema,
+    validate: validString,
     label: "Last Name",
     description: "Enter your surname",
     defaultValue: ""         // optional initial value
@@ -180,18 +179,23 @@ const validString = v.pipe(
     v.maxLength(100, "Too long")
 )
 
+// showing the updated form definition for completeness.  
+// no real changes here
 const formData = defineForm({
   firstName: {
-    //... same as previous example
+    //... the same as previous example
     validate: validString,
   },
   lastName: {
-    //... same as previous example
+    //... the same as previous example
     validate: validString,
   }
 });
 
 ```
+
+In this instance, we simply update the `validString` validator from `zod` to `valibot`.
+`formDefinition` does not change.
 
 ---
 
@@ -212,14 +216,6 @@ const formData = defineForm({
 
 ---
 
-## Accessibility
-
-- Each field provides `describedById` and `errorId` for use with `aria-describedby` and/or `aria-errormessage`.
-- Ensures proper screen reader support for error messages.
-- Group-level errors can be presented with `role="alert"`.
-
----
-
 ## Best Practices
 
 - **Type Safety**: Use `TypeFromDefinition<typeof form>` for your submit handler if you need type safety. This ensures your form data matches the form definition.
@@ -228,6 +224,9 @@ const formData = defineForm({
 - **Reset Strategy**: Call `resetForm()` after successful submission to clear touched/dirty/errors and restore defaults.
 - **Nested Fields**: Use dot notation for nested keys (e.g. `"address.street1"`). TypeScript support ensures autocomplete for these paths.
 - **Accessibility**: Always wire `describedById` and `errorId` into your markup to keep your forms screen-reader friendly.
+  - `getField` provides `describedById` and `errorId` for use with `aria-describedby` and/or `aria-errormessage`.
+  - Ensures that developers can add proper screen reader support for error messages.
+  - Group-level errors can be presented with `role="alert"`.
 
 ---
 
@@ -240,6 +239,7 @@ If you encounter issues or have feature requests, [open an issue](https://github
 ## ChangeLog
 
 - v0.2.4 - Improve validation.
+  - remove "schema" from function names internally and externally.
   - Validation is handled consistently internally.
   - Update `getErrors` to return ordered `{ key, error }[]`.
 - v0.2.3 - Fix recursion error in `isFormDefinition` that caused an infinite loop.
