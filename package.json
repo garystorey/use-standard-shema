@@ -1,15 +1,24 @@
 {
     "name": "use-standard-schema",
-    "version": "0.2.3",
+    "version": "0.2.4",
     "description": "A React hook for managing form state using any standard schema compliant validation library.",
     "main": "dist/index.js",
     "module": "dist/index.mjs",
     "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.js",
+            "default": "./dist/index.mjs"
+        }
+    },
     "files": [
         "dist/**/*"
     ],
+    "sideEffects": false,
     "scripts": {
-        "build": "tsup ./src/index.ts --format cjs,esm --dts",
+        "build": "tsup ./src/index.ts --format cjs,esm --dts --sourcemap",
         "format": "biome format --write",
         "fix": "tsc --noEmit && biome check --fix"
     },
@@ -24,14 +33,9 @@
         "form",
         "react",
         "hook",
-        "form",
         "form management",
         "form handling",
-        "form library",
-        "form hook",
         "form state management",
-        "form handling library",
-        "form state",
         "react hook",
         "form validation",
         "react form",
@@ -39,18 +43,18 @@
     ],
     "author": "Gary Storey <garystoreydev@gmail.com>",
     "license": "MIT",
+    "peerDependencies": {
+        "react": "^18.2.0 || ^19.0.0"
+    },
     "devDependencies": {
         "@biomejs/biome": "2.2.2",
         "@types/react": "^19.1.12",
-        "@types/react-dom": "^19.1.8",
+        "@types/react-dom": "^19.1.9",
         "globals": "^16.3.0",
         "react": "^19.1.1",
         "react-dom": "^19.1.1",
         "tsup": "^8.5.0",
         "typescript": "^5.9.2"
-    },
-    "peerDependencies": {
-        "react": "^19.1.1"
     },
     "dependencies": {
         "@standard-schema/spec": "^1.0.0"
