@@ -63,8 +63,8 @@ export function flattenFormDefinition(formDefinition: FormDefinition, parentPath
 			flattened,
 			propertyValue,
 			fullPath,
-			(fieldDef) => fieldDef,
-			(subSchema, path) => flattenFormDefinition(subSchema, path),
+			(fieldDef: FieldDefinition) => fieldDef,
+			(subSchema: FormDefinition, path:string) => flattenFormDefinition(subSchema, path),
 		)
 	}
 
@@ -82,8 +82,8 @@ export function flattenDefaults(formDefinition: FormDefinition, parentPath = "")
 			flattened,
 			propertyValue,
 			fullPath,
-			(fieldDef) => fieldDef.defaultValue ?? "",
-			(subSchema, path) => flattenDefaults(subSchema, path),
+			(fieldDef: FieldDefinition) => fieldDef.defaultValue ?? "",
+			(subSchema:FormDefinition, path:string) => flattenDefaults(subSchema, path),
 		)
 	}
 

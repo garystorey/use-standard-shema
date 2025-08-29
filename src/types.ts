@@ -34,7 +34,7 @@ type DotFold<T, Prev extends string = "", Mode extends "paths" | "values" = "pat
 // Public aliases
 export type DotPaths<T, Prev extends string = ""> = DotFold<T, Prev, "paths">
 
-export type DotPathsToValues<T, Prev extends string = ""> = UnionToIntersection<DotFold<T, Prev, "values">>
+type DotPathsToValues<T, Prev extends string = ""> = UnionToIntersection<DotFold<T, Prev, "values">>
 
 export type TypeFromDefinition<T extends FormDefinition> = {
 	[K in keyof DotPathsToValues<T>]: DotPathsToValues<T>[K]
@@ -42,3 +42,4 @@ export type TypeFromDefinition<T extends FormDefinition> = {
 
 export type FieldMapper<T> = (fieldDef: FieldDefinition, path: string) => T
 export type RecurseFn<T> = (subSchema: FormDefinition, path: string) => Record<string, T>
+export type ErrorEntry = { key: string; error: string };

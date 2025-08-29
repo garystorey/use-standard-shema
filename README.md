@@ -187,13 +187,12 @@ const formData = defineForm({
 | `getForm` | returns the event handlers for the form for managing form state; accepts a submit handler function |
 | `getField` | returns information for the given field |
 | `resetForm` | resets form state |
-| `errors` | read only Errors mapped by field name |
 | `touched` | read only Touched mapped by field name |
 | `dirty` | read only Dirty mapped by field name |
 | `toFormData` | helper function to convert returned data to web standard FormData |
-| `getErrors` | helper function to get all current errors |
+| `getErrors` | helper function returns an array of all current errors {key,error} |
 | `validate` | helper function to manually call validation for the form or a field |
-|`__setField` | helper function to set a given fields value; value will be validated. |
+|`__setField` | helper function to set a given fields value; value will be validated |
 
 ---
 
@@ -205,6 +204,8 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## ChangeLog
 
+- v0.2.4 - Maintenance of types and helper functions to reduce code complexity.
+- v0.2.3 - fix recursion error in `isFormDefinition` that caused an infinite loop.
 - v0.2.2 - fix recursion error in `flattenSchema`
 - v0.2.1 - rename `defineSchema` to `defineForm`. rename `schema` to `validate`.
 - v0.2.0 - Add nested object support
