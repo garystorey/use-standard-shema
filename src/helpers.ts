@@ -1,11 +1,12 @@
-// helpers.ts
-import type { FieldDefinition, FormDefinition, FormValues } from "./types"
+import type { FieldDefinition, FieldMapper, FormDefinition, FormValues, RecurseFn } from "./types"
 
-export function defineForm<T extends FormDefinition>(schema: T): T {
-	return schema
+/** Add JSDoc comments  */
+/** Define and return the form definition as is. */
+export function defineForm<T extends FormDefinition>(formDefinition: T): T {
+	return formDefinition
 }
 
-// NEW: narrow to plain objects only
+/** Check if a value is a plain object (not an array, function, etc.) */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return (
 		typeof value === "object" &&
@@ -14,16 +15,12 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 	)
 }
 
-export function isSchemaField(obj: unknown): obj is FieldDefinition {
-	return (
-		typeof obj === "object" &&
-		obj !== null &&
-		"label" in obj &&
-		// defaultValue is optional; don't require it for detection
-		"validate" in obj // <-- was "schema"
-	)
+/** Check if a value is a FieldDefinition */
+export function isFieldDefinition(obj: unknown): obj is FieldDefinition {
+	return typeof obj === "object" && obj !== null && "label" in obj && "validate" in obj
 }
 
+/** Convert a flat object of key-value pairs to FormData */
 export function toFormData(data: FormValues) {
 	const formData = new FormData()
 	Object.entries(data).forEach(([key, value]) => {
@@ -34,32 +31,61 @@ export function toFormData(data: FormValues) {
 	return formData
 }
 
-export function flattenSchema(map: FormDefinition, prefix = ""): Record<string, FieldDefinition> {
-	const result: Record<string, FieldDefinition> = {}
-	for (const key in map) {
-		const value = (map as Record<string, unknown>)[key]
-		const path = prefix ? `${prefix}.${key}` : key
-
-		if (isSchemaField(value)) {
-			result[path] = value
-		} else if (isPlainObject(value)) {
-			Object.assign(result, flattenSchema(value as FormDefinition, path))
-		}
+/** Helper function to apply flattening logic recursively */
+/** This function modifies the resultMap in place. */
+/** It uses the fieldMapper to map FieldDefinitions and recurseFn to handle nested objects. */
+/** It checks if the currentValue is a FieldDefinition or a plain object and applies the appropriate logic. */
+function applyFlattening<T>(
+	resultMap: Record<string, T>,
+	currentValue: unknown,
+	currentPath: string,
+	fieldMapper: FieldMapper<T>,
+	recurseFn: RecurseFn<T>,
+): void {
+	if (isFieldDefinition(currentValue)) {
+		resultMap[currentPath] = fieldMapper(currentValue, currentPath)
+		return
 	}
-	return result
+
+	if (isPlainObject(currentValue)) {
+		Object.assign(resultMap, recurseFn(currentValue as FormDefinition, currentPath))
+	}
 }
 
-export function flattenDefaults(map: FormDefinition, prefix = ""): Record<string, string> {
-	const result: Record<string, string> = {}
-	for (const key in map) {
-		const value = (map as Record<string, unknown>)[key]
-		const path = prefix ? `${prefix}.${key}` : key
+/** Flatten a nested FormDefinition into a flat map of dot-notated paths to FieldDefinitions */
+export function flattenSchema(formDefinition: FormDefinition, parentPath = ""): Record<string, FieldDefinition> {
+	const flattened: Record<string, FieldDefinition> = {}
 
-		if (isSchemaField(value)) {
-			result[path] = value.defaultValue ?? ""
-		} else if (isPlainObject(value)) {
-			Object.assign(result, flattenDefaults(value as FormDefinition, path))
-		}
+	for (const [propertyKey, propertyValue] of Object.entries(formDefinition as Record<string, unknown>)) {
+		const fullPath = parentPath ? `${parentPath}.${propertyKey}` : propertyKey
+
+		applyFlattening<FieldDefinition>(
+			flattened,
+			propertyValue,
+			fullPath,
+			(fieldDef) => fieldDef,
+			(subSchema, path) => flattenSchema(subSchema, path),
+		)
 	}
-	return result
+
+	return flattened
+}
+
+/** Flatten a nested FormDefinition into a flat map of dot-notated paths to their default values */
+export function flattenDefaults(formDefinition: FormDefinition, parentPath = ""): Record<string, string> {
+	const flattened: Record<string, string> = {}
+
+	for (const [propertyKey, propertyValue] of Object.entries(formDefinition as Record<string, unknown>)) {
+		const fullPath = parentPath ? `${parentPath}.${propertyKey}` : propertyKey
+
+		applyFlattening<string>(
+			flattened,
+			propertyValue,
+			fullPath,
+			(fieldDef) => fieldDef.defaultValue ?? "",
+			(subSchema, path) => flattenDefaults(subSchema, path),
+		)
+	}
+
+	return flattened
 }

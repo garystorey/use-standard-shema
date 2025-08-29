@@ -3,15 +3,18 @@ import { defineForm, flattenDefaults, flattenSchema, toFormData } from "./helper
 import type { DotPaths, Errors, FieldDefinition, Flags, FormDefinition, FormValues } from "./types"
 
 /** * Custom hook to manage form state based on a schema.
- * @param schemaMap - The schema definition for the form.
+ * @param formDefinition - The form definition.
  * @returns An object containing methods and state for managing the form.
  */
 
-function useStandardSchema<T extends FormDefinition>(schemaMap: T) {
+function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 	type FieldKey = DotPaths<T>
 
-	const flatSchemaMap = useMemo(() => flattenSchema(schemaMap), [schemaMap]) as Record<string, FieldDefinition>
-	const initialValues = useMemo(() => flattenDefaults(schemaMap), [schemaMap])
+	const flatSchemaMap = useMemo(() => flattenSchema(formDefinition), [formDefinition]) as Record<
+		string,
+		FieldDefinition
+	>
+	const initialValues = useMemo(() => flattenDefaults(formDefinition), [formDefinition])
 
 	const [data, setData] = useState<FormValues>(initialValues)
 	const [errors, setErrors] = useState<Errors>({})
