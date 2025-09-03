@@ -242,6 +242,7 @@ If you encounter issues or have feature requests, [open an issue](https://github
   - remove "schema" from function names internally and externally.
   - Validation is handled consistently internally.
   - Update `getErrors` to return ordered `{ key, error }[]`.
+  - fix issue with resetForm not clearing form
 - v0.2.3 - Fix recursion error in `isFormDefinition` that caused an infinite loop.
 - v0.2.2 - Fix recursion error in `flattenSchema`.
 - v0.2.1 - Rename `defineSchema` to `defineForm`. Rename `schema` to `validate`.
