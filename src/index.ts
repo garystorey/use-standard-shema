@@ -1,53 +1,85 @@
 import { type FocusEvent, type FormEvent, useCallback, useMemo, useState } from "react"
-import { defineForm, flattenDefaults, flattenSchema, toFormData } from "./helpers"
-import type { DotPaths, Errors, FieldDefinition, Flags, FormDefinition, FormValues } from "./types"
+import { defineForm, flattenDefaults, flattenFormDefinition, toFormData } from "./helpers"
+import type {
+	DotPaths,
+	ErrorEntry,
+	Errors,
+	FieldDefinition,
+	Flags,
+	FormDefinition,
+	FormValues,
+	TypeFromDefinition,
+} from "./types"
 
-/** * Custom hook to manage form state based on a schema.
- * @param schemaMap - The schema definition for the form.
+/**
+ * Custom hook to manage form state based on a form definition.
+ * @param formDefinition - The form definition.
  * @returns An object containing methods and state for managing the form.
  */
-
-function useStandardSchema<T extends FormDefinition>(schemaMap: T) {
+function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 	type FieldKey = DotPaths<T>
 
-	const flatSchemaMap = useMemo(() => flattenSchema(schemaMap), [schemaMap]) as Record<string, FieldDefinition>
-	const initialValues = useMemo(() => flattenDefaults(schemaMap), [schemaMap])
+	// Derived data
+	const flatFormDefinition = useMemo(() => flattenFormDefinition(formDefinition), [formDefinition]) as Record<
+		string,
+		FieldDefinition
+	>
 
+	const initialValues = useMemo(() => flattenDefaults(formDefinition), [formDefinition])
+
+	const formDefinitionKeys = useMemo(() => Object.keys(flatFormDefinition), [flatFormDefinition])
+
+	// State
 	const [data, setData] = useState<FormValues>(initialValues)
 	const [errors, setErrors] = useState<Errors>({})
 	const [touched, setTouched] = useState<Flags>({})
 	const [dirty, setDirty] = useState<Flags>({})
 
-	const validateField = useCallback(
-		async (field: string, value: string) => {
-			const schema = flatSchemaMap[field]
-			const result = await schema.validate["~standard"].validate(value)
-			const message = result?.issues?.[0]?.message ?? ""
-			setErrors((prev) => ({ ...prev, [field]: message }))
-			return Boolean(message === "")
+	// --- Pure per-field validator (no state updates)
+	const validateFieldValue = useCallback(
+		async (field: string, value: string): Promise<string> => {
+			const fieldDef = flatFormDefinition[field]
+			const result = await fieldDef.validate["~standard"].validate(value)
+			return result?.issues?.[0]?.message ?? ""
 		},
-		[flatSchemaMap],
+		[flatFormDefinition],
 	)
 
-	async function validateForm() {
+	// --- Single-field validate (updates state for that field)
+	const validateField = useCallback(
+		async (field: string, value: string) => {
+			const message = await validateFieldValue(field, value)
+			setErrors((prev) => ({ ...prev, [field]: message }))
+			return message === ""
+		},
+		[validateFieldValue],
+	)
+
+	// --- Full-form validate (batch state update, no flicker)
+	const validateForm = useCallback(async () => {
 		const newErrors: Errors = {}
+
 		await Promise.all(
-			Object.keys(flatSchemaMap).map(async (key) => {
-				const result = await flatSchemaMap[key].validate["~standard"].validate(data[key])
-				newErrors[key] = result?.issues?.[0]?.message ?? ""
+			formDefinitionKeys.map(async (key) => {
+				newErrors[key] = await validateFieldValue(key, data[key])
 			}),
 		)
+
 		setErrors(newErrors)
 		return Object.values(newErrors).every((msg) => msg === "")
-	}
+	}, [formDefinitionKeys, data, validateFieldValue])
 
-	async function validate(name?: FieldKey) {
-		if (name) {
-			return await validateField(name, data[name])
-		} else {
-			return await validateForm()
-		}
-	}
+	const validate = useCallback(
+		async (name?: FieldKey) => {
+			if (name) {
+				const key = name as string
+				return validateField(key, data[key])
+			}
+			return validateForm()
+		},
+		[data, validateField, validateForm],
+	)
+
 	const resetForm = useCallback(() => {
 		setData(initialValues)
 		setErrors({})
@@ -56,28 +88,20 @@ function useStandardSchema<T extends FormDefinition>(schemaMap: T) {
 	}, [initialValues])
 
 	const getForm = useCallback(
-		(onSubmitHandler: (data: FormValues) => void) => {
+		(onSubmitHandler: (data: TypeFromDefinition<typeof formDefinition>) => void) => {
 			const onSubmit = async (e: FormEvent) => {
+				const formEl = e.currentTarget as HTMLFormElement
 				e.preventDefault()
-				const newErrors: Errors = {}
-
-				await Promise.all(
-					Object.keys(flatSchemaMap).map(async (key) => {
-						const result = await flatSchemaMap[key].validate["~standard"].validate(data[key])
-						newErrors[key] = result?.issues?.[0]?.message ?? ""
-					}),
-				)
-
-				setErrors(newErrors)
-
-				const hasError = Object.values(newErrors).some((msg) => msg !== "")
-				if (!hasError) {
-					onSubmitHandler(data)
+				const isValid = await validate()
+				if (isValid) {
+					onSubmitHandler(data as TypeFromDefinition<typeof formDefinition>)
+					formEl.reset()
 				}
 			}
+
 			const onFocus = (e: FocusEvent<HTMLFormElement>) => {
 				const field = e.target.name
-				if (!field || !(field in flatSchemaMap)) return
+				if (!field || !(field in flatFormDefinition)) return
 
 				setTouched((prev) => ({ ...prev, [field]: true }))
 				setErrors((prev) => ({ ...prev, [field]: "" }))
@@ -85,7 +109,7 @@ function useStandardSchema<T extends FormDefinition>(schemaMap: T) {
 
 			const onBlur = async (e: FocusEvent<HTMLFormElement>) => {
 				const field = e.target.name
-				if (!field || !(field in flatSchemaMap)) return
+				if (!field || !(field in flatFormDefinition)) return
 
 				const value = e.target.value
 				const initial = initialValues[field]
@@ -104,17 +128,16 @@ function useStandardSchema<T extends FormDefinition>(schemaMap: T) {
 
 			return { onSubmit, onFocus, onBlur, onReset }
 		},
-		[flatSchemaMap, data, initialValues, resetForm, validateField],
+		[flatFormDefinition, data, initialValues, resetForm, validateField, validate],
 	)
 
-	// index.ts (inside getField)
 	const getField = useCallback(
 		(name: FieldKey) => {
 			const key = name as string
 
-			const def = flatSchemaMap[key]
+			const def = flatFormDefinition[key]
 			if (!def) {
-				throw new Error(`Field "${key}" does not exist in the schema.`)
+				throw new Error(`Field "${key}" does not exist in the form definition.`)
 			}
 
 			const { validate: _validate, ...fieldDef } = def
@@ -126,30 +149,37 @@ function useStandardSchema<T extends FormDefinition>(schemaMap: T) {
 				name: key,
 				defaultValue: data[key] ?? "",
 				error: errors[key] ?? "",
-				touched: !!touched[key],
-				dirty: !!dirty[key],
+				touched: String(touched[key]),
+				dirty: String(dirty[key]),
 				describedById,
 				errorId,
 			}
 		},
-		[flatSchemaMap, data, errors, touched, dirty],
+		[flatFormDefinition, data, errors, touched, dirty],
 	)
 
-	async function __setField(name: FieldKey, value: string) {
-		const field = name as string
-		const result = await validateField(field, value)
-		if (result) setData((prev) => ({ ...prev, [field]: value }))
-		setTouched((prev) => ({ ...prev, [field]: true }))
-		setDirty((prev) => ({ ...prev, [field]: true }))
-	}
+	const setField = useCallback(
+		async (name: FieldKey, value: string) => {
+			const field = name as string
+			const ok = await validateField(field, value)
+			if (ok) setData((prev) => ({ ...prev, [field]: value }))
+			setTouched((prev) => ({ ...prev, [field]: true }))
+			setDirty((prev) => ({ ...prev, [field]: true }))
+		},
+		[validateField],
+	)
 
-	const getErrors = useCallback(() => {
-		const newErrors: Errors = {}
-		Object.keys(flatSchemaMap).forEach((key) => {
-			if (errors[key]) newErrors[key] = errors[key]
-		})
-		return newErrors
-	}, [flatSchemaMap, errors])
+	const getErrors = useCallback((): ErrorEntry[] => {
+		const errorEntries: ErrorEntry[] = []
+		for (const key of formDefinitionKeys) {
+			const error = errors[key]
+			if (error) errorEntries.push({ key, error })
+		}
+		return errorEntries
+	}, [formDefinitionKeys, errors])
+
+	const touchedFrozen = useMemo(() => Object.freeze({ ...touched }), [touched])
+	const dirtyFrozen = useMemo(() => Object.freeze({ ...dirty }), [dirty])
 
 	return {
 		resetForm,
@@ -157,10 +187,9 @@ function useStandardSchema<T extends FormDefinition>(schemaMap: T) {
 		getField,
 		getErrors,
 		validate,
-		__setField,
-		errors: Object.freeze(errors),
-		touched: Object.freeze(touched),
-		dirty: Object.freeze(dirty),
+		__dangerouslySetField: setField,
+		touched: touchedFrozen,
+		dirty: dirtyFrozen,
 	}
 }
 
