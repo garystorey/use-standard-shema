@@ -1,9 +1,10 @@
-import type { FieldDefinition, FieldMapper, FormDefinition, FormValues, RecurseFn } from "./types"
+import type { AssertValidFormKeysDeep, FieldDefinition, FieldMapper, FormDefinition, FormValues, RecurseFn } from "./types"
 
-/** Add JSDoc comments  */
 /** Define and return the form definition as is. */
-export function defineForm<T extends FormDefinition>(formDefinition: T): T {
-	return formDefinition
+export function defineForm<T extends FormDefinition>(
+  formDefinition: AssertValidFormKeysDeep<T>
+): AssertValidFormKeysDeep<T> {
+  return formDefinition
 }
 
 /** Check if a value is a plain object (not an array, function, etc.) */
