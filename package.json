@@ -20,7 +20,9 @@
     "scripts": {
         "build": "tsup ./src/index.ts --format cjs,esm --dts --sourcemap",
         "format": "biome format --write",
-        "fix": "tsc --noEmit && biome check --fix"
+        "fix": "tsc --noEmit && biome check --fix",
+        "all": "npm run fix && npm run format && npm run build",
+        "publish": "npm run all && npm publish --access public"
     },
     "keywords": [
         "zod",
