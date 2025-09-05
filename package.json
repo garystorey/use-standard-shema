@@ -23,7 +23,8 @@
         "fix": "tsc --noEmit && biome check --fix",
         "all": "npm run test && npm run fix && npm run format && npm run build",
         "publish": "npm run all && npm publish --access public",
-        "test": "vitest"
+        "test": "vitest",
+        "test:watch": "vitest --watch"
     },
     "keywords": [
         "zod",
