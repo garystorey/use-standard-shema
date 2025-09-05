@@ -112,7 +112,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 				if (!field || !(field in flatFormDefinition)) return
 
 				const value = e.target.value
-				const initial = initialValues[field]
+				const initial = (initialValues as Record<string, unknown>)[field]
 				const isDirty = value !== initial
 
 				setTouched((prev) => ({ ...prev, [field]: true }))
@@ -149,8 +149,8 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 				name: key,
 				defaultValue: data[key] ?? "",
 				error: errors[key] ?? "",
-				touched: String(touched[key]),
-				dirty: String(dirty[key]),
+				touched: touched[key] ? String(touched[key]) : "false",
+				dirty: dirty[key] ? String(dirty[key]) : "false",
 				describedById,
 				errorId,
 			}

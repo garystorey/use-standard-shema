@@ -238,6 +238,7 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## ChangeLog
 
+- v0.2.5 - Add tests.
 - v0.2.4 - Improve validation.
   - remove "schema" from function names internally and externally.
   - Validation is handled consistently internally.

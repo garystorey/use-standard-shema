@@ -1,6 +1,6 @@
 {
     "name": "use-standard-schema",
-    "version": "0.2.4",
+    "version": "0.2.5",
     "description": "A React hook for managing form state using any standard schema compliant validation library.",
     "main": "dist/index.js",
     "module": "dist/index.mjs",
@@ -21,8 +21,10 @@
         "build": "tsup ./src/index.ts --format cjs,esm --dts --sourcemap",
         "format": "biome format --write",
         "fix": "tsc --noEmit && biome check --fix",
-        "all": "npm run fix && npm run format && npm run build",
-        "publish": "npm run all && npm publish --access public"
+        "all": "npm run test && npm run fix && npm run format && npm run build",
+        "publish": "npm run all && npm publish --access public",
+        "test": "vitest",
+        "test:watch": "vitest --watch"
     },
     "keywords": [
         "zod",
@@ -41,7 +43,12 @@
         "react hook",
         "form validation",
         "react form",
-        "react validation"
+        "react validation",
+        "typescript",
+        "typescript form",
+        "typescript validation",
+        "typescript react",
+        "typescript react form"
     ],
     "author": "Gary Storey <garystoreydev@gmail.com>",
     "license": "MIT",
@@ -50,13 +57,20 @@
     },
     "devDependencies": {
         "@biomejs/biome": "2.2.2",
+        "@testing-library/jest-dom": "^6.8.0",
+        "@testing-library/react": "^16.3.0",
+        "@testing-library/user-event": "^14.6.1",
         "@types/react": "^19.1.12",
         "@types/react-dom": "^19.1.9",
+        "@vitejs/plugin-react": "^5.0.2",
         "globals": "^16.3.0",
+        "jsdom": "^26.1.0",
         "react": "^19.1.1",
         "react-dom": "^19.1.1",
         "tsup": "^8.5.0",
-        "typescript": "^5.9.2"
+        "typescript": "^5.9.2",
+        "vitest": "^3.2.4",
+        "zod": "^4.1.5"
     },
     "dependencies": {
         "@standard-schema/spec": "^1.0.0"
