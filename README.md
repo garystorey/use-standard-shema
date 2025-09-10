@@ -165,6 +165,22 @@ const addressForm = defineForm({
 const streetField = getField("address.street1");
 ```
 
+### Valid keys
+
+A `FormDefinition`'s key is an intersection between a valid JSON key and an HTML name attribute.
+
+```ts
+
+const definition = defineForm({
+    prefix: z.string(),                // valid
+    "first-name": z.string(),           // valid
+    "middle_name": z.string(),          // valid
+    "last:name": z.string(),            // valid
+    "street address": z.string()        // invalid
+})
+
+```
+
 ### Using other validators
 
 Switching to another validator is straightforward. Simply update `validate` in the form definition.
