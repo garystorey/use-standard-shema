@@ -1,8 +1,18 @@
-import type { FieldDefinition, FieldMapper, FormDefinition, FormValues, RecurseFn } from "./types"
+import type {
+	AnyFormPathKey,
+	AssertValidFormKeysDeep,
+	DotPaths,
+	FieldDefinition,
+	FieldMapper,
+	FormDefinition,
+	FormValues,
+	RecurseFn,
+} from "./types"
 
-/** Add JSDoc comments  */
 /** Define and return the form definition as is. */
-export function defineForm<T extends FormDefinition>(formDefinition: T): T {
+export function defineForm<T extends FormDefinition>(
+	formDefinition: AssertValidFormKeysDeep<T>,
+): AssertValidFormKeysDeep<T> {
 	return formDefinition
 }
 
@@ -21,7 +31,9 @@ export function isFieldDefinition(obj: unknown): obj is FieldDefinition {
 }
 
 /** Convert a flat object of key-value pairs to FormData */
-export function toFormData(data: FormValues) {
+export function toFormData(data: Record<AnyFormPathKey, string>): FormData
+export function toFormData(data: FormValues): FormData
+export function toFormData(data: Record<string, string>) {
 	const formData = new FormData()
 	Object.entries(data).forEach(([key, value]) => {
 		if (value !== undefined && value !== null) {
@@ -52,7 +64,18 @@ function applyFlattening<T>(
 	}
 }
 
-/** Flatten a nested FormDefinition into a flat map of dot-notated paths to FieldDefinitions */
+// ---------------- flattenFormDefinition ----------------
+export function flattenFormDefinition<Def extends FormDefinition>(
+	formDefinition: Def,
+	parentPath?: string,
+): Record<DotPaths<Def>, FieldDefinition>
+
+export function flattenFormDefinition(
+	formDefinition: FormDefinition,
+	parentPath?: string,
+): Record<AnyFormPathKey, FieldDefinition>
+
+// implementation (unchanged body; note the general return type)
 export function flattenFormDefinition(
 	formDefinition: FormDefinition,
 	parentPath = "",
@@ -74,7 +97,15 @@ export function flattenFormDefinition(
 	return flattened
 }
 
-/** Flatten a nested FormDefinition into a flat map of dot-notated paths to their default values */
+// ---------------- flattenDefaults ----------------
+export function flattenDefaults<Def extends FormDefinition>(
+	formDefinition: Def,
+	parentPath?: string,
+): Record<DotPaths<Def>, string>
+
+export function flattenDefaults(formDefinition: FormDefinition, parentPath?: string): Record<AnyFormPathKey, string>
+
+// implementation (unchanged body; note the general return type)
 export function flattenDefaults(formDefinition: FormDefinition, parentPath = ""): Record<string, string> {
 	const flattened: Record<string, string> = {}
 
