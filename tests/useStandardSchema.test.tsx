@@ -1,12 +1,10 @@
-import React from "react"
-import { describe, it, expect, vi } from "vitest"
-import { render, screen, act } from "@testing-library/react"
+import { act, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-
-import { email, string } from "./test-validation-lib"
-import { Harness, HarnessApi } from "./test-harness"
-
+import React from "react"
+import { describe, expect, it, vi } from "vitest"
 import { defineForm } from "../src"
+import { Harness, type HarnessApi } from "./test-harness"
+import { email, string } from "./test-validation-lib"
 
 describe("useStandardSchema", () => {
 	const schema = defineForm({

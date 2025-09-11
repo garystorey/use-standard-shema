@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest"
-import { defineForm, flattenDefaults, flattenFormDefinition, toFormData, isFieldDefinition } from "../src/helpers"
 import type { StandardSchemaV1 } from "@standard-schema/spec"
+import { describe, expect, it } from "vitest"
+import { defineForm, flattenDefaults, flattenFormDefinition, isFieldDefinition, toFormData } from "../src/helpers"
 
 interface StringSchema extends StandardSchemaV1<string> {
 	type: "string"

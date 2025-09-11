@@ -1,4 +1,4 @@
-import { StandardSchemaV1 } from "@standard-schema/spec"
+import type { StandardSchemaV1 } from "@standard-schema/spec"
 
 /** ----------------------------------------------------------------
  * Typed schema helpers compatible with Standard Schema V1
