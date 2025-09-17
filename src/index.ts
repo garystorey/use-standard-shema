@@ -173,10 +173,10 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 		const errorEntries: ErrorEntry[] = []
 		for (const key of formDefinitionKeys) {
 			const error = errors[key]
-			if (error) errorEntries.push({ key, error })
+			if (error) errorEntries.push({ key, error, label: flatFormDefinition[key].label })
 		}
 		return errorEntries
-	}, [formDefinitionKeys, errors])
+	}, [formDefinitionKeys, errors,flatFormDefinition])
 
 	const touchedFrozen = useMemo(() => Object.freeze({ ...touched }), [touched])
 	const dirtyFrozen = useMemo(() => Object.freeze({ ...dirty }), [dirty])

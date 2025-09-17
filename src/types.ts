@@ -69,7 +69,7 @@ export type TypeFromDefinition<T extends FormDefinition> = {
 
 export type FieldMapper<T> = (fieldDef: FieldDefinition, path: string) => T
 export type RecurseFn<T> = (subSchema: FormDefinition, path: string) => Record<string, T>
-export type ErrorEntry = { key: string; error: string }
+export type ErrorEntry = { key: string; error: string, label: string }
 
 /* =============================================================================
  * Unicode-aware key validation (no whitespace; "." reserved as path separator)
