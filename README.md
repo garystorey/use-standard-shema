@@ -176,10 +176,10 @@ A `FormDefinition`'s key is an intersection between a valid JSON key and an HTML
 
 const definition = defineForm({
     prefix: z.string(),                // valid
-    "first-name": z.string(),           // valid
-    "middle_name": z.string(),          // valid
-    "last:name": z.string(),            // valid
-    "street address": z.string()        // invalid
+    "first-name": z.string(),          // valid
+    "middle_name": z.string(),         // valid
+    "last:name": z.string(),           // valid
+    "street address": z.string()       // invalid
 })
 
 ```
