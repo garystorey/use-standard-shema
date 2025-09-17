@@ -96,13 +96,16 @@ export function App() {
   const firstName = getField("firstName");
   const lastName = getField("lastName");
 
+  const allErrors = getErrors()
+
   return (
     <form {...form}>
+
       {/* show all errors */}
-      {getErrors().length > 0 && (
+      {allErrors.length > 0 && (
         <div className="all-error-messages" role="alert">
-          {getErrors().map(({ key, error }) => (
-            <p key={key}>{error}</p>
+          {allErrors.map(({ key, error, label }) => (
+            <p key={key}>{label} is {error}</p>
           ))}
         </div>
       )}
@@ -173,10 +176,10 @@ A `FormDefinition`'s key is an intersection between a valid JSON key and an HTML
 
 const definition = defineForm({
     prefix: z.string(),                // valid
-    "first-name": z.string(),           // valid
-    "middle_name": z.string(),          // valid
-    "last:name": z.string(),            // valid
-    "street address": z.string()        // invalid
+    "first-name": z.string(),          // valid
+    "middle_name": z.string(),         // valid
+    "last:name": z.string(),           // valid
+    "street address": z.string()       // invalid
 })
 
 ```
@@ -226,7 +229,7 @@ In this instance, we simply update the `validString` validator from `zod` to `va
 | `touched`                    | Read-only frozen object of touched fields |
 | `dirty`                      | Read-only frozen object of dirty fields |
 | `toFormData(data)`           | Helper to convert values to `FormData` |
-| `getErrors()`                | Returns an array of `{ key, error }` in form definition order |
+| `getErrors()`                | Returns an array of `{ key, error, label }` in form definition order |
 | `validate(name?)`            | Validates either the entire form or a single field |
 | `__dangerouslySetField(name, value)` | Sets a field’s value directly and validates it |
 
@@ -254,6 +257,8 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## ChangeLog
 
+- v0.2.6 - Better error handling
+  - Add `label` to type `ErrorEntry`. This allows users to use the label in error messages.
 - v0.2.5 - Add tests.
   - Add vitest and testing-library.
   - Add tests for all existing functionality.

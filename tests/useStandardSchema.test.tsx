@@ -195,7 +195,7 @@ describe("useStandardSchema", () => {
 
 		const errs = api!.getErrors()
 		expect(Array.isArray(errs)).toBe(true)
-		expect(errs).toEqual([{ key: "user.contact.email", error: "Invalid email" }])
+		expect(errs).toEqual([{ key: "user.contact.email", error: "Invalid email", label: "Email" }])
 	})
 
 	it("getForm: prevents submit when invalid, submits when valid, and supports reset", async () => {
