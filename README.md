@@ -279,7 +279,7 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## ChangeLog
 
-- **v0.2.7**
+- **v0.2.7** - Improve error handling
   - Update the return of `getErrors` to be `{name, label, error}` for consistency.
   - `getErrors` will name accept an optional `name` prop and return only that error.
   - Add `FieldDefinitionProps` interface for easy extension for custom components.
