@@ -248,12 +248,17 @@ type FieldProps = FieldDefinitionProps & {
 | `getForm(onSubmit)`          | Returns event handlers for the form; submit handler only fires with valid data |
 | `getField(name)`             | Returns metadata for a given field (label, defaultValue, error, touched, dirty, ARIA ids) |
 | `resetForm()`                | Resets all form state to initial defaults |
-| `touched`                    | Read-only frozen object of touched fields |
-| `dirty`                      | Read-only frozen object of dirty fields |
+| `isTouched(name?)`           | Returns `true/false` if form or field has been touched |
+| `isDirty(name?)`             | Returns `true/false` if form or field is dirty |
+| `isValid(name?)`             | Returns `true/false` if form or field is currently valid <span style='color:red'>*</span> |
 | `toFormData(data)`           | Helper to convert values to `FormData` |
-| `getErrors(name?)`                | Returns an array of `{ name, error, label }` for field or form |
+| `getErrors(name?)`           | Returns an array of `{ name, error, label }` for field or form |
 | `validate(name?)`            | Validates either the entire form or a single field |
 | `__dangerouslySetField(name, value)` | Sets a field’s value directly and validates it |
+
+<br/>
+<span style='color:red'>*</span>
+<strong>NOTE</strong>: This function does not validate the field.  It simply checks if it is currently valid.
 
 ---
 
@@ -279,6 +284,12 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## ChangeLog
 
+- **v0.3.0** - Replace `dirty` and `touched` objects.
+  - Add `isDirty` and `isTouched` which accept an optional `name` param. Returns true/false
+  - Added `isValid` function
+    - Accepts an optional `name` param.
+    - Returns `true/false` if the field currently has an error.
+    - **NOTE:** This *does not validate the field*. It checks if it is currently valid.
 - **v0.2.7** - Improve error handling
   - Update the return of `getErrors` to be `{name, label, error}` for consistency.
   - `getErrors` will name accept an optional `name` prop and return only that error.
