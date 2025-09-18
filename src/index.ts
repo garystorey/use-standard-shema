@@ -166,14 +166,14 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 			setTouched((prev) => ({ ...prev, [field]: true }))
 			setDirty((prev) => ({ ...prev, [field]: true }))
 		},
-		[validateField],
+		[validateField]
 	)
 
 	const getErrors = useCallback((): ErrorEntry[] => {
 		const errorEntries: ErrorEntry[] = []
-		for (const key of formDefinitionKeys) {
-			const error = errors[key]
-			if (error) errorEntries.push({ key, error, label: flatFormDefinition[key].label })
+		for (const name of formDefinitionKeys) {
+			const error = errors[name]
+			if (error) errorEntries.push({ name, error, label: flatFormDefinition[name].label })
 		}
 		return errorEntries
 	}, [formDefinitionKeys, errors, flatFormDefinition])
