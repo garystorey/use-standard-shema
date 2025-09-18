@@ -170,7 +170,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 	)
 
 	const getErrors = useCallback(
-		(name?: string): ErrorEntry[] => {
+		(name?: FieldKey): ErrorEntry[] => {
 			if (name) {
 				const error = errors[name]
 				if (!error) return []
