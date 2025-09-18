@@ -220,9 +220,20 @@ In this instance, we simply update the `validString` validator from `zod` to `va
 
 ## Custom Components
 
-It is recommended to use `useStandardSchema` with your own custom React components.  This enables you to simply spread the result of the `getField` call directly without creating individual props.
+It is recommended to use `useStandardSchema` with your own custom React components.  This enables you to simply spread the result of the `getField` call directly without creating individual props. You can extend the `FieldDefinitionProps` interface provided.
 
-```tsx
+```ts
+
+interface FieldProps extends FieldDefinitionProps {
+    // your props here
+}
+
+// or
+
+type FieldProps = FieldDefinitionProps & {
+    // your props here
+}
+
 
 <Field {...getField("firstName")} />
 <Field {...getField("lastName")} />
@@ -271,6 +282,7 @@ If you encounter issues or have feature requests, [open an issue](https://github
 - **v0.2.7**
   - Update the return of `getErrors` to be `{name, label, error}` for consistency.
   - `getErrors` will name accept an optional `name` prop and return only that error.
+  - Add `FieldDefinitionProps` interface for easy extension for custom components.
 - **v0.2.6** - Better error handling
   - Add `label` to type `ErrorEntry`. This allows users to use the label in error messages.
 - **v0.2.5** - Add tests.

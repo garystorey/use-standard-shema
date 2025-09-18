@@ -156,3 +156,11 @@ type _HasInvalidKeys<T> = {
 export type AssertValidFormKeysDeep<T extends FormDefinition> = true extends _HasInvalidKeys<T>
 	? never
 	: { [K in keyof T]: T[K] extends FormDefinition ? AssertValidFormKeysDeep<T[K]> : T[K] }
+
+
+ export interface FieldDefintionProps extends FieldDefinition {
+  name: string;
+  error: string;
+  errorId: string;
+  describedById: string;
+}
