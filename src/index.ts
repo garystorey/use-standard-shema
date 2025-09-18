@@ -166,17 +166,38 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 			setTouched((prev) => ({ ...prev, [field]: true }))
 			setDirty((prev) => ({ ...prev, [field]: true }))
 		},
-		[validateField]
+		[validateField],
 	)
 
-	const getErrors = useCallback((): ErrorEntry[] => {
-		const errorEntries: ErrorEntry[] = []
-		for (const name of formDefinitionKeys) {
-			const error = errors[name]
-			if (error) errorEntries.push({ name, error, label: flatFormDefinition[name].label })
-		}
-		return errorEntries
-	}, [formDefinitionKeys, errors, flatFormDefinition])
+	const getErrors = useCallback(
+		(name?: string): ErrorEntry[] => {
+			if (name) {
+				const error = errors[name]
+				if (!error) return []
+				return [
+					{
+						name,
+						error,
+						label: flatFormDefinition[name]?.label,
+					},
+				]
+			}
+
+			const errorEntries: ErrorEntry[] = []
+			for (const key of formDefinitionKeys) {
+				const error = errors[key]
+				if (error) {
+					errorEntries.push({
+						name: key,
+						error,
+						label: flatFormDefinition[key].label,
+					})
+				}
+			}
+			return errorEntries
+		},
+		[formDefinitionKeys, errors, flatFormDefinition],
+	)
 
 	const touchedFrozen = useMemo(() => Object.freeze({ ...touched }), [touched])
 	const dirtyFrozen = useMemo(() => Object.freeze({ ...dirty }), [dirty])

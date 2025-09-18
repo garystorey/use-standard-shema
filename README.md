@@ -218,6 +218,17 @@ In this instance, we simply update the `validString` validator from `zod` to `va
 
 ---
 
+## Custom Components
+
+It is recommended to use `useStandardSchema` with your own custom React components.  This enables you to simply spread the result of the `getField` call directly without creating individual props.
+
+```tsx
+
+<Field {...getField("firstName")} />
+<Field {...getField("lastName")} />
+
+```
+
 ## API
 
 | Hook / Function              | Description                                                                 |
@@ -229,7 +240,7 @@ In this instance, we simply update the `validString` validator from `zod` to `va
 | `touched`                    | Read-only frozen object of touched fields |
 | `dirty`                      | Read-only frozen object of dirty fields |
 | `toFormData(data)`           | Helper to convert values to `FormData` |
-| `getErrors()`                | Returns an array of `{ key, error, label }` in form definition order |
+| `getErrors()`                | Returns an array of `{ name, error, label }` in form definition order |
 | `validate(name?)`            | Validates either the entire form or a single field |
 | `__dangerouslySetField(name, value)` | Sets a field’s value directly and validates it |
 
@@ -257,23 +268,26 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## ChangeLog
 
-- v0.2.6 - Better error handling
+- **v0.2.7**
+  - Update the return of `getErrors` to be `{name, label, error}` for consistency.
+  - `getErrors` will name accept an optional `name` prop and return only that error.
+- **v0.2.6** - Better error handling
   - Add `label` to type `ErrorEntry`. This allows users to use the label in error messages.
-- v0.2.5 - Add tests.
+- **v0.2.5** - Add tests.
   - Add vitest and testing-library.
   - Add tests for all existing functionality.
   - Created a stricter `FormDefinition` type.
     - Keys must be an intersection of a valid json key and an html name attribute.
-- v0.2.4 - Improve validation.
+- **v0.2.4** - Improve validation.
   - remove "schema" from function names internally and externally.
   - Validation is handled consistently internally.
   - Update `getErrors` to return ordered `{ key, error }[]`.
   - fix issue with resetForm not clearing form
-- v0.2.3 - Fix recursion error in `isFormDefinition` that caused an infinite loop.
-- v0.2.2 - Fix recursion error in `flattenSchema`.
-- v0.2.1 - Rename `defineSchema` to `defineForm`. Rename `schema` to `validate`.
-- v0.2.0 - Add nested object support.
-- v0.1.0 - Initial release.
+- **v0.2.3** - Fix recursion error in `isFormDefinition` that caused an infinite loop.
+- **v0.2.2** - Fix recursion error in `flattenSchema`.
+- **v0.2.1** - Rename `defineSchema` to `defineForm`. Rename `schema` to `validate`.
+- **v0.2.0** - Add nested object support.
+- **v0.1.0** - Initial release.
 
 ---
 
