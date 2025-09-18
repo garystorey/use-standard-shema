@@ -69,7 +69,7 @@ export type TypeFromDefinition<T extends FormDefinition> = {
 
 export type FieldMapper<T> = (fieldDef: FieldDefinition, path: string) => T
 export type RecurseFn<T> = (subSchema: FormDefinition, path: string) => Record<string, T>
-export type ErrorEntry = { key: string; error: string; label: string }
+export type ErrorEntry = { name: string; error: string; label: string }
 
 /* =============================================================================
  * Unicode-aware key validation (no whitespace; "." reserved as path separator)
@@ -156,3 +156,10 @@ type _HasInvalidKeys<T> = {
 export type AssertValidFormKeysDeep<T extends FormDefinition> = true extends _HasInvalidKeys<T>
 	? never
 	: { [K in keyof T]: T[K] extends FormDefinition ? AssertValidFormKeysDeep<T[K]> : T[K] }
+
+export interface FieldDefintionProps extends FieldDefinition {
+	name: string
+	error: string
+	errorId: string
+	describedById: string
+}
