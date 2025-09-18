@@ -32,7 +32,7 @@ export function Harness({
 					defaultValue={nameField.defaultValue}
 					aria-describedby={nameField.describedById}
 					aria-errormessage={nameField.errorId}
-					aria-invalid={Boolean(nameField.error) || false}
+					aria-invalid={Boolean(nameField.error) || undefined}
 					data-testid="name"
 				/>
 				<p id={nameField.describedById}>{nameField.description}</p>
@@ -49,7 +49,7 @@ export function Harness({
 					defaultValue={emailField.defaultValue}
 					aria-describedby={emailField.describedById}
 					aria-errormessage={emailField.errorId}
-					aria-invalid={Boolean(emailField.error) || false}
+					aria-invalid={Boolean(emailField.error) || undefined}
 					data-testid="email"
 				/>
 				<p id={emailField.describedById} >{emailField.description}</p>
