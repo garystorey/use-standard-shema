@@ -240,7 +240,7 @@ It is recommended to use `useStandardSchema` with your own custom React componen
 | `touched`                    | Read-only frozen object of touched fields |
 | `dirty`                      | Read-only frozen object of dirty fields |
 | `toFormData(data)`           | Helper to convert values to `FormData` |
-| `getErrors()`                | Returns an array of `{ name, error, label }` in form definition order |
+| `getErrors(name?)`                | Returns an array of `{ name, error, label }` for field or form |
 | `validate(name?)`            | Validates either the entire form or a single field |
 | `__dangerouslySetField(name, value)` | Sets a field’s value directly and validates it |
 
