@@ -1,4 +1,4 @@
-import { type FocusEvent, type FormEvent, useCallback, useMemo, useState } from "react"
+import { type FocusEvent, type FormEvent, useCallback, useMemo, useRef, useState } from "react"
 import { defineForm, flattenDefaults, flattenFormDefinition, toFormData } from "./helpers"
 import type {
 	DotPaths,
@@ -34,6 +34,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 	const [errors, setErrors] = useState<Errors>({})
 	const [touched, setTouched] = useState<Flags>({})
 	const [dirty, setDirty] = useState<Flags>({})
+	const latestValidationValueRef = useRef<Record<string, string>>({})
 
 	// --- Pure per-field validator (no state updates)
 	const validateFieldValue = useCallback(
@@ -48,8 +49,18 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 	// --- Single-field validate (updates state for that field)
 	const validateField = useCallback(
 		async (field: string, value: string) => {
+			latestValidationValueRef.current[field] = value
 			const message = await validateFieldValue(field, value)
-			setErrors((prev) => ({ ...prev, [field]: message }))
+
+			if (latestValidationValueRef.current[field] !== value) {
+				return message === ""
+			}
+
+			setErrors((prev) => {
+				if (prev[field] === message) return prev
+				return { ...prev, [field]: message }
+			})
+
 			return message === ""
 		},
 		[validateFieldValue],
@@ -85,6 +96,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 		setErrors({})
 		setTouched({})
 		setDirty({})
+		latestValidationValueRef.current = {}
 	}, [initialValues])
 
 	const getForm = useCallback(
@@ -163,6 +175,11 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 		async (name: FieldKey, value: string) => {
 			const field = name as string
 			const ok = await validateField(field, value)
+
+			if (latestValidationValueRef.current[field] !== value) {
+				return
+			}
+
 			if (ok) setData((prev) => ({ ...prev, [field]: value }))
 			setTouched((prev) => ({ ...prev, [field]: true }))
 			setDirty((prev) => ({ ...prev, [field]: true }))
