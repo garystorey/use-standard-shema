@@ -8,11 +8,11 @@ export type FormValues = Record<string, string>
 export type Flags = Record<string, boolean>
 export type Errors = Record<string, string>
 
-export interface FieldDefinition {
-	label: string
-	description?: string
-	defaultValue?: string
-	validate: StandardSchemaV1
+export interface FieldDefinition<Schema extends StandardSchemaV1 = StandardSchemaV1> {
+        label: string
+        description?: string
+        defaultValue?: string
+        validate: Schema
 }
 
 /** A form schema tree: keys map to either fields or nested groups. */
@@ -27,6 +27,15 @@ export type FormDefinition = {
 /** Merge a union of object types into a single object type. */
 type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (k: infer I) => void ? I : never
 
+/** Normalize an object type by forcing remapping. */
+type Simplify<T> = { [K in keyof T]: T[K] } & {}
+
+/** Extract the Standard Schema output type. */
+type SchemaOutput<Schema> = Schema extends StandardSchemaV1<any, infer Output> ? Output : unknown
+
+/** Extract the inferred value for a field definition. */
+type FieldOutput<Def> = Def extends FieldDefinition<infer Schema> ? SchemaOutput<Schema> : unknown
+
 /* =============================================================================
  * Dot-path flattener (depth-limited to avoid “excessively deep” errors)
  * ========================================================================== */
@@ -38,7 +47,7 @@ type Dec<D extends Depth> = DecMap[D]
 /**
  * Folds a FormDefinition into:
  *  - Mode="paths": a union of dot paths
- *  - Mode="values": a map { path: defaultValue } (for union-to-intersection)
+ *  - Mode="values": a map { path: fieldOutput } (for union-to-intersection)
  *
  * Depth-limited so TS doesn’t infinitely expand on generics.
  */
@@ -47,25 +56,23 @@ type DotFold<T, Prev extends string = "", Mode extends "paths" | "values" = "pat
 ] extends [0]
 	? never
 	: {
-			[K in keyof T]: T[K] extends FieldDefinition
-				? Mode extends "paths"
-					? `${Prev}${K & string}`
-					: { [P in `${Prev}${K & string}`]: T[K]["defaultValue"] }
-				: T[K] extends FormDefinition
-					? DotFold<T[K], `${Prev}${K & string}.`, Mode, Dec<D>>
-					: never
-		}[keyof T]
+                        [K in keyof T]: T[K] extends FieldDefinition
+                                ? Mode extends "paths"
+                                        ? `${Prev}${K & string}`
+                                        : { [P in `${Prev}${K & string}`]: FieldOutput<T[K]> }
+                                : T[K] extends FormDefinition
+                                        ? DotFold<T[K], `${Prev}${K & string}.`, Mode, Dec<D>>
+                                        : never
+                }[keyof T]
 
 /** Public aliases */
 export type DotPaths<T, Prev extends string = "", D extends Depth = 10> = DotFold<T, Prev, "paths", D>
 
-type DotPathsToValues<T, Prev extends string = "", D extends Depth = 10> = UnionToIntersection<
-	DotFold<T, Prev, "values", D>
+type DotPathsToFieldOutputs<T, Prev extends string = "", D extends Depth = 10> = UnionToIntersection<
+        DotFold<T, Prev, "values", D>
 >
 
-export type TypeFromDefinition<T extends FormDefinition> = {
-	[K in keyof DotPathsToValues<T>]: DotPathsToValues<T>[K]
-}
+export type TypeFromDefinition<T extends FormDefinition> = Simplify<DotPathsToFieldOutputs<T>>
 
 export type FieldMapper<T> = (fieldDef: FieldDefinition, path: string) => T
 export type RecurseFn<T> = (subSchema: FormDefinition, path: string) => Record<string, T>

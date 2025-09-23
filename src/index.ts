@@ -1,4 +1,11 @@
-import { type FocusEvent, type FormEvent, useCallback, useMemo, useState } from "react"
+import {
+        type FocusEvent,
+        type FormEvent,
+        useCallback,
+        useMemo,
+        useRef,
+        useState,
+} from "react"
 import { defineForm, flattenDefaults, flattenFormDefinition, toFormData } from "./helpers"
 import type {
 	DotPaths,
@@ -17,9 +24,9 @@ import type {
  * @returns An object containing methods and state for managing the form.
  */
 function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
-	type FieldKey = DotPaths<T>
+        type FieldKey = DotPaths<T>
 
-	// Derived data
+        // Derived data
 	const flatFormDefinition = useMemo(() => flattenFormDefinition(formDefinition), [formDefinition]) as Record<
 		string,
 		FieldDefinition
@@ -32,8 +39,10 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 	// State
 	const [data, setData] = useState<FormValues>(initialValues)
 	const [errors, setErrors] = useState<Errors>({})
-	const [touched, setTouched] = useState<Flags>({})
-	const [dirty, setDirty] = useState<Flags>({})
+        const [touched, setTouched] = useState<Flags>({})
+        const [dirty, setDirty] = useState<Flags>({})
+
+        const latestValidationValueRef = useRef<Record<string, string>>({})
 
 	// --- Pure per-field validator (no state updates)
 	const validateFieldValue = useCallback(
@@ -46,14 +55,24 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 	)
 
 	// --- Single-field validate (updates state for that field)
-	const validateField = useCallback(
-		async (field: string, value: string) => {
-			const message = await validateFieldValue(field, value)
-			setErrors((prev) => ({ ...prev, [field]: message }))
-			return message === ""
-		},
-		[validateFieldValue],
-	)
+        const validateField = useCallback(
+                async (field: string, value: string) => {
+                        latestValidationValueRef.current[field] = value
+                        const message = await validateFieldValue(field, value)
+
+                        if (latestValidationValueRef.current[field] !== value) {
+                                return message === ""
+                        }
+
+                        setErrors((prev) => {
+                                if (prev[field] === message) return prev
+                                return { ...prev, [field]: message }
+                        })
+
+                        return message === ""
+                },
+                [validateFieldValue],
+        )
 
 	// --- Full-form validate (batch state update, no flicker)
 	const validateForm = useCallback(async () => {
@@ -80,12 +99,13 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 		[data, validateField, validateForm],
 	)
 
-	const resetForm = useCallback(() => {
-		setData(initialValues)
-		setErrors({})
-		setTouched({})
-		setDirty({})
-	}, [initialValues])
+        const resetForm = useCallback(() => {
+                setData(initialValues)
+                setErrors({})
+                setTouched({})
+                setDirty({})
+                latestValidationValueRef.current = {}
+        }, [initialValues])
 
 	const getForm = useCallback(
 		(onSubmitHandler: (data: TypeFromDefinition<typeof formDefinition>) => void) => {
@@ -159,16 +179,21 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 		[flatFormDefinition, data, errors, touched, dirty],
 	)
 
-	const setField = useCallback(
-		async (name: FieldKey, value: string) => {
-			const field = name as string
-			const ok = await validateField(field, value)
-			if (ok) setData((prev) => ({ ...prev, [field]: value }))
-			setTouched((prev) => ({ ...prev, [field]: true }))
-			setDirty((prev) => ({ ...prev, [field]: true }))
-		},
-		[validateField],
-	)
+        const setField = useCallback(
+                async (name: FieldKey, value: string) => {
+                        const field = name as string
+                        const ok = await validateField(field, value)
+
+                        if (latestValidationValueRef.current[field] !== value) {
+                                return
+                        }
+
+                        if (ok) setData((prev) => ({ ...prev, [field]: value }))
+                        setTouched((prev) => ({ ...prev, [field]: true }))
+                        setDirty((prev) => ({ ...prev, [field]: true }))
+                },
+                [validateField],
+        )
 
 	const getErrors = useCallback(
 		(name?: FieldKey): ErrorEntry[] => {
