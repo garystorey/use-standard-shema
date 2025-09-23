@@ -19,11 +19,16 @@ function asyncEmail(
                 "~standard": {
                         version: 1,
                         vendor: "tests",
-                        async validate(value: string) {
+                        async validate(raw: unknown) {
+                                if (typeof raw !== "string") {
+                                        return { issues: [{ message }] }
+                                }
+
+                                const value = raw
                                 const delay = delays[value] ?? 0
                                 await new Promise((resolve) => setTimeout(resolve, delay))
 
-                                if (typeof value !== "string" || !/@/.test(value)) {
+                                if (!/@/.test(value)) {
                                         return { issues: [{ message }] }
                                 }
 
