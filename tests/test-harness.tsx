@@ -52,7 +52,7 @@ export function Harness({
 					aria-invalid={Boolean(emailField.error) || undefined}
 					data-testid="email"
 				/>
-				<p id={emailField.describedById} >{emailField.description}</p>
+				<p id={emailField.describedById}>{emailField.description}</p>
 				<p hidden id={emailField.errorId} role="alert" aria-live="polite" data-testid="email-error">
 					{emailField.error}
 				</p>

@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import React from "react"
 import { describe, expect, it, vi } from "vitest"
@@ -227,6 +227,40 @@ describe("useStandardSchema", () => {
 
 		expect(screen.getByTestId("name-touched")).toHaveTextContent("false")
 		expect(screen.getByTestId("email-dirty")).toHaveTextContent("false")
+	})
+
+	it("resets internal state after a successful submit", async () => {
+		const onSubmit = vi.fn()
+		const user = userEvent.setup()
+
+		render(<Harness schema={schema} onSubmit={onSubmit} />)
+
+		const nameInput = screen.getByTestId("name") as HTMLInputElement
+		const emailInput = screen.getByTestId("email") as HTMLInputElement
+
+		await user.click(nameInput)
+		await user.type(nameInput, "Alice")
+		await user.tab()
+
+		await user.click(emailInput)
+		await user.clear(emailInput)
+		await user.type(emailInput, "alice@example.com")
+		await user.tab()
+
+		await waitFor(() => {
+			expect(screen.getByTestId("name-touched")).toHaveTextContent("true")
+			expect(screen.getByTestId("email-dirty")).toHaveTextContent("true")
+		})
+
+		await user.click(screen.getByText("Submit"))
+
+		await waitFor(() => {
+			expect(onSubmit).toHaveBeenCalledTimes(1)
+			expect(screen.getByTestId("name-touched")).toHaveTextContent("false")
+			expect(screen.getByTestId("email-dirty")).toHaveTextContent("false")
+			expect(nameInput.value).toBe("")
+			expect(emailInput.value).toBe("default@example.com")
+		})
 	})
 
 	it("getField throws for unknown keys", () => {

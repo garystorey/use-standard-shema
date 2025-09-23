@@ -95,6 +95,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 				const isValid = await validate()
 				if (isValid) {
 					onSubmitHandler(data as TypeFromDefinition<typeof formDefinition>)
+					resetForm()
 					formEl.reset()
 				}
 			}
@@ -199,24 +200,32 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 		[formDefinitionKeys, errors, flatFormDefinition],
 	)
 
-    const isDirty = useCallback((name?: FieldKey) => {
-        if (name) return Boolean(dirty[name])
-        return Object.keys(dirty).length > 0
-    }, [dirty])
+	const isDirty = useCallback(
+		(name?: FieldKey) => {
+			if (name) return Boolean(dirty[name])
+			return Object.keys(dirty).length > 0
+		},
+		[dirty],
+	)
 
-    const isTouched = useCallback((name?: FieldKey) => {
-        if (name) return Boolean(touched[name])
-        return Object.keys(touched).length > 0
-    }, [touched])
+	const isTouched = useCallback(
+		(name?: FieldKey) => {
+			if (name) return Boolean(touched[name])
+			return Object.keys(touched).length > 0
+		},
+		[touched],
+	)
 
-    const isValid = useCallback((name?: FieldKey) => {
-        if (name) return !Boolean(errors[name])
-        return Object.values(errors).every((msg) => msg === "")
-    }, [errors])
+	const isValid = useCallback(
+		(name?: FieldKey) => {
+			if (name) return !errors[name]
+			return Object.values(errors).every((msg) => msg === "")
+		},
+		[errors],
+	)
 
-    const getDirty = useCallback(() => Object.freeze(dirty), [dirty])
-    const getTouched = useCallback(() => Object.freeze(touched), [touched])
-
+	const getDirty = useCallback(() => Object.freeze(dirty), [dirty])
+	const getTouched = useCallback(() => Object.freeze(touched), [touched])
 
 	return {
 		resetForm,
@@ -225,11 +234,11 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 		getErrors,
 		validate,
 		__dangerouslySetField: setField,
-        isTouched,
-        isDirty,
-        isValid,
-        getDirty,
-        getTouched,
+		isTouched,
+		isDirty,
+		isValid,
+		getDirty,
+		getTouched,
 	}
 }
 
