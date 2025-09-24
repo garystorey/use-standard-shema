@@ -13,6 +13,7 @@ export interface FieldDefinition {
 	description?: string
 	defaultValue?: string
 	validate: StandardSchemaV1
+	validateAsync?: (value: string) => Promise<{ error?: string }>
 }
 
 /** A form schema tree: keys map to either fields or nested groups. */
@@ -157,9 +158,13 @@ export type AssertValidFormKeysDeep<T extends FormDefinition> = true extends _Ha
 	? never
 	: { [K in keyof T]: T[K] extends FormDefinition ? AssertValidFormKeysDeep<T[K]> : T[K] }
 
-export interface FieldDefintionProps extends FieldDefinition {
+export interface FieldDefinitionProps extends Omit<FieldDefinition, 'validate' | 'validateAsync'> {
 	name: string
+	defaultValue: string
 	error: string
+	touched: string
+	dirty: string
+	validating: string
 	errorId: string
 	describedById: string
 }

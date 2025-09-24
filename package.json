@@ -24,7 +24,9 @@
         "all": "npm run test && npm run fix && npm run format && npm run build",
         "publish": "npm run all && npm publish --access public",
         "test": "vitest",
-        "test:watch": "vitest --watch"
+        "test:watch": "vitest --watch",
+        "demo": "vite serve demo",
+        "demo:build": "vite build demo"
     },
     "keywords": [
         "zod",
@@ -69,6 +71,7 @@
         "react-dom": "^19.1.1",
         "tsup": "^8.5.0",
         "typescript": "^5.9.2",
+        "vite": "^6.3.6",
         "vitest": "^3.2.4",
         "zod": "^4.1.9"
     },

@@ -34,13 +34,40 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 	const [errors, setErrors] = useState<Errors>({})
 	const [touched, setTouched] = useState<Flags>({})
 	const [dirty, setDirty] = useState<Flags>({})
+	const [validating, setValidating] = useState<Flags>({})
+
+	// Track active async validations for cancellation
+	const validationControllers = useMemo(() => new Map<string, AbortController>(), [])
 
 	// --- Pure per-field validator (no state updates)
 	const validateFieldValue = useCallback(
-		async (field: string, value: string): Promise<string> => {
+		async (field: string, value: string, signal?: AbortSignal): Promise<string> => {
 			const fieldDef = flatFormDefinition[field]
+
+			// Run sync validation first
 			const result = await fieldDef.validate["~standard"].validate(value)
-			return result?.issues?.[0]?.message ?? ""
+			const syncError = result?.issues?.[0]?.message ?? ""
+
+			// If sync validation fails, skip async
+			if (syncError) return syncError
+
+			// Run async validation if provided
+			if (fieldDef.validateAsync) {
+				try {
+					const asyncResult = await Promise.race([
+						fieldDef.validateAsync(value),
+						new Promise<{ error?: string }>((_, reject) => {
+							signal?.addEventListener('abort', () => reject(new Error('Validation cancelled')))
+						})
+					])
+					return asyncResult.error ?? ""
+				} catch (err) {
+					if (err instanceof Error && err.message === 'Validation cancelled') return ""
+					return "Validation failed"
+				}
+			}
+
+			return ""
 		},
 		[flatFormDefinition],
 	)
@@ -48,11 +75,32 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 	// --- Single-field validate (updates state for that field)
 	const validateField = useCallback(
 		async (field: string, value: string) => {
-			const message = await validateFieldValue(field, value)
-			setErrors((prev) => ({ ...prev, [field]: message }))
-			return message === ""
+			// Cancel any in-flight validation for this field
+			const existingController = validationControllers.get(field)
+			if (existingController) {
+				existingController.abort()
+			}
+
+			// Create new controller for this validation
+			const controller = new AbortController()
+			validationControllers.set(field, controller)
+
+			// Mark as validating if async validator exists
+			const fieldDef = flatFormDefinition[field]
+			if (fieldDef.validateAsync) {
+				setValidating((prev) => ({ ...prev, [field]: true }))
+			}
+
+			try {
+				const message = await validateFieldValue(field, value, controller.signal)
+				setErrors((prev) => ({ ...prev, [field]: message }))
+				return message === ""
+			} finally {
+				setValidating((prev) => ({ ...prev, [field]: false }))
+				validationControllers.delete(field)
+			}
 		},
-		[validateFieldValue],
+		[validateFieldValue, validationControllers, flatFormDefinition],
 	)
 
 	// --- Full-form validate (batch state update, no flicker)
@@ -140,7 +188,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 				throw new Error(`Field "${key}" does not exist in the form definition.`)
 			}
 
-			const { validate: _validate, ...fieldDef } = def
+			const { validate: _validate, validateAsync: _validateAsync, ...fieldDef } = def
 			const describedById = `${key}-description`
 			const errorId = `${key}-error`
 
@@ -151,11 +199,12 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 				error: errors[key] ?? "",
 				touched: touched[key] ? String(touched[key]) : "false",
 				dirty: dirty[key] ? String(dirty[key]) : "false",
+				validating: validating[key] ? String(validating[key]) : "false",
 				describedById,
 				errorId,
 			}
 		},
-		[flatFormDefinition, data, errors, touched, dirty],
+		[flatFormDefinition, data, errors, touched, dirty, validating],
 	)
 
 	const setField = useCallback(
@@ -215,4 +264,4 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 }
 
 export { useStandardSchema, defineForm, toFormData }
-export { FieldDefinition, FormDefinition, TypeFromDefinition } from "./types"
+export type { FieldDefinition, FormDefinition, TypeFromDefinition } from "./types"

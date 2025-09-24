@@ -151,6 +151,39 @@ export function App() {
 
 ## Examples
 
+### Async validation (NEW!)
+
+Add server-side validation for username availability, email verification, etc:
+
+```tsx
+const signupForm = defineForm({
+  username: {
+    label: "Username",
+    // Sync validation runs first
+    validate: z.string().min(3).max(20),
+    // Async validation only runs if sync passes
+    validateAsync: async (value) => {
+      const response = await fetch(`/api/check-username?name=${value}`)
+      const { available } = await response.json()
+      return available ? {} : { error: "Username already taken" }
+    }
+  }
+})
+
+// In your component:
+const field = getField("username")
+
+// Show loading state during async validation
+{field.validating === "true" && <span>Checking availability...</span>}
+{field.error && <span>{field.error}</span>}
+```
+
+Features:
+- **Progressive validation**: Sync errors show immediately, async runs after
+- **Automatic cancellation**: New validations cancel in-flight requests
+- **Loading states**: `field.validating` tracks async validation status
+- **Smart debouncing**: Only validates on blur when field is dirty
+
 ### Nested object field
 
 Dot notation is supported automatically:
@@ -246,7 +279,7 @@ type FieldProps = FieldDefinitionProps & {
 |------------------------------|-----------------------------------------------------------------------------|
 | `useStandardSchema(formDefinition)` | Initialize form state and validation with a form definition |
 | `getForm(onSubmit)`          | Returns event handlers for the form; submit handler only fires with valid data |
-| `getField(name)`             | Returns metadata for a given field (label, defaultValue, error, touched, dirty, ARIA ids) |
+| `getField(name)`             | Returns metadata for a given field (label, defaultValue, error, touched, dirty, validating, ARIA ids) |
 | `resetForm()`                | Resets all form state to initial defaults |
 | `touched`                    | Read-only frozen object of touched fields |
 | `dirty`                      | Read-only frozen object of dirty fields |
@@ -279,6 +312,12 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## ChangeLog
 
+- **v0.3.0** - Add async validation support (UNRELEASED)
+  - Add optional `validateAsync` field to `FieldDefinition` for server-side validation
+  - Add `validating` state to track fields currently being validated asynchronously
+  - Automatic cancellation of in-flight validations when new ones start
+  - Progressive validation: sync errors show first, async runs only if sync passes
+  - Zero breaking changes - existing forms work unchanged
 - **v0.2.7** - Improve error handling
   - Update the return of `getErrors` to be `{name, label, error}` for consistency.
   - `getErrors` will name accept an optional `name` prop and return only that error.
