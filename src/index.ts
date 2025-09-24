@@ -264,4 +264,4 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 }
 
 export { useStandardSchema, defineForm, toFormData }
-export type { FieldDefinition, FormDefinition, TypeFromDefinition } from "./types"
+export type { FieldDefinition, FormDefinition, TypeFromDefinition, FieldDefinitionProps } from "./types"

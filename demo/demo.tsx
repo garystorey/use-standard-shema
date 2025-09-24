@@ -1,6 +1,6 @@
 import React, { useState } from "react"
 import ReactDOM from "react-dom/client"
-import { defineForm, useStandardSchema, type TypeFromDefinition } from "use-standard-schema"
+import { defineForm, useStandardSchema, type TypeFromDefinition, type FieldDefinitionProps } from "../src/index"
 import * as z from "zod"
 
 // Validation schemas
@@ -332,7 +332,7 @@ function DemoApp() {
 
 // Field component
 interface FieldProps {
-  field: ReturnType<typeof useStandardSchema>["getField"] extends (name: any) => infer R ? R : never
+  field: FieldDefinitionProps
   type?: "text" | "email" | "tel" | "url" | "textarea"
   required?: boolean
 }
