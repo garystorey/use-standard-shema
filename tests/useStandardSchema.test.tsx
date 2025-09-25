@@ -1,43 +1,60 @@
-import { act, render, screen, waitFor, fireEvent } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import React from "react"
-import { describe, expect, it, vi } from "vitest"
-import { defineForm } from "../src"
+import { describe, expect, expectTypeOf, it, vi } from "vitest"
+import type { StandardSchemaV1 } from "@standard-schema/spec"
+import { defineForm, type TypeFromDefinition } from "../src"
 import { Harness, type HarnessApi } from "./test-harness"
 import { email, string } from "./test-validation-lib"
 
-const delays: Record<string, number> = {
-	"slow@example.com": 150,
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+function asyncEmail(
+        delays: Record<string, number>,
+        message: string = "Invalid email",
+): StandardSchemaV1<string> {
+        return {
+                type: "string",
+                message,
+                "~standard": {
+                        version: 1,
+                        vendor: "tests",
+                        async validate(raw: unknown) {
+                                if (typeof raw !== "string") {
+                                        return { issues: [{ message }] }
+                                }
+
+                                const value = raw
+                                const delay = delays[value] ?? 0
+                                await new Promise((resolve) => setTimeout(resolve, delay))
+
+                                if (!/@/.test(value)) {
+                                        return { issues: [{ message }] }
+                                }
+
+                                return { value }
+                        },
+                },
+        }
 }
 
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
-const asyncEmail = (message: string = "Invalid email") => ({
-	type: "string" as const,
-	message,
-	"~standard": {
-		version: 1 as const,
-		vendor: "tests",
-		async validate(raw: unknown) {
-			if (typeof raw !== "string") {
-				return { issues: [{ message }] }
-			}
-
-			const value = raw
-			const delay = delays[value]
-			if (typeof delay === "number" && delay > 0) {
-				await wait(delay)
-			}
-
-			return /@/.test(value) ? { value } : { issues: [{ message }] }
-		},
-	},
-})
-
 describe("useStandardSchema", () => {
-	const schema = defineForm({
-		user: {
-			name: {
+        it("TypeFromDefinition infers validator output types without defaults", () => {
+                const typedForm = defineForm({
+                        field: {
+                                label: "Field",
+                                validate: string(),
+                        },
+                })
+
+                type Values = TypeFromDefinition<typeof typedForm>
+
+                expectTypeOf<Values>().toEqualTypeOf<{ field: string }>()
+        })
+
+        const schema = defineForm({
+                user: {
+                        name: {
 				label: "Name",
 				description: "Your full name",
 				defaultValue: "",
@@ -103,11 +120,11 @@ describe("useStandardSchema", () => {
 		expect(emailInput).toHaveAttribute("aria-invalid", "true")
 	})
 
-	it("onFocus clears error for that field", async () => {
-		const onSubmit = vi.fn()
-		const user = userEvent.setup()
+    it("onFocus clears error for that field", async () => {
+      const onSubmit = vi.fn()
+      const user = userEvent.setup()
 
-		render(<Harness schema={schema} onSubmit={onSubmit} />)
+      render(<Harness schema={schema} onSubmit={onSubmit} />)
 
 		const emailInput = screen.getByTestId("email") as HTMLInputElement
 
@@ -118,10 +135,54 @@ describe("useStandardSchema", () => {
 		expect(screen.getByTestId("email-error")).toHaveTextContent("Invalid email")
 
 		await user.click(emailInput) // focus -> clear error
+        expect(screen.getByTestId("email-error")).toHaveTextContent("")
+        expect(emailInput).not.toHaveAttribute("aria-invalid")
+    })
 
-		expect(screen.getByTestId("email-error")).toHaveTextContent("")
-		expect(emailInput).not.toHaveAttribute("aria-invalid")
-	})
+    it("ignores stale async validation results", async () => {
+      const delays = { slow: 60, "fast@example.com": 5 }
+      const asyncSchema = defineForm({
+        user: {
+          name: {
+            label: "Name",
+            description: "Your full name",
+            defaultValue: "",
+            validate: string("Required"),
+          },
+          contact: {
+            email: {
+              label: "Email",
+              defaultValue: "default@example.com",
+              validate: asyncEmail(delays),
+            },
+          },
+        },
+      })
+
+      render(<Harness schema={asyncSchema} onSubmit={vi.fn()} />)
+
+      const emailInput = screen.getByTestId("email") as HTMLInputElement
+
+      fireEvent.focus(emailInput)
+      fireEvent.change(emailInput, { target: { value: "slow" } })
+      fireEvent.blur(emailInput) // kicks off slow async validation returning an error
+
+      fireEvent.focus(emailInput)
+      fireEvent.change(emailInput, { target: { value: "fast@example.com" } })
+      fireEvent.blur(emailInput) // kicks off faster validation returning success
+
+      await waitFor(() => {
+              expect(screen.getByTestId("email-error")).toHaveTextContent("")
+              expect(emailInput).not.toHaveAttribute("aria-invalid")
+      })
+
+      await act(async () => {
+              await sleep(delays.slow + 10)
+      })
+
+      expect(screen.getByTestId("email-error")).toHaveTextContent("")
+      expect(emailInput).not.toHaveAttribute("aria-invalid")
+  })
 
 	it("ignores stale async validation results", async () => {
 		const delays = { slow: 60, "fast@example.com": 5 }
