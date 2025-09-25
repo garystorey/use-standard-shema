@@ -1,5 +1,13 @@
 import { type FocusEvent, type FormEvent, useCallback, useMemo, useRef, useState } from "react"
-import { defineForm, flattenDefaults, flattenFormDefinition, toFormData } from "./helpers"
+import {
+	DEFAULT_VALIDATION_ERROR,
+	defineForm,
+	extractIssues,
+	flattenFormDefinition,
+	normalizeThrownError,
+	readIssueMessage,
+	toFormData,
+} from "./helpers"
 import type {
 	DotPaths,
 	ErrorEntry,
@@ -20,14 +28,20 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 	type FieldKey = DotPaths<T>
 
 	// Derived data
-	const flatFormDefinition = useMemo(() => flattenFormDefinition(formDefinition), [formDefinition]) as Record<
-		string,
-		FieldDefinition
-	>
+	const { flatFormDefinition, initialValues, formDefinitionKeys } = useMemo(() => {
+		const flattened = flattenFormDefinition(formDefinition) as Record<string, FieldDefinition>
+		const defaults: FormValues = {}
 
-	const initialValues = useMemo(() => flattenDefaults(formDefinition), [formDefinition])
+		for (const [key, fieldDef] of Object.entries(flattened)) {
+			defaults[key] = fieldDef.defaultValue ?? ""
+		}
 
-	const formDefinitionKeys = useMemo(() => Object.keys(flatFormDefinition), [flatFormDefinition])
+		return {
+			flatFormDefinition: flattened,
+			initialValues: defaults,
+			formDefinitionKeys: Object.keys(flattened),
+		}
+	}, [formDefinition])
 
 	// State
 	const [data, setData] = useState<FormValues>(initialValues)
@@ -41,8 +55,22 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 	const validateFieldValue = useCallback(
 		async (field: string, value: string): Promise<string> => {
 			const fieldDef = flatFormDefinition[field]
-			const result = await fieldDef.validate["~standard"].validate(value)
-			return result?.issues?.[0]?.message ?? ""
+			if (!fieldDef) {
+				return DEFAULT_VALIDATION_ERROR
+			}
+
+			try {
+				const result = await fieldDef.validate["~standard"].validate(value)
+				const extracted = extractIssues(result)
+				if (extracted?.hadIssues) {
+					const message = readIssueMessage(extracted.issues)
+					return message ?? DEFAULT_VALIDATION_ERROR
+				}
+
+				return ""
+			} catch (error) {
+				return normalizeThrownError(error, DEFAULT_VALIDATION_ERROR)
+			}
 		},
 		[flatFormDefinition],
 	)
@@ -52,9 +80,10 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 		async (field: string, value: string) => {
 			latestValidationValueRef.current[field] = value
 			const message = await validateFieldValue(field, value)
+			const ok = message === ""
 
 			if (latestValidationValueRef.current[field] !== value) {
-				return message === ""
+				return ok
 			}
 
 			setErrors((prev) => {
@@ -62,30 +91,28 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 				return { ...prev, [field]: message }
 			})
 
-			return message === ""
+			return ok
 		},
 		[validateFieldValue],
 	)
 
 	// --- Full-form validate (batch state update, no flicker)
 	const validateForm = useCallback(async () => {
-		const newErrors: Errors = {}
-
-		await Promise.all(
-			formDefinitionKeys.map(async (key) => {
-				newErrors[key] = await validateFieldValue(key, data[key])
-			}),
+		const entries = await Promise.all(
+			formDefinitionKeys.map(async (key) => [key, await validateFieldValue(key, data[key] ?? "")] as const),
 		)
 
+		const newErrors = Object.fromEntries(entries) as Errors
 		setErrors(newErrors)
-		return Object.values(newErrors).every((msg) => msg === "")
+
+		return entries.every(([, message]) => message === "")
 	}, [formDefinitionKeys, data, validateFieldValue])
 
 	const validate = useCallback(
 		async (name?: FieldKey) => {
 			if (name) {
 				const key = name as string
-				return validateField(key, data[key])
+				return validateField(key, data[key] ?? "")
 			}
 			return validateForm()
 		},
@@ -192,36 +219,36 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 		(name?: FieldKey): ErrorEntry[] => {
 			if (name) {
 				const error = errors[name]
-				if (!error) return []
-				return [
-					{
-						name,
-						error,
-						label: flatFormDefinition[name]?.label,
-					},
-				]
+				return error
+					? [
+							{
+								name,
+								error,
+								label: flatFormDefinition[name]?.label,
+							},
+						]
+					: []
 			}
 
-			const errorEntries: ErrorEntry[] = []
-			for (const key of formDefinitionKeys) {
-				const error = errors[key]
-				if (error) {
-					errorEntries.push({
-						name: key,
-						error,
-						label: flatFormDefinition[key].label,
-					})
-				}
-			}
-			return errorEntries
-		},
-		[formDefinitionKeys, errors, flatFormDefinition],
-	)
+                        return formDefinitionKeys.reduce<ErrorEntry[]>((errorEntries, key) => {
+                                const error = errors[key]
+                                if (error) {
+                                        errorEntries.push({
+                                                name: key,
+                                                error,
+                                                label: flatFormDefinition[key].label,
+                                        })
+                                }
+                                return errorEntries
+                        }, [])
+                },
+                [formDefinitionKeys, errors, flatFormDefinition],
+        )
 
 	const isDirty = useCallback(
 		(name?: FieldKey) => {
 			if (name) return Boolean(dirty[name])
-			return Object.keys(dirty).length > 0
+			return Object.values(dirty).some(Boolean)
 		},
 		[dirty],
 	)
@@ -229,7 +256,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 	const isTouched = useCallback(
 		(name?: FieldKey) => {
 			if (name) return Boolean(touched[name])
-			return Object.keys(touched).length > 0
+			return Object.values(touched).some(Boolean)
 		},
 		[touched],
 	)

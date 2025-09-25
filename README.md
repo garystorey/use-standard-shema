@@ -150,6 +150,9 @@ export function App() {
 ```
 
 ## Examples
+  
+### Code Sandbox
+You can [try it out on CodeSandbox](https://codesandbox.io/p/sandbox/use-standard-schema-vthys3). Fork the sandbox and code away!  
 
 ### Nested object field
 
@@ -269,8 +272,6 @@ type FieldProps = FieldDefinitionProps & {
 - **Type Safety**: Use `TypeFromDefinition<typeof form>` for your submit handler if you need type safety. This ensures your form data matches the form definition.
 - **Error Display**: Use `getErrors()` for global errors and `field.error` for field-level errors.
 - **Performance**: Handlers and derived values (`getForm`, `getField`, `getErrors`) are memoized internally. You don’t need extra `useMemo` unless you’re doing heavy custom work.
-- **Reset Strategy**: Call `resetForm()` after successful submission to clear touched/dirty/errors and restore defaults.
-- **Boolean flags**: The `touched` and `dirty` values returned from `getField` are plain booleans, making it easy to toggle helper text, validation messaging, or styling without string comparisons.
 - **Nested Fields**: Use dot notation for nested keys (e.g. `"address.street1"`). TypeScript support ensures autocomplete for these paths.
 - **Accessibility**: Always wire `describedById` and `errorId` into your markup to keep your forms screen-reader friendly.
   - `getField` provides `describedById` and `errorId` for use with `aria-describedby` and/or `aria-errormessage`.
@@ -287,12 +288,14 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## ChangeLog
 
-- **v0.3.0** - Replace `dirty` and `touched` objects.
-  - Add `isDirty` and `isTouched` which accept an optional `name` param. Returns true/false
+- **v0.3.0** - Metadata and error-handling improvements.
+  - Add `isDirty` and `isTouched` which accept an optional `name` param. returns true/false.
   - Added `isValid` function
     - Accepts an optional `name` param.
     - Returns `true/false` if the field currently has an error.
     - **NOTE:** This *does not validate the field*. It checks if it is currently valid.
+  - `getField` now returns `touched` and `dirty` as booleans.
+  - Wrapped validations yo normalize thrown errors.
 - **v0.2.7** - Improve error handling
   - Update the return of `getErrors` to be `{name, label, error}` for consistency.
   - `getErrors` will name accept an optional `name` prop and return only that error.
