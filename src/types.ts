@@ -9,15 +9,15 @@ export type Flags = Record<string, boolean>
 export type Errors = Record<string, string>
 
 export interface FieldDefinition<Schema extends StandardSchemaV1 = StandardSchemaV1> {
-        label: string
-        description?: string
-        defaultValue?: string
-        validate: Schema
+    label: string
+    description?: string
+    defaultValue?: string
+    validate: Schema
 }
 
 /** A form schema tree: keys map to either fields or nested groups. */
 export type FormDefinition = {
-	[key: string]: FieldDefinition | FormDefinition
+    [key: string]: FieldDefinition | FormDefinition
 }
 
 /* =============================================================================
@@ -52,24 +52,24 @@ type Dec<D extends Depth> = DecMap[D]
  * Depth-limited so TS doesn’t infinitely expand on generics.
  */
 type DotFold<T, Prev extends string = "", Mode extends "paths" | "values" = "paths", D extends Depth = 10> = [
-	D,
+    D,
 ] extends [0]
-	? never
-	: {
-                        [K in keyof T]: T[K] extends FieldDefinition
-                                ? Mode extends "paths"
-                                        ? `${Prev}${K & string}`
-                                        : { [P in `${Prev}${K & string}`]: FieldOutput<T[K]> }
-                                : T[K] extends FormDefinition
-                                        ? DotFold<T[K], `${Prev}${K & string}.`, Mode, Dec<D>>
-                                        : never
-                }[keyof T]
+    ? never
+    : {
+        [K in keyof T]: T[K] extends FieldDefinition
+        ? Mode extends "paths"
+        ? `${Prev}${K & string}`
+        : { [P in `${Prev}${K & string}`]: FieldOutput<T[K]> }
+        : T[K] extends FormDefinition
+        ? DotFold<T[K], `${Prev}${K & string}.`, Mode, Dec<D>>
+        : never
+    }[keyof T]
 
 /** Public aliases */
 export type DotPaths<T, Prev extends string = "", D extends Depth = 10> = DotFold<T, Prev, "paths", D>
 
 type DotPathsToFieldOutputs<T, Prev extends string = "", D extends Depth = 10> = UnionToIntersection<
-        DotFold<T, Prev, "values", D>
+    DotFold<T, Prev, "values", D>
 >
 
 export type TypeFromDefinition<T extends FormDefinition> = Simplify<DotPathsToFieldOutputs<T>>
@@ -84,31 +84,31 @@ export type ErrorEntry = { name: string; error: string; label: string }
 
 /** ECMAScript WhiteSpace + LineTerminators + NBSP + BOM */
 type WhiteSpaceChar =
-	| " "
-	| "\t"
-	| "\n"
-	| "\r"
-	| "\v"
-	| "\f"
-	| "\u00A0"
-	| "\u1680"
-	| "\u2000"
-	| "\u2001"
-	| "\u2002"
-	| "\u2003"
-	| "\u2004"
-	| "\u2005"
-	| "\u2006"
-	| "\u2007"
-	| "\u2008"
-	| "\u2009"
-	| "\u200A"
-	| "\u2028"
-	| "\u2029"
-	| "\u202F"
-	| "\u205F"
-	| "\u3000"
-	| "\uFEFF"
+    | " "
+    | "\t"
+    | "\n"
+    | "\r"
+    | "\v"
+    | "\f"
+    | "\u00A0"
+    | "\u1680"
+    | "\u2000"
+    | "\u2001"
+    | "\u2002"
+    | "\u2003"
+    | "\u2004"
+    | "\u2005"
+    | "\u2006"
+    | "\u2007"
+    | "\u2008"
+    | "\u2009"
+    | "\u200A"
+    | "\u2028"
+    | "\u2029"
+    | "\u202F"
+    | "\u205F"
+    | "\u3000"
+    | "\uFEFF"
 
 /**
  * A single segment (between dots) is valid iff:
@@ -118,21 +118,21 @@ type WhiteSpaceChar =
  *  All other Unicode code points (incl. hyphens, emoji, etc.) are allowed.
  */
 type _IsValidSegment<S extends string> = S extends ""
-	? false
-	: S extends `${string}${WhiteSpaceChar}${string}`
-		? false
-		: S extends `${string}.${string}`
-			? false
-			: true
+    ? false
+    : S extends `${string}${WhiteSpaceChar}${string}`
+    ? false
+    : S extends `${string}.${string}`
+    ? false
+    : true
 
 /** Full key: one or more valid segments separated by dots. */
 export type FormPathKey<S extends string> = S extends `${infer Head}.${infer Tail}`
-	? _IsValidSegment<Head> extends true
-		? FormPathKey<Tail>
-		: never
-	: _IsValidSegment<S> extends true
-		? S
-		: never
+    ? _IsValidSegment<Head> extends true
+    ? FormPathKey<Tail>
+    : never
+    : _IsValidSegment<S> extends true
+    ? S
+    : never
 
 /** Shape-only path type for APIs not tied to a specific schema. */
 export type AnyFormPathKey = FormPathKey<string>
@@ -144,15 +144,15 @@ export type AnyFormPathKey = FormPathKey<string>
  * - Recurse into nested FormDefinition branches
  */
 type _HasInvalidKeys<T> = {
-	[K in keyof T]: K extends string
-		? string extends K
-			? false // skip index signature
-			: FormPathKey<K> extends never
-				? true
-				: T[K] extends FormDefinition
-					? _HasInvalidKeys<T[K]>
-					: false
-		: false
+    [K in keyof T]: K extends string
+    ? string extends K
+    ? false // skip index signature
+    : FormPathKey<K> extends never
+    ? true
+    : T[K] extends FormDefinition
+    ? _HasInvalidKeys<T[K]>
+    : false
+    : false
 }[keyof T]
 
 /**
@@ -161,12 +161,12 @@ type _HasInvalidKeys<T> = {
  * - Otherwise, preserve the exact inferred shape of `T` (recursing only to check)
  */
 export type AssertValidFormKeysDeep<T extends FormDefinition> = true extends _HasInvalidKeys<T>
-	? never
-	: { [K in keyof T]: T[K] extends FormDefinition ? AssertValidFormKeysDeep<T[K]> : T[K] }
+    ? never
+    : { [K in keyof T]: T[K] extends FormDefinition ? AssertValidFormKeysDeep<T[K]> : T[K] }
 
 export interface FieldDefintionProps extends FieldDefinition {
-	name: string
-	error: string
-	errorId: string
-	describedById: string
+    name: string
+    error: string
+    errorId: string
+    describedById: string
 }
