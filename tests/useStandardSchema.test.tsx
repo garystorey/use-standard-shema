@@ -120,11 +120,11 @@ describe("useStandardSchema", () => {
 		expect(emailInput).toHaveAttribute("aria-invalid", "true")
 	})
 
-        it("onFocus clears error for that field", async () => {
-                const onSubmit = vi.fn()
-                const user = userEvent.setup()
+    it("onFocus clears error for that field", async () => {
+      const onSubmit = vi.fn()
+      const user = userEvent.setup()
 
-                render(<Harness schema={schema} onSubmit={onSubmit} />)
+      render(<Harness schema={schema} onSubmit={onSubmit} />)
 
 		const emailInput = screen.getByTestId("email") as HTMLInputElement
 
@@ -135,55 +135,99 @@ describe("useStandardSchema", () => {
 		expect(screen.getByTestId("email-error")).toHaveTextContent("Invalid email")
 
 		await user.click(emailInput) // focus -> clear error
+        expect(screen.getByTestId("email-error")).toHaveTextContent("")
+        expect(emailInput).not.toHaveAttribute("aria-invalid")
+    })
 
-                expect(screen.getByTestId("email-error")).toHaveTextContent("")
-                expect(emailInput).not.toHaveAttribute("aria-invalid")
-        })
+    it("ignores stale async validation results", async () => {
+      const delays = { slow: 60, "fast@example.com": 5 }
+      const asyncSchema = defineForm({
+        user: {
+          name: {
+            label: "Name",
+            description: "Your full name",
+            defaultValue: "",
+            validate: string("Required"),
+          },
+          contact: {
+            email: {
+              label: "Email",
+              defaultValue: "default@example.com",
+              validate: asyncEmail(delays),
+            },
+          },
+        },
+      })
 
-        it("ignores stale async validation results", async () => {
-                const delays = { slow: 60, "fast@example.com": 5 }
-                const asyncSchema = defineForm({
-                        user: {
-                                name: {
-                                        label: "Name",
-                                        description: "Your full name",
-                                        defaultValue: "",
-                                        validate: string("Required"),
-                                },
-                                contact: {
-                                        email: {
-                                                label: "Email",
-                                                defaultValue: "default@example.com",
-                                                validate: asyncEmail(delays),
-                                        },
-                                },
-                        },
-                })
+      render(<Harness schema={asyncSchema} onSubmit={vi.fn()} />)
 
-                render(<Harness schema={asyncSchema} onSubmit={vi.fn()} />)
+      const emailInput = screen.getByTestId("email") as HTMLInputElement
 
-                const emailInput = screen.getByTestId("email") as HTMLInputElement
+      fireEvent.focus(emailInput)
+      fireEvent.change(emailInput, { target: { value: "slow" } })
+      fireEvent.blur(emailInput) // kicks off slow async validation returning an error
 
-                fireEvent.focus(emailInput)
-                fireEvent.change(emailInput, { target: { value: "slow" } })
-                fireEvent.blur(emailInput) // kicks off slow async validation returning an error
+      fireEvent.focus(emailInput)
+      fireEvent.change(emailInput, { target: { value: "fast@example.com" } })
+      fireEvent.blur(emailInput) // kicks off faster validation returning success
 
-                fireEvent.focus(emailInput)
-                fireEvent.change(emailInput, { target: { value: "fast@example.com" } })
-                fireEvent.blur(emailInput) // kicks off faster validation returning success
+      await waitFor(() => {
+              expect(screen.getByTestId("email-error")).toHaveTextContent("")
+              expect(emailInput).not.toHaveAttribute("aria-invalid")
+      })
 
-                await waitFor(() => {
-                        expect(screen.getByTestId("email-error")).toHaveTextContent("")
-                        expect(emailInput).not.toHaveAttribute("aria-invalid")
-                })
+      await act(async () => {
+              await sleep(delays.slow + 10)
+      })
 
-                await act(async () => {
-                        await sleep(delays.slow + 10)
-                })
+      expect(screen.getByTestId("email-error")).toHaveTextContent("")
+      expect(emailInput).not.toHaveAttribute("aria-invalid")
+  })
 
-                expect(screen.getByTestId("email-error")).toHaveTextContent("")
-                expect(emailInput).not.toHaveAttribute("aria-invalid")
-        })
+	it("ignores stale async validation results", async () => {
+		const delays = { slow: 60, "fast@example.com": 5 }
+		const asyncSchema = defineForm({
+			user: {
+				name: {
+					label: "Name",
+					description: "Your full name",
+					defaultValue: "",
+					validate: string("Required"),
+				},
+				contact: {
+					email: {
+						label: "Email",
+						defaultValue: "default@example.com",
+						validate: asyncEmail("Invalid email"),
+					},
+				},
+			},
+		})
+
+		render(<Harness schema={asyncSchema} onSubmit={vi.fn()} />)
+
+		const emailInput = screen.getByTestId("email") as HTMLInputElement
+
+		fireEvent.focus(emailInput)
+		fireEvent.change(emailInput, { target: { value: "slow" } })
+		fireEvent.blur(emailInput) // kicks off slow async validation returning an error
+
+		fireEvent.focus(emailInput)
+		fireEvent.change(emailInput, { target: { value: "fast@example.com" } })
+		fireEvent.blur(emailInput) // kicks off faster validation returning success
+
+		await waitFor(() => {
+			expect(screen.getByTestId("email-error")).toHaveTextContent("")
+			expect(emailInput).not.toHaveAttribute("aria-invalid")
+		})
+
+		await act(async () => {
+			await wait(delays.slow + 10)
+		})
+
+		expect(screen.getByTestId("email-error")).toHaveTextContent("")
+		expect(emailInput).not.toHaveAttribute("aria-invalid")
+	})
 
 	it("validate(name) validates one field; validate() validates entire form", async () => {
 		let api: HarnessApi
