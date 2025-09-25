@@ -246,7 +246,7 @@ type FieldProps = FieldDefinitionProps & {
 |------------------------------|-----------------------------------------------------------------------------|
 | `useStandardSchema(formDefinition)` | Initialize form state and validation with a form definition |
 | `getForm(onSubmit)`          | Returns event handlers for the form; submit handler only fires with valid data |
-| `getField(name)`             | Returns metadata for a given field (label, defaultValue, error, touched, dirty, ARIA ids) |
+| `getField(name)`             | Returns metadata for a given field (label, defaultValue, error, `touched`/`dirty` booleans, ARIA ids) |
 | `resetForm()`                | Resets all form state to initial defaults |
 | `isTouched(name?)`           | Returns `true/false` if form or field has been touched |
 | `isDirty(name?)`             | Returns `true/false` if form or field is dirty |
@@ -260,6 +260,8 @@ type FieldProps = FieldDefinitionProps & {
 <span style='color:red'>*</span>
 <strong>NOTE</strong>: This function does not validate the field.  It simply checks if it is currently valid.
 
+> **Environment note:** `toFormData` relies on the global [`FormData`](https://developer.mozilla.org/docs/Web/API/FormData) constructor. In SSR or other non-browser environments you may need to provide a polyfill (e.g. `undici` or `formdata-node`) or guard calls to `toFormData` to avoid runtime errors.
+
 ---
 
 ## Best Practices
@@ -268,6 +270,8 @@ type FieldProps = FieldDefinitionProps & {
 - **Error Display**: Use `getErrors()` for global errors and `field.error` for field-level errors.
 - **Performance**: Handlers and derived values (`getForm`, `getField`, `getErrors`) are memoized internally. You don’t need extra `useMemo` unless you’re doing heavy custom work.
 - **Reset Strategy**: Call `resetForm()` after successful submission to clear touched/dirty/errors and restore defaults.
+- **Boolean flags**: The `touched` and `dirty` values returned from `getField` are plain booleans, making it easy to toggle helper text, validation messaging, or styling without string comparisons.
+- **Validator errors**: If a Standard Schema validator throws (sync or async), the hook catches it and surfaces the issue message (or thrown `Error` text) through `field.error`. When no message is available, the hook falls back to a generic "Validation failed" string.
 - **Nested Fields**: Use dot notation for nested keys (e.g. `"address.street1"`). TypeScript support ensures autocomplete for these paths.
 - **Accessibility**: Always wire `describedById` and `errorId` into your markup to keep your forms screen-reader friendly.
   - `getField` provides `describedById` and `errorId` for use with `aria-describedby` and/or `aria-errormessage`.
@@ -284,12 +288,15 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## ChangeLog
 
-- **v0.3.0** - Replace `dirty` and `touched` objects.
-  - Add `isDirty` and `isTouched` which accept an optional `name` param. Returns true/false
+- **v0.3.0** - Metadata and error-handling improvements.
+  - Add `isDirty` and `isTouched` which accept an optional `name` param and return booleans.
   - Added `isValid` function
     - Accepts an optional `name` param.
     - Returns `true/false` if the field currently has an error.
     - **NOTE:** This *does not validate the field*. It checks if it is currently valid.
+  - `getField` now returns `touched` and `dirty` as booleans, simplifying conditional UI logic.
+  - Standard Schema validations are wrapped to normalize thrown errors and surface issue messages per the v1 specification.
+  - Documented that `toFormData` requires a global `FormData` implementation in non-browser environments.
 - **v0.2.7** - Improve error handling
   - Update the return of `getErrors` to be `{name, label, error}` for consistency.
   - `getErrors` will name accept an optional `name` prop and return only that error.

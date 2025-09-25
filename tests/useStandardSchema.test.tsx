@@ -35,6 +35,42 @@ function asyncEmail(delays: Record<string, number>, message: string = "Invalid e
 	}
 }
 
+function throwingEmail(message: string = "Exploded"): StandardSchemaV1<string> {
+	return {
+		type: "string",
+		message,
+		"~standard": {
+			version: 1,
+			vendor: "tests",
+			async validate(raw: unknown) {
+				if (typeof raw !== "string" || raw === "boom") {
+					throw new Error(message)
+				}
+
+				if (!/@/.test(raw)) {
+					return { issues: [{ message }] }
+				}
+
+				return { value: raw }
+			},
+		},
+	}
+}
+
+function throwingIssuesWithoutMessage(): StandardSchemaV1<string> {
+	return {
+		type: "string",
+		message: "Schema fallback message",
+		"~standard": {
+			version: 1,
+			vendor: "tests",
+			async validate() {
+				throw { issues: [{}] }
+			},
+		},
+	}
+}
+
 describe("useStandardSchema", () => {
 	it("TypeFromDefinition infers validator output types without defaults", () => {
 		const typedForm = defineForm({
@@ -136,6 +172,42 @@ describe("useStandardSchema", () => {
 		expect(emailInput).not.toHaveAttribute("aria-invalid")
 	})
 
+	it("surfaces thrown validator errors", async () => {
+		const onSubmit = vi.fn()
+		const user = userEvent.setup()
+		const throwingSchema = defineForm({
+			user: {
+				name: {
+					label: "Name",
+					description: "Your full name",
+					defaultValue: "",
+					validate: string("Required"),
+				},
+				contact: {
+					email: {
+						label: "Email",
+						defaultValue: "default@example.com",
+						validate: throwingEmail(),
+					},
+				},
+			},
+		})
+
+		render(<Harness schema={throwingSchema} onSubmit={onSubmit} />)
+
+		const emailInput = screen.getByTestId("email") as HTMLInputElement
+
+		await user.click(emailInput)
+		await user.clear(emailInput)
+		await user.type(emailInput, "boom")
+		await user.tab()
+
+		await waitFor(() => {
+			expect(screen.getByTestId("email-error")).toHaveTextContent("Exploded")
+			expect(emailInput).toHaveAttribute("aria-invalid", "true")
+		})
+	})
+
 	it("ignores stale async validation results", async () => {
 		const delays = { slow: 60, "fast@example.com": 5 }
 		const asyncSchema = defineForm({
@@ -219,7 +291,7 @@ describe("useStandardSchema", () => {
 		})
 
 		await act(async () => {
-			await wait(delays.slow + 10)
+			await sleep(delays.slow + 10)
 		})
 
 		expect(screen.getByTestId("email-error")).toHaveTextContent("")
@@ -298,6 +370,44 @@ describe("useStandardSchema", () => {
 			await api!.__dangerouslySetField("user.contact.email", "good@ex.com")
 		})
 		expect(screen.getByTestId("email-error")).toHaveTextContent("")
+	})
+
+	it("falls back to default messaging when thrown issues lack text", async () => {
+		let api: HarnessApi
+		const onSubmit = vi.fn()
+		const throwingSchema = defineForm({
+			user: {
+				name: {
+					label: "Name",
+					description: "Your full name",
+					defaultValue: "",
+					validate: string("Required"),
+				},
+				contact: {
+					email: {
+						label: "Email",
+						defaultValue: "default@example.com",
+						validate: throwingIssuesWithoutMessage(),
+					},
+				},
+			},
+		})
+
+		render(
+			<Harness
+				schema={throwingSchema}
+				onSubmit={onSubmit}
+				onApi={(x) => {
+					api = x
+				}}
+			/>,
+		)
+
+		await act(async () => {
+			await api!.__dangerouslySetField("user.contact.email", "whatever")
+		})
+
+		expect(screen.getByTestId("email-error")).toHaveTextContent("Validation failed")
 	})
 
 	it("getErrors returns only populated errors", async () => {

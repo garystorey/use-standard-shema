@@ -8,6 +8,89 @@ import type {
 	FormValues,
 	RecurseFn,
 } from "./types"
+import type { StandardSchemaV1 } from "@standard-schema/spec"
+
+export const DEFAULT_VALIDATION_ERROR = "Validation failed"
+
+type ExtractedIssues = {
+	issues: ReadonlyArray<StandardSchemaV1.Issue>
+	hadIssues: boolean
+}
+
+export function readIssueMessage(issues: ReadonlyArray<StandardSchemaV1.Issue> | undefined): string | undefined {
+	if (!issues || issues.length === 0) {
+		return undefined
+	}
+
+	for (const issue of issues) {
+		const message = typeof issue.message === "string" ? issue.message.trim() : ""
+		if (message.length > 0) {
+			return message
+		}
+	}
+
+	return undefined
+}
+
+export function extractIssues(value: unknown): ExtractedIssues | undefined {
+	if (!value || typeof value !== "object" || !("issues" in value)) {
+		return undefined
+	}
+
+	const rawIssues = (value as { issues?: unknown }).issues
+	if (!Array.isArray(rawIssues)) {
+		return undefined
+	}
+
+	const typedIssues: StandardSchemaV1.Issue[] = []
+	for (const issue of rawIssues) {
+		if (
+			issue &&
+			typeof issue === "object" &&
+			"message" in issue &&
+			typeof (issue as { message?: unknown }).message === "string"
+		) {
+			typedIssues.push(issue as StandardSchemaV1.Issue)
+		}
+	}
+
+	return { issues: typedIssues, hadIssues: rawIssues.length > 0 }
+}
+
+export function normalizeThrownError(
+	error: unknown,
+	fallback: string = DEFAULT_VALIDATION_ERROR,
+	readMessage: typeof readIssueMessage = readIssueMessage,
+	issueExtractor: typeof extractIssues = extractIssues,
+): string {
+	if (error instanceof Error) {
+		const message = typeof error.message === "string" ? error.message.trim() : ""
+		return message.length > 0 ? message : fallback
+	}
+
+	if (typeof error === "string") {
+		const message = error.trim()
+		return message.length > 0 ? message : fallback
+	}
+
+	if (error && typeof error === "object" && "message" in error) {
+		const message = (error as { message?: unknown }).message
+		if (typeof message === "string") {
+			const trimmed = message.trim()
+			if (trimmed.length > 0) {
+				return trimmed
+			}
+		}
+	}
+
+	const extracted = issueExtractor(error)
+	if (extracted?.hadIssues) {
+		const message = readMessage(extracted.issues)
+		return message ?? fallback
+	}
+
+	return fallback
+}
 
 /** Define and return the form definition as is. */
 export function defineForm<T extends FormDefinition>(
