@@ -163,8 +163,8 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 				name: key,
 				defaultValue: data[key] ?? "",
 				error: errors[key] ?? "",
-				touched: touched[key] ? String(touched[key]) : "false",
-				dirty: dirty[key] ? String(dirty[key]) : "false",
+				touched: Boolean(touched[key]),
+				dirty: Boolean(dirty[key]),
 				describedById,
 				errorId,
 			}

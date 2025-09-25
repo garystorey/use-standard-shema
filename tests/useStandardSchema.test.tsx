@@ -219,7 +219,7 @@ describe("useStandardSchema", () => {
 		})
 
 		await act(async () => {
-			await wait(delays.slow + 10)
+			await sleep(delays.slow + 10)
 		})
 
 		expect(screen.getByTestId("email-error")).toHaveTextContent("")

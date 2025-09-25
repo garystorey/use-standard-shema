@@ -246,7 +246,7 @@ type FieldProps = FieldDefinitionProps & {
 |------------------------------|-----------------------------------------------------------------------------|
 | `useStandardSchema(formDefinition)` | Initialize form state and validation with a form definition |
 | `getForm(onSubmit)`          | Returns event handlers for the form; submit handler only fires with valid data |
-| `getField(name)`             | Returns metadata for a given field (label, defaultValue, error, touched, dirty, ARIA ids) |
+| `getField(name)`             | Returns metadata for a given field (label, defaultValue, error, `touched`/`dirty` booleans, ARIA ids) |
 | `resetForm()`                | Resets all form state to initial defaults |
 | `isTouched(name?)`           | Returns `true/false` if form or field has been touched |
 | `isDirty(name?)`             | Returns `true/false` if form or field is dirty |
@@ -260,6 +260,8 @@ type FieldProps = FieldDefinitionProps & {
 <span style='color:red'>*</span>
 <strong>NOTE</strong>: This function does not validate the field.  It simply checks if it is currently valid.
 
+> **Environment note:** `toFormData` relies on the global [`FormData`](https://developer.mozilla.org/docs/Web/API/FormData) constructor. In SSR or other non-browser environments you may need to provide a polyfill (e.g. `undici` or `formdata-node`) or guard calls to `toFormData` to avoid runtime errors.
+
 ---
 
 ## Best Practices
@@ -268,6 +270,7 @@ type FieldProps = FieldDefinitionProps & {
 - **Error Display**: Use `getErrors()` for global errors and `field.error` for field-level errors.
 - **Performance**: Handlers and derived values (`getForm`, `getField`, `getErrors`) are memoized internally. You don’t need extra `useMemo` unless you’re doing heavy custom work.
 - **Reset Strategy**: Call `resetForm()` after successful submission to clear touched/dirty/errors and restore defaults.
+- **Boolean flags**: The `touched` and `dirty` values returned from `getField` are plain booleans, making it easy to toggle helper text, validation messaging, or styling without string comparisons.
 - **Nested Fields**: Use dot notation for nested keys (e.g. `"address.street1"`). TypeScript support ensures autocomplete for these paths.
 - **Accessibility**: Always wire `describedById` and `errorId` into your markup to keep your forms screen-reader friendly.
   - `getField` provides `describedById` and `errorId` for use with `aria-describedby` and/or `aria-errormessage`.
