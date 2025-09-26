@@ -1,30 +1,33 @@
 import React, { useImperativeHandle } from "react"
 import { useStandardSchema } from "../src"
-import type { DotPaths, FormDefinition, TypeFromDefinition } from "../src"
+import type { DotPaths, FieldDefinition, FormDefinition, TypeFromDefinition } from "../src"
 
-type EnsurePath<TSchema extends FormDefinition, TPath extends string> = TPath extends DotPaths<TSchema>
-        ? TSchema
-        : never
+type RequiredHarnessFields = {
+        user: ({
+                name: FieldDefinition
+        } & FormDefinition) & {
+                contact: ({
+                        email: FieldDefinition
+                } & FormDefinition)
+        }
+}
 
-export type HarnessSchema<TSchema extends FormDefinition = FormDefinition> = EnsurePath<
-        EnsurePath<TSchema, "user.name">,
-        "user.contact.email"
->
+export type HarnessSchema = FormDefinition & RequiredHarnessFields
 
-type PathFor<TSchema extends FormDefinition, TPath extends string> = TPath extends DotPaths<TSchema>
+type PathFor<TSchema extends HarnessSchema, TPath extends string> = TPath extends DotPaths<TSchema>
         ? TPath
         : never
 
-export type HarnessApi<TSchema extends FormDefinition = FormDefinition> = ReturnType<
+export type HarnessApi<TSchema extends HarnessSchema = HarnessSchema> = ReturnType<
         typeof useStandardSchema<TSchema>
 >
 
-export interface HarnessProps<TSchema extends FormDefinition> {
-        schema: HarnessSchema<TSchema>
+export interface HarnessProps<TSchema extends HarnessSchema> {
+        schema: TSchema
         onSubmit: (data: TypeFromDefinition<TSchema>) => void
 }
 
-export const Harness = React.forwardRef(function Harness<TSchema extends FormDefinition>(
+export const Harness = React.forwardRef(function Harness<TSchema extends HarnessSchema>(
         { schema, onSubmit }: HarnessProps<TSchema>,
         ref: React.ForwardedRef<HarnessApi<TSchema>>,
 ) {
