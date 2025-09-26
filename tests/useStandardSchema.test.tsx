@@ -3,14 +3,14 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import React from "react"
 import { describe, expect, expectTypeOf, it, vi } from "vitest"
-import { defineForm, type TypeFromDefinition } from "../src"
+import { defineForm, type FormDefinition, type TypeFromDefinition } from "../src"
 import { Harness, type HarnessApi, type HarnessSchema } from "./test-harness"
 import { email, string } from "./test-validation-lib"
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-function renderHarnessWithApi<TSchema extends HarnessSchema>(
-        schema: TSchema,
+function renderHarnessWithApi<TSchema extends FormDefinition>(
+        schema: HarnessSchema<TSchema>,
         onSubmit: (data: TypeFromDefinition<TSchema>) => void,
 ) {
         const ref = React.createRef<HarnessApi<TSchema>>()

@@ -1,26 +1,30 @@
 import React, { useImperativeHandle } from "react"
 import { useStandardSchema } from "../src"
-import type { FieldDefinition, FormDefinition, TypeFromDefinition } from "../src"
+import type { DotPaths, FormDefinition, TypeFromDefinition } from "../src"
 
-export type HarnessSchema = FormDefinition & {
-        user: FormDefinition & {
-                name: FieldDefinition
-                contact: FormDefinition & {
-                        email: FieldDefinition
-                }
-        }
-}
+type EnsurePath<TSchema extends FormDefinition, TPath extends string> = TPath extends DotPaths<TSchema>
+        ? TSchema
+        : never
 
-export type HarnessApi<TSchema extends HarnessSchema = HarnessSchema> = ReturnType<
+export type HarnessSchema<TSchema extends FormDefinition = FormDefinition> = EnsurePath<
+        EnsurePath<TSchema, "user.name">,
+        "user.contact.email"
+>
+
+type PathFor<TSchema extends FormDefinition, TPath extends string> = TPath extends DotPaths<TSchema>
+        ? TPath
+        : never
+
+export type HarnessApi<TSchema extends FormDefinition = FormDefinition> = ReturnType<
         typeof useStandardSchema<TSchema>
 >
 
-export interface HarnessProps<TSchema extends HarnessSchema> {
-        schema: TSchema
+export interface HarnessProps<TSchema extends FormDefinition> {
+        schema: HarnessSchema<TSchema>
         onSubmit: (data: TypeFromDefinition<TSchema>) => void
 }
 
-export const Harness = React.forwardRef(function Harness<TSchema extends HarnessSchema>(
+export const Harness = React.forwardRef(function Harness<TSchema extends FormDefinition>(
         { schema, onSubmit }: HarnessProps<TSchema>,
         ref: React.ForwardedRef<HarnessApi<TSchema>>,
 ) {
@@ -32,8 +36,11 @@ export const Harness = React.forwardRef(function Harness<TSchema extends Harness
 
         const form = getForm(onSubmit)
 
-	const nameField = getField("user.name")
-	const emailField = getField("user.contact.email")
+        const namePath: PathFor<TSchema, "user.name"> = "user.name"
+        const emailPath: PathFor<TSchema, "user.contact.email"> = "user.contact.email"
+
+        const nameField = getField(namePath)
+        const emailField = getField(emailPath)
 
 	return (
 		<form aria-label="Form" {...form}>
@@ -74,10 +81,10 @@ export const Harness = React.forwardRef(function Harness<TSchema extends Harness
 			<button type="submit">Submit</button>
 			<button type="reset">Reset</button>
 
-			<output data-testid="name-touched">{String(isTouched("user.name"))}</output>
-			<output data-testid="email-touched">{String(isTouched("user.contact.email"))}</output>
-                        <output data-testid="name-dirty">{String(isDirty("user.name"))}</output>
-                        <output data-testid="email-dirty">{String(isDirty("user.contact.email"))}</output>
+                        <output data-testid="name-touched">{String(isTouched(namePath))}</output>
+                        <output data-testid="email-touched">{String(isTouched(emailPath))}</output>
+                        <output data-testid="name-dirty">{String(isDirty(namePath))}</output>
+                        <output data-testid="email-dirty">{String(isDirty(emailPath))}</output>
                 </form>
         )
 })
