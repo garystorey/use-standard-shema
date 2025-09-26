@@ -1,3 +1,4 @@
+import type { StandardSchemaV1 } from "@standard-schema/spec"
 import type {
 	AnyFormPathKey,
 	AssertValidFormKeysDeep,
@@ -8,7 +9,6 @@ import type {
 	FormValues,
 	RecurseFn,
 } from "./types"
-import type { StandardSchemaV1 } from "@standard-schema/spec"
 
 export const DEFAULT_VALIDATION_ERROR = "Validation failed"
 

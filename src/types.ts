@@ -31,7 +31,7 @@ type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) exten
 type Simplify<T> = { [K in keyof T]: T[K] } & {}
 
 /** Extract the Standard Schema output type. */
-type SchemaOutput<Schema> = Schema extends StandardSchemaV1<any, infer Output> ? Output : unknown
+type SchemaOutput<Schema> = Schema extends StandardSchemaV1<unknown, infer Output> ? Output : unknown
 
 /** Extract the inferred value for a field definition. */
 type FieldOutput<Def> = Def extends FieldDefinition<infer Schema> ? SchemaOutput<Schema> : unknown

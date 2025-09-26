@@ -1,8 +1,8 @@
+import type { StandardSchemaV1 } from "@standard-schema/spec"
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import React from "react"
 import { describe, expect, expectTypeOf, it, vi } from "vitest"
-import type { StandardSchemaV1 } from "@standard-schema/spec"
 import { defineForm, type TypeFromDefinition } from "../src"
 import { Harness, type HarnessApi } from "./test-harness"
 import { email, string } from "./test-validation-lib"
@@ -11,8 +11,6 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 function asyncEmail(delays: Record<string, number>, message: string = "Invalid email"): StandardSchemaV1<string> {
 	return {
-		type: "string",
-		message,
 		"~standard": {
 			version: 1,
 			vendor: "tests",
@@ -37,8 +35,6 @@ function asyncEmail(delays: Record<string, number>, message: string = "Invalid e
 
 function throwingEmail(message: string = "Exploded"): StandardSchemaV1<string> {
 	return {
-		type: "string",
-		message,
 		"~standard": {
 			version: 1,
 			vendor: "tests",
@@ -59,8 +55,6 @@ function throwingEmail(message: string = "Exploded"): StandardSchemaV1<string> {
 
 function throwingIssuesWithoutMessage(): StandardSchemaV1<string> {
 	return {
-		type: "string",
-		message: "Schema fallback message",
 		"~standard": {
 			version: 1,
 			vendor: "tests",
