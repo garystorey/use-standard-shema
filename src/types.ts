@@ -16,9 +16,7 @@ export interface FieldDefinition<Schema extends StandardSchemaV1 = StandardSchem
 }
 
 /** A form schema tree: keys map to either fields or nested groups. */
-export type FormDefinition = {
-	[key: string]: FieldDefinition | FormDefinition
-}
+export type FormDefinition = Record<string, FieldDefinition | FormDefinition>
 
 /* =============================================================================
  * Utilities
@@ -76,7 +74,18 @@ export type TypeFromDefinition<T extends FormDefinition> = Simplify<DotPathsToFi
 
 export type FieldMapper<T> = (fieldDef: FieldDefinition, path: string) => T
 export type RecurseFn<T> = (subSchema: FormDefinition, path: string) => Record<string, T>
-export type ErrorEntry = { name: string; error: string; label: string }
+
+type FieldRuntimeState = {
+        name: string
+        error: string
+        errorId: string
+        describedById: string
+        touched: boolean
+        dirty: boolean
+}
+
+export type FieldDefintionProps = FieldDefinition & FieldRuntimeState
+export type ErrorEntry = Pick<FieldDefintionProps, "name" | "label" | "error">
 
 /* =============================================================================
  * Unicode-aware key validation (no whitespace; "." reserved as path separator)
@@ -164,11 +173,3 @@ export type AssertValidFormKeysDeep<T extends FormDefinition> = true extends _Ha
 	? never
 	: { [K in keyof T]: T[K] extends FormDefinition ? AssertValidFormKeysDeep<T[K]> : T[K] }
 
-export interface FieldDefintionProps extends FieldDefinition {
-	name: string
-	error: string
-	errorId: string
-	describedById: string
-	touched: boolean
-	dirty: boolean
-}
