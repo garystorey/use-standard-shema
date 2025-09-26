@@ -71,11 +71,7 @@ describe("helpers", () => {
 
 	describe("readIssueMessage", () => {
 		it("returns the first non-empty trimmed message", () => {
-			const issues = [
-				{ message: "   " },
-				{ message: " second " },
-				{ message: "third" },
-			] as Array<{ message: string }>
+			const issues = [{ message: "   " }, { message: " second " }, { message: "third" }] as Array<{ message: string }>
 			expect(readIssueMessage(issues)).toBe("second")
 		})
 
@@ -89,11 +85,7 @@ describe("helpers", () => {
 	describe("extractIssues", () => {
 		it("filters non-issue values and reports if issues were present", () => {
 			const result = extractIssues({
-				issues: [
-					{ message: "first" },
-					{ message: 123 },
-					{ message: "second" },
-				],
+				issues: [{ message: "first" }, { message: 123 }, { message: "second" }],
 			})
 
 			expect(result).toEqual({
@@ -111,8 +103,8 @@ describe("helpers", () => {
 
 	describe("normalizeThrownError", () => {
 		it("prefers Error/string messages and falls back when empty", () => {
-                        expect(normalizeThrownError(new Error(" Bad things "))).toBe("Bad things")
-                        expect(normalizeThrownError(" explicit ")).toBe("explicit")
+			expect(normalizeThrownError(new Error(" Bad things "))).toBe("Bad things")
+			expect(normalizeThrownError(" explicit ")).toBe("explicit")
 			expect(normalizeThrownError(new Error("  "))).toBe(DEFAULT_VALIDATION_ERROR)
 		})
 

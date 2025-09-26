@@ -230,20 +230,20 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 					: []
 			}
 
-                        return formDefinitionKeys.reduce<ErrorEntry[]>((errorEntries, key) => {
-                                const error = errors[key]
-                                if (error) {
-                                        errorEntries.push({
-                                                name: key,
-                                                error,
-                                                label: flatFormDefinition[key].label,
-                                        })
-                                }
-                                return errorEntries
-                        }, [])
-                },
-                [formDefinitionKeys, errors, flatFormDefinition],
-        )
+			return formDefinitionKeys.reduce<ErrorEntry[]>((errorEntries, key) => {
+				const error = errors[key]
+				if (error) {
+					errorEntries.push({
+						name: key,
+						error,
+						label: flatFormDefinition[key].label,
+					})
+				}
+				return errorEntries
+			}, [])
+		},
+		[formDefinitionKeys, errors, flatFormDefinition],
+	)
 
 	const isDirty = useCallback(
 		(name?: FieldKey) => {
