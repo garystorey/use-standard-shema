@@ -36,43 +36,38 @@ type SchemaOutput<Schema> = Schema extends StandardSchemaV1<unknown, infer Outpu
 /** Extract the inferred value for a field definition. */
 type FieldOutput<Def> = Def extends FieldDefinition<infer Schema> ? SchemaOutput<Schema> : unknown
 
+/** Literal string keys only; filters out the index signature. */
+type LiteralStringKeys<T> = {
+    [K in Extract<keyof T, string>]: string extends K ? never : K
+}[Extract<keyof T, string>]
+
+/** Prefix helper used for dot-path construction. */
+type JoinPath<Prefix extends string, Key extends string> = Prefix extends "" ? Key : `${Prefix}.${Key}`
+
 /* =============================================================================
- * Dot-path flattener (depth-limited to avoid “excessively deep” errors)
+ * Dot-path helpers
  * ========================================================================== */
 
-type Depth = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10
-type DecMap = { 0: 0; 1: 0; 2: 1; 3: 2; 4: 3; 5: 4; 6: 5; 7: 6; 8: 7; 9: 8; 10: 9 }
-type Dec<D extends Depth> = DecMap[D]
-
-/**
- * Folds a FormDefinition into:
- *  - Mode="paths": a union of dot paths
- *  - Mode="values": a map { path: fieldOutput } (for union-to-intersection)
- *
- * Depth-limited so TS doesn’t infinitely expand on generics.
- */
-type DotFold<T, Prev extends string = "", Mode extends "paths" | "values" = "paths", D extends Depth = 10> = [
-    D,
-] extends [0]
-    ? never
-    : {
-        [K in keyof T]: T[K] extends FieldDefinition
-        ? Mode extends "paths"
-        ? `${Prev}${K & string}`
-        : { [P in `${Prev}${K & string}`]: FieldOutput<T[K]> }
+export type DotPaths<T extends FormDefinition, Prefix extends string = ""> = {
+    [K in LiteralStringKeys<T>]: T[K] extends FieldDefinition
+        ? JoinPath<Prefix, K>
         : T[K] extends FormDefinition
-        ? DotFold<T[K], `${Prev}${K & string}.`, Mode, Dec<D>>
+        ? DotPaths<T[K], JoinPath<Prefix, K>>
         : never
-    }[keyof T]
+}[LiteralStringKeys<T>]
 
-/** Public aliases */
-export type DotPaths<T, Prev extends string = "", D extends Depth = 10> = DotFold<T, Prev, "paths", D>
-
-type DotPathsToFieldOutputs<T, Prev extends string = "", D extends Depth = 10> = UnionToIntersection<
-    DotFold<T, Prev, "values", D>
+type DotPathMap<T extends FormDefinition, Prefix extends string = ""> = UnionToIntersection<
+    | {
+        [K in LiteralStringKeys<T>]: T[K] extends FieldDefinition
+            ? { [Path in JoinPath<Prefix, K>]: FieldOutput<T[K]> }
+            : T[K] extends FormDefinition
+            ? DotPathMap<T[K], JoinPath<Prefix, K>>
+            : {}
+    }[LiteralStringKeys<T>]
+    | {}
 >
 
-export type TypeFromDefinition<T extends FormDefinition> = Simplify<DotPathsToFieldOutputs<T>>
+export type TypeFromDefinition<T extends FormDefinition> = Simplify<DotPathMap<T>>
 
 export type FieldMapper<T> = (fieldDef: FieldDefinition, path: string) => T
 export type RecurseFn<T> = (subSchema: FormDefinition, path: string) => Record<string, T>
@@ -154,17 +149,15 @@ export type AnyFormPathKey = FormPathKey<string>
  * - Checks only literal string keys
  * - Recurse into nested FormDefinition branches
  */
-type _HasInvalidKeys<T> = {
-    [K in keyof T]: K extends string
-    ? string extends K
-    ? false // skip index signature
-    : FormPathKey<K> extends never
-    ? true
-    : T[K] extends FormDefinition
-    ? _HasInvalidKeys<T[K]>
-    : false
-    : false
-}[keyof T]
+type _HasInvalidKeys<T> = LiteralStringKeys<T> extends never
+    ? false
+    : {
+        [K in LiteralStringKeys<T>]: FormPathKey<K> extends never
+            ? true
+            : T[K] extends FormDefinition
+            ? _HasInvalidKeys<T[K]>
+            : false
+    }[LiteralStringKeys<T>]
 
 /**
  * Public assertion:
