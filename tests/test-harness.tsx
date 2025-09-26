@@ -1,23 +1,36 @@
-import React, { useEffect } from "react"
+import React, { useImperativeHandle } from "react"
 import { useStandardSchema } from "../src"
-export type HarnessApi = any
+import type { FieldDefinition, FormDefinition, TypeFromDefinition } from "../src"
 
-export function Harness({
-	schema,
-	onSubmit,
-	onApi,
-}: {
-	schema: any
-	onSubmit: (data: unknown) => void
-	onApi?: (api: HarnessApi) => void
-}) {
-	const api = useStandardSchema(schema)
+export type HarnessSchema = FormDefinition & {
+        user: FormDefinition & {
+                name: FieldDefinition
+                contact: FormDefinition & {
+                        email: FieldDefinition
+                }
+        }
+}
 
-	useEffect(() => onApi && onApi(api), [api, onApi])
+export type HarnessApi<TSchema extends HarnessSchema = HarnessSchema> = ReturnType<
+        typeof useStandardSchema<TSchema>
+>
 
-	const { getField, getForm, isDirty, isTouched } = api
+export interface HarnessProps<TSchema extends HarnessSchema> {
+        schema: TSchema
+        onSubmit: (data: TypeFromDefinition<TSchema>) => void
+}
 
-	const form = getForm(onSubmit)
+export const Harness = React.forwardRef(function Harness<TSchema extends HarnessSchema>(
+        { schema, onSubmit }: HarnessProps<TSchema>,
+        ref: React.ForwardedRef<HarnessApi<TSchema>>,
+) {
+        const api = useStandardSchema(schema)
+
+        useImperativeHandle(ref, () => api, [api])
+
+        const { getField, getForm, isDirty, isTouched } = api
+
+        const form = getForm(onSubmit)
 
 	const nameField = getField("user.name")
 	const emailField = getField("user.contact.email")
@@ -63,8 +76,8 @@ export function Harness({
 
 			<output data-testid="name-touched">{String(isTouched("user.name"))}</output>
 			<output data-testid="email-touched">{String(isTouched("user.contact.email"))}</output>
-			<output data-testid="name-dirty">{String(isDirty("user.name"))}</output>
-			<output data-testid="email-dirty">{String(isDirty("user.contact.email"))}</output>
-		</form>
-	)
-}
+                        <output data-testid="name-dirty">{String(isDirty("user.name"))}</output>
+                        <output data-testid="email-dirty">{String(isDirty("user.contact.email"))}</output>
+                </form>
+        )
+})

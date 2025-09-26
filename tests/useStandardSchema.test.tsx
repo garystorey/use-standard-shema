@@ -4,10 +4,28 @@ import userEvent from "@testing-library/user-event"
 import React from "react"
 import { describe, expect, expectTypeOf, it, vi } from "vitest"
 import { defineForm, type TypeFromDefinition } from "../src"
-import { Harness, type HarnessApi } from "./test-harness"
+import { Harness, type HarnessApi, type HarnessSchema } from "./test-harness"
 import { email, string } from "./test-validation-lib"
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+function renderHarnessWithApi<TSchema extends HarnessSchema>(
+        schema: TSchema,
+        onSubmit: (data: TypeFromDefinition<TSchema>) => void,
+) {
+        const ref = React.createRef<HarnessApi<TSchema>>()
+        render(<Harness ref={ref} schema={schema} onSubmit={onSubmit} />)
+        return {
+                ref,
+                getApi() {
+                        const api = ref.current
+                        if (!api) {
+                                throw new Error("Harness API not available")
+                        }
+                        return api
+                },
+        }
+}
 
 function asyncEmail(delays: Record<string, number>, message: string = "Invalid email"): StandardSchemaV1<string> {
 	return {
@@ -282,55 +300,37 @@ describe("useStandardSchema", () => {
 	})
 
 	it("getErrors(name) returns entry for a specific field", async () => {
-		let api: HarnessApi
-		const onSubmit = vi.fn()
-		const user = userEvent.setup()
+        const onSubmit = vi.fn()
+        const user = userEvent.setup()
 
-		render(
-			<Harness
-				schema={schema}
-				onSubmit={onSubmit}
-				onApi={(x) => {
-					api = x
-				}}
-			/>,
-		)
+        const { getApi } = renderHarnessWithApi(schema, onSubmit)
 
-		const emailInput = screen.getByTestId("email") as HTMLInputElement
-		await user.clear(emailInput)
-		await user.type(emailInput, "bad")
-		await user.tab()
+        const emailInput = screen.getByTestId("email") as HTMLInputElement
+        await user.clear(emailInput)
+        await user.type(emailInput, "bad")
+        await user.tab()
 
-		await waitFor(() => {
-			expect(api!.getErrors("user.contact.email")).toEqual([
-				{ name: "user.contact.email", error: "Invalid email", label: "Email" },
-			])
-		})
+        await waitFor(() => {
+                expect(getApi().getErrors("user.contact.email")).toEqual([
+                        { name: "user.contact.email", error: "Invalid email", label: "Email" },
+                ])
+        })
 
-		expect(api!.getErrors("user.name")).toEqual([])
+        expect(getApi().getErrors("user.name")).toEqual([])
 	})
 
 	it("tracks dirty, touched, and valid state per-field and for the whole form", async () => {
-		let api: HarnessApi
-		const onSubmit = vi.fn()
-		const user = userEvent.setup()
+        const onSubmit = vi.fn()
+        const user = userEvent.setup()
 
-		render(
-			<Harness
-				schema={schema}
-				onSubmit={onSubmit}
-				onApi={(x) => {
-					api = x
-				}}
-			/>,
-		)
+        const { getApi } = renderHarnessWithApi(schema, onSubmit)
 
-		expect(api!.isDirty()).toBe(false)
-		expect(api!.isDirty("user.contact.email")).toBe(false)
-		expect(api!.isTouched()).toBe(false)
-		expect(api!.isTouched("user.contact.email")).toBe(false)
-		expect(api!.isValid()).toBe(true)
-		expect(api!.isValid("user.contact.email")).toBe(true)
+        expect(getApi().isDirty()).toBe(false)
+        expect(getApi().isDirty("user.contact.email")).toBe(false)
+        expect(getApi().isTouched()).toBe(false)
+        expect(getApi().isTouched("user.contact.email")).toBe(false)
+        expect(getApi().isValid()).toBe(true)
+        expect(getApi().isValid("user.contact.email")).toBe(true)
 
 		const emailInput = screen.getByTestId("email") as HTMLInputElement
 
@@ -338,10 +338,10 @@ describe("useStandardSchema", () => {
 		await user.tab()
 
 		await waitFor(() => {
-			expect(api!.isTouched("user.contact.email")).toBe(true)
-		})
-		expect(api!.isDirty("user.contact.email")).toBe(false)
-		expect(api!.isDirty()).toBe(false)
+                        expect(getApi().isTouched("user.contact.email")).toBe(true)
+                })
+        expect(getApi().isDirty("user.contact.email")).toBe(false)
+        expect(getApi().isDirty()).toBe(false)
 
 		await user.click(emailInput)
 		await user.clear(emailInput)
@@ -349,10 +349,10 @@ describe("useStandardSchema", () => {
 		await user.tab()
 
 		await waitFor(() => {
-			expect(api!.isDirty("user.contact.email")).toBe(true)
-			expect(api!.isDirty()).toBe(true)
-			expect(api!.isValid("user.contact.email")).toBe(false)
-			expect(api!.isValid()).toBe(false)
+                        expect(getApi().isDirty("user.contact.email")).toBe(true)
+                        expect(getApi().isDirty()).toBe(true)
+                        expect(getApi().isValid("user.contact.email")).toBe(false)
+                        expect(getApi().isValid()).toBe(false)
 		})
 
 		await user.click(emailInput)
@@ -361,28 +361,19 @@ describe("useStandardSchema", () => {
 		await user.tab()
 
 		await waitFor(() => {
-			expect(api!.isValid("user.contact.email")).toBe(true)
-			expect(api!.isValid()).toBe(true)
-		})
+                        expect(getApi().isValid("user.contact.email")).toBe(true)
+                        expect(getApi().isValid()).toBe(true)
+        })
 	})
 
-	it("getDirty() and getTouched() return frozen snapshots", async () => {
-		let api: HarnessApi
-		const onSubmit = vi.fn()
-		const user = userEvent.setup()
+        it("getDirty() and getTouched() return frozen snapshots", async () => {
+                const onSubmit = vi.fn()
+                const user = userEvent.setup()
 
-		render(
-			<Harness
-				schema={schema}
-				onSubmit={onSubmit}
-				onApi={(x) => {
-					api = x
-				}}
-			/>,
-		)
+                const { getApi } = renderHarnessWithApi(schema, onSubmit)
 
-		const initialDirty = api!.getDirty()
-		const initialTouched = api!.getTouched()
+                const initialDirty = getApi().getDirty()
+                const initialTouched = getApi().getTouched()
 
 		expect(initialDirty).toEqual({})
 		expect(initialTouched).toEqual({})
@@ -395,8 +386,8 @@ describe("useStandardSchema", () => {
 		await user.type(emailInput, "oops")
 		await user.tab()
 
-		const dirtySnapshot = api!.getDirty()
-		const touchedSnapshot = api!.getTouched()
+                const dirtySnapshot = getApi().getDirty()
+                const touchedSnapshot = getApi().getTouched()
 
 		expect(Object.isFrozen(dirtySnapshot)).toBe(true)
 		expect(Object.isFrozen(touchedSnapshot)).toBe(true)
@@ -408,20 +399,11 @@ describe("useStandardSchema", () => {
 		expect(initialTouched["user.contact.email"]).toBeUndefined()
 	})
 
-	it("validate(name) validates one field; validate() validates entire form", async () => {
-		let api: HarnessApi
-		const onSubmit = vi.fn()
-		const user = userEvent.setup()
+        it("validate(name) validates one field; validate() validates entire form", async () => {
+                const onSubmit = vi.fn()
+                const user = userEvent.setup()
 
-		render(
-			<Harness
-				schema={schema}
-				onSubmit={onSubmit}
-				onApi={(x) => {
-					api = x
-				}}
-			/>,
-		)
+                const { getApi } = renderHarnessWithApi(schema, onSubmit)
 
 		const nameInput = screen.getByTestId("name") as HTMLInputElement
 		const emailInput = screen.getByTestId("email") as HTMLInputElement
@@ -433,9 +415,9 @@ describe("useStandardSchema", () => {
 
 		// validate only the email field -> should show error
 		let emailValidationResult: boolean | undefined
-		await act(async () => {
-			emailValidationResult = await api!.validate("user.contact.email")
-		})
+                await act(async () => {
+                        emailValidationResult = await getApi().validate("user.contact.email")
+                })
 
 		expect(screen.getByTestId("email-error")).toHaveTextContent("Invalid email")
 		expect(emailValidationResult).toBe(false)
@@ -445,18 +427,18 @@ describe("useStandardSchema", () => {
 		await user.type(emailInput, "valid@example.com")
 		await user.tab()
 
-		await act(async () => {
-			emailValidationResult = await api!.validate("user.contact.email")
-		})
+                await act(async () => {
+                        emailValidationResult = await getApi().validate("user.contact.email")
+                })
 
 		expect(screen.getByTestId("email-error")).toHaveTextContent("")
 		expect(emailValidationResult).toBe(true)
 
 		// Full-form validate should be FALSE right now because name is still required & empty
 		let formValidationResult: boolean | undefined
-		await act(async () => {
-			formValidationResult = await api!.validate()
-		})
+                await act(async () => {
+                        formValidationResult = await getApi().validate()
+                })
 		expect(formValidationResult).toBe(false)
 
 		// Fill name, blur to commit
@@ -464,42 +446,32 @@ describe("useStandardSchema", () => {
 		await user.tab()
 
 		// Now full-form validate should pass
-		await act(async () => {
-			formValidationResult = await api!.validate()
-		})
+                await act(async () => {
+                        formValidationResult = await getApi().validate()
+                })
 		expect(formValidationResult).toBe(true)
 	})
 
 	it("__dangerouslySetField sets value and flags (and validates) before data commit", async () => {
-		let api: HarnessApi
-		const onSubmit = vi.fn()
+        const onSubmit = vi.fn()
 
-		render(
-			<Harness
-				schema={schema}
-				onSubmit={onSubmit}
-				onApi={(x) => {
-					api = x
-				}}
-			/>,
-		)
+        const { getApi } = renderHarnessWithApi(schema, onSubmit)
 
-		await act(async () => await api!.__dangerouslySetField("user.contact.email", "invalid"))
+        await act(async () => await getApi().__dangerouslySetField("user.contact.email", "invalid"))
 
-		expect(screen.getByTestId("email-dirty")).toHaveTextContent("true")
-		expect(screen.getByTestId("email-touched")).toHaveTextContent("true")
-		expect(screen.getByTestId("email-error")).toHaveTextContent("Invalid email")
+        expect(screen.getByTestId("email-dirty")).toHaveTextContent("true")
+        expect(screen.getByTestId("email-touched")).toHaveTextContent("true")
+        expect(screen.getByTestId("email-error")).toHaveTextContent("Invalid email")
 
-		await act(async () => {
-			await api!.__dangerouslySetField("user.contact.email", "good@ex.com")
-		})
-		expect(screen.getByTestId("email-error")).toHaveTextContent("")
+        await act(async () => {
+                await getApi().__dangerouslySetField("user.contact.email", "good@ex.com")
+        })
+        expect(screen.getByTestId("email-error")).toHaveTextContent("")
 	})
 
 	it("falls back to default messaging when thrown issues lack text", async () => {
-		let api: HarnessApi
-		const onSubmit = vi.fn()
-		const throwingSchema = defineForm({
+                const onSubmit = vi.fn()
+                const throwingSchema = defineForm({
 			user: {
 				name: {
 					label: "Name",
@@ -517,51 +489,34 @@ describe("useStandardSchema", () => {
 			},
 		})
 
-		render(
-			<Harness
-				schema={throwingSchema}
-				onSubmit={onSubmit}
-				onApi={(x) => {
-					api = x
-				}}
-			/>,
-		)
+                const { getApi } = renderHarnessWithApi(throwingSchema, onSubmit)
 
-		await act(async () => {
-			await api!.__dangerouslySetField("user.contact.email", "whatever")
-		})
+                await act(async () => {
+                        await getApi().__dangerouslySetField("user.contact.email", "whatever")
+                })
 
-		expect(screen.getByTestId("email-error")).toHaveTextContent("Validation failed")
-	})
+                expect(screen.getByTestId("email-error")).toHaveTextContent("Validation failed")
+        })
 
-	it("getErrors returns only populated errors", async () => {
-		let api: HarnessApi
-		const onSubmit = vi.fn()
-		const user = userEvent.setup()
+        it("getErrors returns only populated errors", async () => {
+                const onSubmit = vi.fn()
+                const user = userEvent.setup()
 
-		render(
-			<Harness
-				schema={schema}
-				onSubmit={onSubmit}
-				onApi={(x) => {
-					api = x
-				}}
-			/>,
-		)
+                const { getApi } = renderHarnessWithApi(schema, onSubmit)
 
-		const emailInput = screen.getByTestId("email") as HTMLInputElement
-		await user.clear(emailInput)
-		await user.type(emailInput, "nope")
-		await user.tab() // commit
+                const emailInput = screen.getByTestId("email") as HTMLInputElement
+                await user.clear(emailInput)
+                await user.type(emailInput, "nope")
+                await user.tab() // commit
 
-		await act(async () => {
-			await api!.validate("user.contact.email")
-		})
+                await act(async () => {
+                        await getApi().validate("user.contact.email")
+                })
 
-		const errs = api!.getErrors()
-		expect(Array.isArray(errs)).toBe(true)
-		expect(errs).toEqual([{ name: "user.contact.email", error: "Invalid email", label: "Email" }])
-	})
+                const errs = getApi().getErrors()
+                expect(Array.isArray(errs)).toBe(true)
+                expect(errs).toEqual([{ name: "user.contact.email", error: "Invalid email", label: "Email" }])
+        })
 
 	it("getForm: prevents submit when invalid, submits when valid, and supports reset", async () => {
 		const onSubmit = vi.fn()
@@ -628,20 +583,14 @@ describe("useStandardSchema", () => {
 		})
 	})
 
-	it("getField throws for unknown keys", () => {
-		let api: HarnessApi
-		const onSubmit = vi.fn()
+        it("getField throws for unknown keys", () => {
+                const onSubmit = vi.fn()
 
-		render(
-			<Harness
-				schema={schema}
-				onSubmit={onSubmit}
-				onApi={(x) => {
-					api = x
-				}}
-			/>,
-		)
+                const { getApi } = renderHarnessWithApi(schema, onSubmit)
 
-		expect(() => api!.getField("user.unknown")).toThrow('Field "user.unknown" does not exist in the form definition.')
-	})
+                // @ts-expect-error - intentional invalid access to assert runtime guard
+                expect(() => getApi().getField("user.unknown")).toThrow(
+                        'Field "user.unknown" does not exist in the form definition.',
+                )
+        })
 })
