@@ -1,6 +1,16 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec"
 import { describe, expect, it } from "vitest"
-import { defineForm, flattenDefaults, flattenFormDefinition, isFieldDefinition, toFormData } from "../src/helpers"
+import {
+	DEFAULT_VALIDATION_ERROR,
+	defineForm,
+	extractIssues,
+	flattenDefaults,
+	flattenFormDefinition,
+	isFieldDefinition,
+	normalizeThrownError,
+	readIssueMessage,
+	toFormData,
+} from "../src/helpers"
 
 interface StringSchema extends StandardSchemaV1<string> {
 	type: "string"
@@ -57,5 +67,57 @@ describe("helpers", () => {
 		expect(isFieldDefinition({ label: "X", validate: noopString() })).toBe(true)
 		expect(isFieldDefinition({ label: "X" })).toBe(false)
 		expect(isFieldDefinition(null)).toBe(false)
+	})
+
+	describe("readIssueMessage", () => {
+		it("returns the first non-empty trimmed message", () => {
+			const issues = [{ message: "   " }, { message: " second " }, { message: "third" }] as Array<{ message: string }>
+			expect(readIssueMessage(issues)).toBe("second")
+		})
+
+		it("returns undefined when there are no usable messages", () => {
+			const issues = [{ message: "   " }] as Array<{ message: string }>
+			expect(readIssueMessage(issues)).toBeUndefined()
+			expect(readIssueMessage(undefined)).toBeUndefined()
+		})
+	})
+
+	describe("extractIssues", () => {
+		it("filters non-issue values and reports if issues were present", () => {
+			const result = extractIssues({
+				issues: [{ message: "first" }, { message: 123 }, { message: "second" }],
+			})
+
+			expect(result).toEqual({
+				issues: [{ message: "first" }, { message: "second" }],
+				hadIssues: true,
+			})
+		})
+
+		it("returns undefined when shape does not match", () => {
+			expect(extractIssues(null)).toBeUndefined()
+			expect(extractIssues({ issues: "nope" })).toBeUndefined()
+			expect(extractIssues({})).toBeUndefined()
+		})
+	})
+
+	describe("normalizeThrownError", () => {
+		it("prefers Error/string messages and falls back when empty", () => {
+			expect(normalizeThrownError(new Error(" Bad things "))).toBe("Bad things")
+			expect(normalizeThrownError(" explicit ")).toBe("explicit")
+			expect(normalizeThrownError(new Error("  "))).toBe(DEFAULT_VALIDATION_ERROR)
+		})
+
+		it("uses provided issues when present", () => {
+			const message = normalizeThrownError({
+				issues: [{ message: " from issues " }],
+			})
+			expect(message).toBe("from issues")
+		})
+
+		it("falls back when issues exist but contain no text", () => {
+			const message = normalizeThrownError({ issues: [{ message: "   " }] })
+			expect(message).toBe(DEFAULT_VALIDATION_ERROR)
+		})
 	})
 })
