@@ -16,14 +16,14 @@ function renderHarnessWithApi<TSchema extends HarnessSchema>(
         const ref = React.createRef<HarnessApi<TSchema>>()
         render(<Harness ref={ref} schema={schema} onSubmit={onSubmit} />)
         return {
-                ref,
-                getApi() {
-                        const api = ref.current
-                        if (!api) {
-                                throw new Error("Harness API not available")
-                        }
-                        return api
-                },
+          ref,
+          getApi() {
+            const api = ref.current
+            if (!api) {
+                throw new Error("Harness API not available")
+            }
+            return api
+          },
         }
 }
 
@@ -399,11 +399,11 @@ describe("useStandardSchema", () => {
 		expect(initialTouched["user.contact.email"]).toBeUndefined()
 	})
 
-        it("validate(name) validates one field; validate() validates entire form", async () => {
-                const onSubmit = vi.fn()
-                const user = userEvent.setup()
+  it("validate(name) validates one field; validate() validates entire form", async () => {
+    const onSubmit = vi.fn()
+    const user = userEvent.setup()
 
-                const { getApi } = renderHarnessWithApi(schema, onSubmit)
+    const { getApi } = renderHarnessWithApi(schema, onSubmit)
 
 		const nameInput = screen.getByTestId("name") as HTMLInputElement
 		const emailInput = screen.getByTestId("email") as HTMLInputElement
@@ -415,9 +415,9 @@ describe("useStandardSchema", () => {
 
 		// validate only the email field -> should show error
 		let emailValidationResult: boolean | undefined
-                await act(async () => {
-                        emailValidationResult = await getApi().validate("user.contact.email")
-                })
+    await act(async () => {
+      emailValidationResult = await getApi().validate("user.contact.email")
+    })
 
 		expect(screen.getByTestId("email-error")).toHaveTextContent("Invalid email")
 		expect(emailValidationResult).toBe(false)
@@ -427,18 +427,18 @@ describe("useStandardSchema", () => {
 		await user.type(emailInput, "valid@example.com")
 		await user.tab()
 
-                await act(async () => {
-                        emailValidationResult = await getApi().validate("user.contact.email")
-                })
+    await act(async () => {
+      emailValidationResult = await getApi().validate("user.contact.email")
+    })
 
 		expect(screen.getByTestId("email-error")).toHaveTextContent("")
 		expect(emailValidationResult).toBe(true)
 
 		// Full-form validate should be FALSE right now because name is still required & empty
 		let formValidationResult: boolean | undefined
-                await act(async () => {
-                        formValidationResult = await getApi().validate()
-                })
+    await act(async () => {
+      formValidationResult = await getApi().validate()
+    })
 		expect(formValidationResult).toBe(false)
 
 		// Fill name, blur to commit
@@ -446,9 +446,9 @@ describe("useStandardSchema", () => {
 		await user.tab()
 
 		// Now full-form validate should pass
-                await act(async () => {
-                        formValidationResult = await getApi().validate()
-                })
+    await act(async () => {
+      formValidationResult = await getApi().validate()
+    })
 		expect(formValidationResult).toBe(true)
 	})
 
@@ -464,14 +464,14 @@ describe("useStandardSchema", () => {
         expect(screen.getByTestId("email-error")).toHaveTextContent("Invalid email")
 
         await act(async () => {
-                await getApi().__dangerouslySetField("user.contact.email", "good@ex.com")
+            await getApi().__dangerouslySetField("user.contact.email", "good@ex.com")
         })
         expect(screen.getByTestId("email-error")).toHaveTextContent("")
 	})
 
 	it("falls back to default messaging when thrown issues lack text", async () => {
-                const onSubmit = vi.fn()
-                const throwingSchema = defineForm({
+    const onSubmit = vi.fn()
+    const throwingSchema = defineForm({
 			user: {
 				name: {
 					label: "Name",
@@ -489,34 +489,34 @@ describe("useStandardSchema", () => {
 			},
 		})
 
-                const { getApi } = renderHarnessWithApi(throwingSchema, onSubmit)
+    const { getApi } = renderHarnessWithApi(throwingSchema, onSubmit)
 
-                await act(async () => {
-                        await getApi().__dangerouslySetField("user.contact.email", "whatever")
-                })
+    await act(async () => {
+      await getApi().__dangerouslySetField("user.contact.email", "whatever")
+    })
 
-                expect(screen.getByTestId("email-error")).toHaveTextContent("Validation failed")
-        })
+      expect(screen.getByTestId("email-error")).toHaveTextContent("Validation failed")
+  })
 
-        it("getErrors returns only populated errors", async () => {
-                const onSubmit = vi.fn()
-                const user = userEvent.setup()
+  it("getErrors returns only populated errors", async () => {
+    const onSubmit = vi.fn()
+    const user = userEvent.setup()
 
-                const { getApi } = renderHarnessWithApi(schema, onSubmit)
+    const { getApi } = renderHarnessWithApi(schema, onSubmit)
 
-                const emailInput = screen.getByTestId("email") as HTMLInputElement
-                await user.clear(emailInput)
-                await user.type(emailInput, "nope")
-                await user.tab() // commit
+    const emailInput = screen.getByTestId("email") as HTMLInputElement
+    await user.clear(emailInput)
+    await user.type(emailInput, "nope")
+    await user.tab() // commit
 
-                await act(async () => {
-                        await getApi().validate("user.contact.email")
-                })
+    await act(async () => {
+            await getApi().validate("user.contact.email")
+    })
 
-                const errs = getApi().getErrors()
-                expect(Array.isArray(errs)).toBe(true)
-                expect(errs).toEqual([{ name: "user.contact.email", error: "Invalid email", label: "Email" }])
-        })
+    const errs = getApi().getErrors()
+    expect(Array.isArray(errs)).toBe(true)
+    expect(errs).toEqual([{ name: "user.contact.email", error: "Invalid email", label: "Email" }])
+  })
 
 	it("getForm: prevents submit when invalid, submits when valid, and supports reset", async () => {
 		const onSubmit = vi.fn()
@@ -583,14 +583,13 @@ describe("useStandardSchema", () => {
 		})
 	})
 
-        it("getField throws for unknown keys", () => {
-                const onSubmit = vi.fn()
+  it("getField throws for unknown keys", () => {
+    const onSubmit = vi.fn()
+    const { getApi } = renderHarnessWithApi(schema, onSubmit)
 
-                const { getApi } = renderHarnessWithApi(schema, onSubmit)
-
-                // @ts-expect-error - intentional invalid access to assert runtime guard
-                expect(() => getApi().getField("user.unknown")).toThrow(
-                        'Field "user.unknown" does not exist in the form definition.',
-                )
-        })
+    // @ts-expect-error - intentional invalid access to assert runtime guard
+    expect(() => getApi().getField("user.unknown")).toThrow(
+      'Field "user.unknown" does not exist in the form definition.',
+    )
+  })
 })

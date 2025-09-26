@@ -84,10 +84,10 @@ export const Harness = React.forwardRef(function Harness<TSchema extends Harness
 			<button type="submit">Submit</button>
 			<button type="reset">Reset</button>
 
-                        <output data-testid="name-touched">{String(isTouched(namePath))}</output>
-                        <output data-testid="email-touched">{String(isTouched(emailPath))}</output>
-                        <output data-testid="name-dirty">{String(isDirty(namePath))}</output>
-                        <output data-testid="email-dirty">{String(isDirty(emailPath))}</output>
-                </form>
+      <output data-testid="name-touched">{String(isTouched(namePath))}</output>
+      <output data-testid="email-touched">{String(isTouched(emailPath))}</output>
+      <output data-testid="name-dirty">{String(isDirty(namePath))}</output>
+      <output data-testid="email-dirty">{String(isDirty(emailPath))}</output>
+   </form>
         )
 })
