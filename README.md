@@ -248,8 +248,8 @@ type FieldProps = FieldDefinitionProps & {
 | `getForm(onSubmit)`          | Returns event handlers for the form; submit handler only fires with valid data |
 | `getField(name)`             | Returns metadata for a given field (label, defaultValue, error, touched, dirty, ARIA ids) |
 | `resetForm()`                | Resets all form state to initial defaults |
-| `touched`                    | Read-only frozen object of touched fields |
-| `dirty`                      | Read-only frozen object of dirty fields |
+| `isTouched(name?)`           | Returns whether a field (or any field when omitted) has been touched |
+| `isDirty(name?)`             | Returns whether a field (or any field when omitted) has been modified |
 | `toFormData(data)`           | Helper to convert values to `FormData` |
 | `getErrors(name?)`                | Returns an array of `{ name, error, label }` for field or form |
 | `validate(name?)`            | Validates either the entire form or a single field |

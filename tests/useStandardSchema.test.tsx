@@ -75,6 +75,53 @@ describe("useStandardSchema", () => {
 		expect(emailInput).toHaveAttribute("aria-invalid", "true")
 	})
 
+	it("exposes isTouched/isDirty helpers for form-level and field checks", async () => {
+		let api: HarnessApi
+		const onSubmit = vi.fn()
+		const user = userEvent.setup()
+
+		render(
+			<Harness
+				schema={schema}
+				onSubmit={onSubmit}
+				onApi={(x) => {
+					api = x
+				}}
+			/>,
+		)
+
+		const emailInput = screen.getByTestId("email") as HTMLInputElement
+		const resetButton = screen.getByText("Reset")
+
+		expect(api!.isTouched()).toBe(false)
+		expect(api!.isTouched("user.contact.email")).toBe(false)
+		expect(api!.isDirty()).toBe(false)
+		expect(api!.isDirty("user.contact.email")).toBe(false)
+
+		await user.click(emailInput)
+		await user.tab()
+
+		expect(api!.isTouched()).toBe(true)
+		expect(api!.isTouched("user.contact.email")).toBe(true)
+		expect(api!.isTouched("user.name")).toBe(false)
+		expect(api!.isDirty()).toBe(false)
+		expect(api!.isDirty("user.contact.email")).toBe(false)
+
+		await user.click(emailInput)
+		await user.clear(emailInput)
+		await user.type(emailInput, "new@example.com")
+		await user.tab()
+
+		expect(api!.isDirty()).toBe(true)
+		expect(api!.isDirty("user.contact.email")).toBe(true)
+		expect(api!.isDirty("user.name")).toBe(false)
+
+		await user.click(resetButton)
+
+		expect(api!.isTouched()).toBe(false)
+		expect(api!.isDirty()).toBe(false)
+	})
+
 	it("onFocus clears error for that field", async () => {
 		const onSubmit = vi.fn()
 		const user = userEvent.setup()
