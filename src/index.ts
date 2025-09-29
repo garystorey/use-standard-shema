@@ -199,40 +199,40 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 		[formDefinitionKeys, errors, flatFormDefinition],
 	)
 
-        const isTouched = useCallback(
-                (name?: FieldKey) => {
-                        if (name) {
-                                const key = name as string
-                                return Boolean(touched[key])
-                        }
+	const isTouched = useCallback(
+		(name?: FieldKey) => {
+			if (name) {
+				const key = name as string
+				return Boolean(touched[key])
+			}
 
-                        return Object.values(touched).some(Boolean)
-                },
-                [touched],
-        )
+			return Object.values(touched).some(Boolean)
+		},
+		[touched],
+	)
 
-        const isDirty = useCallback(
-                (name?: FieldKey) => {
-                        if (name) {
-                                const key = name as string
-                                return Boolean(dirty[key])
-                        }
+	const isDirty = useCallback(
+		(name?: FieldKey) => {
+			if (name) {
+				const key = name as string
+				return Boolean(dirty[key])
+			}
 
-                        return Object.values(dirty).some(Boolean)
-                },
-                [dirty],
-        )
+			return Object.values(dirty).some(Boolean)
+		},
+		[dirty],
+	)
 
-        return {
-                resetForm,
-                getForm,
-                getField,
-                getErrors,
-                validate,
-                __dangerouslySetField: setField,
-                isTouched,
-                isDirty,
-        }
+	return {
+		resetForm,
+		getForm,
+		getField,
+		getErrors,
+		validate,
+		__dangerouslySetField: setField,
+		isTouched,
+		isDirty,
+	}
 }
 
 export { useStandardSchema, defineForm, toFormData }
