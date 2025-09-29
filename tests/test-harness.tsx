@@ -1,19 +1,68 @@
-import React, { useEffect } from "react"
+import React, { useLayoutEffect } from "react"
 import { useStandardSchema } from "../src"
-export type HarnessApi = any
+import type {
+        DotPaths,
+        ErrorEntry,
+        FieldDefinition,
+        FormDefinition,
+        TypeFromDefinition,
+} from "../src/types"
 
-export function Harness({
-	schema,
-	onSubmit,
-	onApi,
-}: {
-	schema: any
-	onSubmit: (data: unknown) => void
-	onApi?: (api: HarnessApi) => void
-}) {
-	const api = useStandardSchema(schema)
+type HarnessField<Name extends string> = FieldDefinition & {
+        name: Name
+        defaultValue: string
+        error: string
+        touched: string
+        dirty: string
+        describedById: string
+        errorId: string
+}
 
-	useEffect(() => onApi && onApi(api), [api, onApi])
+export type HarnessApi<Def extends FormDefinition> = {
+        resetForm: () => void
+        getForm: (
+                onSubmitHandler: (data: TypeFromDefinition<Def>) => void,
+        ) => {
+                onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>
+                onFocus: (event: React.FocusEvent<HTMLFormElement>) => void
+                onBlur: (event: React.FocusEvent<HTMLFormElement>) => Promise<void>
+                onReset: () => void
+        }
+        getField: <Name extends DotPaths<Def>>(name: Name) => HarnessField<Name>
+        getErrors: <Name extends DotPaths<Def>>(name?: Name) => ErrorEntry[]
+        validate: <Name extends DotPaths<Def>>(name?: Name) => Promise<boolean>
+        __dangerouslySetField: <Name extends DotPaths<Def>>(name: Name, value: string) => Promise<void>
+        isTouched: <Name extends DotPaths<Def>>(name?: Name) => boolean
+        isDirty: <Name extends DotPaths<Def>>(name?: Name) => boolean
+}
+
+let latestApi: HarnessApi<FormDefinition> | null = null
+
+export function getHarnessApi<Def extends FormDefinition>(): HarnessApi<Def> {
+        if (!latestApi) {
+                throw new Error("Harness API is not available. Did you render the Harness component?")
+        }
+
+        return latestApi as HarnessApi<Def>
+}
+
+type HarnessProps<Def extends FormDefinition> = {
+        formDefinition: Def
+        onSubmit: (data: TypeFromDefinition<Def>) => void
+}
+
+export function Harness<Def extends FormDefinition>({ formDefinition, onSubmit }: HarnessProps<Def>) {
+        const api = useStandardSchema(formDefinition) as unknown as HarnessApi<Def>
+
+        useLayoutEffect(() => {
+                latestApi = api as unknown as HarnessApi<FormDefinition>
+
+                return () => {
+                        if (latestApi === api) {
+                                latestApi = null
+                        }
+                }
+        }, [api])
 
 	const { getField, getForm } = api
 
