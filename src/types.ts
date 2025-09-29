@@ -12,6 +12,12 @@ export interface FieldDefinition {
 	label: string
 	description?: string
 	defaultValue?: string
+	// Optional runtime / schema-provided flags (some callers include these on the
+	// field object). Make them optional here to avoid needing `any` casts.
+	touched?: boolean
+	dirty?: boolean
+	// Optional inline error provided on the field definition
+	error?: string
 	validate: StandardSchemaV1
 }
 

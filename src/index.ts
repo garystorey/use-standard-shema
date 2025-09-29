@@ -27,7 +27,7 @@ export interface UseStandardSchemaReturn<T extends FormDefinition> {
 	}
 	getField: (
 		name: DotPaths<T>,
-	) => Partial<FieldDefintionProps> & { defaultValue: string; error: string; touched: boolean; dirty: boolean }
+	) => Partial<FieldDefintionProps> & { defaultValue?: string; error: string; touched?: boolean; dirty?: boolean }
 	getErrors: (name?: DotPaths<T>) => ErrorEntry[]
 	validate: (name?: DotPaths<T>) => Promise<boolean>
 	__dangerouslySetField: (name: DotPaths<T>, value: string) => Promise<void>
@@ -185,30 +185,28 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 			const describedById = `${key}-description`
 			const errorId = `${key}-error`
 
-			if (!def) {
-				// Return a harmless inline-error representation rather than throwing so callers can render
-				return {
-					label: "",
-					description: undefined as string | undefined,
-					name: key,
-					defaultValue: "",
-					error: `Field "${key}" not found`,
-					touched: false,
-					dirty: false,
-					describedById,
-					errorId,
-				}
-			}
+			if (!def) throw new Error(`Field "${key}" not found`)
 
-			const { validate: _validate, ...fieldDef } = def
+			// Destructure `validate` and commonly-used schema values out of the definition
+			const {
+				validate: _validate,
+				defaultValue: defDefault,
+				touched: defTouched,
+				dirty: defDirty,
+				error: defError,
+				...fieldDef
+			} = def
 
 			return {
 				...fieldDef,
 				name: key,
-				defaultValue: (data as Record<string, string>)[key] ?? "",
-				error: (errors as Record<string, string>)[key] ?? "",
-				touched: Boolean((touched as Record<string, boolean>)[key]),
-				dirty: Boolean((dirty as Record<string, boolean>)[key]),
+				// Prefer runtime data for the current value, otherwise fall back to schema default
+				defaultValue: (data as Record<string, string>)[key] ?? defDefault ?? "",
+				// Prefer runtime validation errors (state), otherwise use schema-provided error
+				error: errors[key] ?? defError ?? "",
+				// Prefer runtime flags if set; otherwise use schema-provided flags
+				touched: (touched as Record<string, boolean>)[key] ?? defTouched ?? false,
+				dirty: (dirty as Record<string, boolean>)[key] ?? defDirty ?? false,
 				describedById,
 				errorId,
 			}
