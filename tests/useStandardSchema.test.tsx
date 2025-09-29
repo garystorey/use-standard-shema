@@ -1,14 +1,11 @@
-import React, { forwardRef, useImperativeHandle } from "react"
-import { describe, expect, it, vi } from "vitest"
-import { render, waitFor, screen, fireEvent } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { act } from "react"
-import { defineForm } from "../src/helpers"
+import React, { act, forwardRef, useImperativeHandle } from "react"
+import { describe, expect, it, vi } from "vitest"
 import { useStandardSchema } from "../src"
-import type { ErrorEntry, FormDefinition } from "../src/types"
-import { string as reqString, email as emailValidator } from "./test-validation-lib"
-
-type HookApi = ReturnType<typeof useStandardSchema>
+import { defineForm } from "../src/helpers"
+import type { ErrorEntry } from "../src/types"
+import { email as emailValidator, string as reqString } from "./test-validation-lib"
 
 function makeForm() {
 	return defineForm({
@@ -19,7 +16,10 @@ function makeForm() {
 	})
 }
 
-const Harness = forwardRef<HookApi | null, { formDef: FormDefinition }>(function Harness(props, ref) {
+type FormType = ReturnType<typeof makeForm>
+type HookApi = ReturnType<typeof useStandardSchema<FormType>>
+
+const Harness = forwardRef<HookApi | null, { formDef: FormType }>(function Harness(props, ref) {
 	const api = useStandardSchema(props.formDef)
 	useImperativeHandle(ref, () => api, [api])
 	return null
@@ -35,7 +35,7 @@ function setupHarness(): { form: ReturnType<typeof makeForm>; ref: React.RefObje
 
 describe("useStandardSchema (basic)", () => {
 	it("getField returns metadata and default value", () => {
-	const { form, ref } = setupHarness()
+		const { form, ref } = setupHarness()
 
 		const field = ref.current!.getField("name")
 		expect(field.name).toBe("name")
@@ -45,7 +45,7 @@ describe("useStandardSchema (basic)", () => {
 	})
 
 	it("validate a missing required field produces an error and isDirty/isTouched are set", async () => {
-	const { form, ref } = setupHarness()
+		const { form, ref } = setupHarness()
 
 		// Validate an empty value for name
 		let ok: boolean
@@ -71,7 +71,7 @@ describe("useStandardSchema (basic)", () => {
 	})
 
 	it("setting a valid value clears the error and updates data; resetForm restores defaults", async () => {
-	const { form, ref } = setupHarness()
+		const { form, ref } = setupHarness()
 
 		// Set a valid name
 		await act(async () => {
@@ -122,7 +122,7 @@ describe("useStandardSchema (basic)", () => {
 
 const FormHarness = forwardRef<
 	HookApi | null,
-	{ formDef: FormDefinition; onSubmitSpy: (data: Record<string, unknown>) => void }
+	{ formDef: FormType; onSubmitSpy: (data: Record<string, unknown>) => void }
 >(function FormHarness(props, ref) {
 	const api = useStandardSchema(props.formDef)
 	const handlers = api.getForm(props.onSubmitSpy)
