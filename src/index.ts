@@ -187,26 +187,15 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 
 			if (!def) throw new Error(`Field "${key}" not found`)
 
-			// Destructure `validate` and commonly-used schema values out of the definition
-			const {
-				validate: _validate,
-				defaultValue: defDefault,
-				touched: defTouched,
-				dirty: defDirty,
-				error: defError,
-				...fieldDef
-			} = def
+			const { validate: _validate, ...fieldDef } = def
 
 			return {
 				...fieldDef,
 				name: key,
-				// Prefer runtime data for the current value, otherwise fall back to schema default
-				defaultValue: (data as Record<string, string>)[key] ?? defDefault ?? "",
-				// Prefer runtime validation errors (state), otherwise use schema-provided error
-				error: errors[key] ?? defError ?? "",
-				// Prefer runtime flags if set; otherwise use schema-provided flags
-				touched: (touched as Record<string, boolean>)[key] ?? defTouched ?? false,
-				dirty: (dirty as Record<string, boolean>)[key] ?? defDirty ?? false,
+				defaultValue: data[key] ?? "",
+				error: errors[key] ?? "",
+				touched: touched[key] ?? false,
+				dirty: dirty[key] ?? false,
 				describedById,
 				errorId,
 			}
