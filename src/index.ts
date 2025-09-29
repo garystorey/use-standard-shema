@@ -1,15 +1,15 @@
 import { type FocusEvent, type FormEvent, useCallback, useMemo, useState } from "react"
 import { defineForm, flattenDefaults, flattenFormDefinition, toFormData } from "./helpers"
 import type {
-    DotPaths,
-    ErrorEntry,
-    Errors,
-    FieldDefinition,
-    FieldDefintionProps,
-    Flags,
-    FormDefinition,
-    FormValues,
-    TypeFromDefinition,
+	DotPaths,
+	ErrorEntry,
+	Errors,
+	FieldDefinition,
+	FieldDefintionProps,
+	Flags,
+	FormDefinition,
+	FormValues,
+	TypeFromDefinition,
 } from "./types"
 
 /**
@@ -18,275 +18,279 @@ import type {
  * @returns An object containing methods and state for managing the form.
  */
 export interface UseStandardSchemaReturn<T extends FormDefinition> {
-    resetForm: () => void
-    getForm: (onSubmitHandler: (data: TypeFromDefinition<T>) => void) => {
-        onSubmit: (e: FormEvent) => Promise<void>
-        onFocus: (e: FocusEvent<HTMLFormElement>) => void
-        onBlur: (e: FocusEvent<HTMLFormElement>) => Promise<void>
-        onReset: () => void
-    }
-    getField: (
-        name: DotPaths<T>,
-    ) => Partial<FieldDefintionProps> & { defaultValue: string; error: string; touched: boolean; dirty: boolean }
-    getErrors: (name?: DotPaths<T>) => ErrorEntry[]
-    validate: (name?: DotPaths<T>) => Promise<boolean>
-    __dangerouslySetField: (name: DotPaths<T>, value: string) => Promise<void>
-    isTouched: (name?: DotPaths<T>) => boolean
-    isDirty: (name?: DotPaths<T>) => boolean
+	resetForm: () => void
+	getForm: (onSubmitHandler: (data: TypeFromDefinition<T>) => void) => {
+		onSubmit: (e: FormEvent) => Promise<void>
+		onFocus: (e: FocusEvent<HTMLFormElement>) => void
+		onBlur: (e: FocusEvent<HTMLFormElement>) => Promise<void>
+		onReset: () => void
+	}
+	getField: (
+		name: DotPaths<T>,
+	) => Partial<FieldDefintionProps> & { defaultValue: string; error: string; touched: boolean; dirty: boolean }
+	getErrors: (name?: DotPaths<T>) => ErrorEntry[]
+	validate: (name?: DotPaths<T>) => Promise<boolean>
+	__dangerouslySetField: (name: DotPaths<T>, value: string) => Promise<void>
+	isTouched: (name?: DotPaths<T>) => boolean
+	isDirty: (name?: DotPaths<T>) => boolean
 }
 
 function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStandardSchemaReturn<T> {
-    type FieldKey = DotPaths<T>
+	type FieldKey = DotPaths<T>
 
-    // Derived data
-    const flatFormDefinition = useMemo(() => flattenFormDefinition(formDefinition), [formDefinition]) as Record<
-        string,
-        FieldDefinition
-    >
+	// Derived data
+	const flatFormDefinition = useMemo(() => flattenFormDefinition(formDefinition), [formDefinition]) as Record<
+		string,
+		FieldDefinition
+	>
 
-    const initialValues = useMemo(() => flattenDefaults(formDefinition), [formDefinition])
+	const initialValues = useMemo(() => flattenDefaults(formDefinition), [formDefinition])
 
-    const formDefinitionKeys = useMemo(() => Object.keys(flatFormDefinition), [flatFormDefinition])
+	const formDefinitionKeys = useMemo(() => Object.keys(flatFormDefinition), [flatFormDefinition])
 
-    // State
-    const [data, setData] = useState<FormValues>(initialValues)
-    const [errors, setErrors] = useState<Errors>({})
-    const [touched, setTouched] = useState<Flags>({})
-    const [dirty, setDirty] = useState<Flags>({})
+	// State
+	const [data, setData] = useState<FormValues>(initialValues)
+	const [errors, setErrors] = useState<Errors>({})
+	const [touched, setTouched] = useState<Flags>({})
+	const [dirty, setDirty] = useState<Flags>({})
 
-    // --- Pure per-field validator (no state updates)
-    const validateFieldValue = useCallback(
-        async (field: string, value: string): Promise<string> => {
-            const fieldDef = flatFormDefinition[field]
-            if (!fieldDef) return `Field "${String(field)}" not found`
+	// --- Pure per-field validator (no state updates)
+	const validateFieldValue = useCallback(
+		async (field: string, value: string): Promise<string> => {
+			const fieldDef = flatFormDefinition[field]
+			if (!fieldDef) return `Field "${String(field)}" not found`
 
-            // Validator shape follows the Standard Schema spec; be defensive in case of unexpected shape
-            const vs: unknown = fieldDef.validate
+			// Validator shape follows the Standard Schema spec; be defensive in case of unexpected shape
+			const vs: unknown = fieldDef.validate
 
-            // Narrow unknown to object-like before property access
-            const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null
+			// Narrow unknown to object-like before property access
+			const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null
 
-            let validateFn: unknown
-            if (isObject(vs)) {
-                const std = vs["~standard"]
-                if (isObject(std) && typeof (std as Record<string, unknown>)["validate"] === "function") {
-                    validateFn = (std as Record<string, unknown>)["validate"]
-                } else if (typeof (vs as Record<string, unknown>)["validate"] === "function") {
-                    validateFn = (vs as Record<string, unknown>)["validate"]
-                }
-            }
+			let validateFn: unknown
+			if (isObject(vs)) {
+				const std = (vs as Record<string, unknown>)["~standard"]
+				if (isObject(std) && typeof (std as Record<string, unknown>).validate === "function") {
+					validateFn = (std as Record<string, unknown>).validate
+				} else if (typeof (vs as Record<string, unknown>).validate === "function") {
+					validateFn = (vs as Record<string, unknown>).validate
+				}
+			}
 
-            if (typeof validateFn !== "function") {
-                // Return a validation-error-like message rather than throwing
-                return "validator not available"
-            }
+			if (typeof validateFn !== "function") {
+				// Return a validation-error-like message rather than throwing
+				return "validator not available"
+			}
 
-            const result = await (validateFn as (v: string) => Promise<any>)(value)
-            return result?.issues?.[0]?.message ?? ""
-        },
-        [flatFormDefinition],
-    )
+			const result = await (validateFn as (v: string) => Promise<unknown>)(value)
+			// Narrow the unknown result to a shape we can safely inspect
+			const issues = (result as Record<string, unknown> | null)?.issues as Array<Record<string, unknown>> | undefined
+			const first = issues && issues.length > 0 ? issues[0] : undefined
+			const message = first ? (first.message as string | undefined) : undefined
+			return message ?? ""
+		},
+		[flatFormDefinition],
+	)
 
-    // --- Single-field validate (updates state for that field)
-    const validateField = useCallback(
-        async (field: string, value: string) => {
-            const message = await validateFieldValue(field, value)
-            setErrors((prev) => ({ ...prev, [field]: message }))
-            return message === ""
-        },
-        [validateFieldValue],
-    )
+	// --- Single-field validate (updates state for that field)
+	const validateField = useCallback(
+		async (field: string, value: string) => {
+			const message = await validateFieldValue(field, value)
+			setErrors((prev) => ({ ...prev, [field]: message }))
+			return message === ""
+		},
+		[validateFieldValue],
+	)
 
-    // --- Full-form validate (batch state update, no flicker)
-    const validateForm = useCallback(async () => {
-        const newErrors: Errors = {}
+	// --- Full-form validate (batch state update, no flicker)
+	const validateForm = useCallback(async () => {
+		const newErrors: Errors = {}
 
-        await Promise.all(
-            formDefinitionKeys.map(async (key) => {
-                newErrors[key] = await validateFieldValue(key, data[key])
-            }),
-        )
+		await Promise.all(
+			formDefinitionKeys.map(async (key) => {
+				newErrors[key] = await validateFieldValue(key, data[key])
+			}),
+		)
 
-        setErrors(newErrors)
-        return Object.values(newErrors).every((msg) => msg === "")
-    }, [formDefinitionKeys, data, validateFieldValue])
+		setErrors(newErrors)
+		return Object.values(newErrors).every((msg) => msg === "")
+	}, [formDefinitionKeys, data, validateFieldValue])
 
-    const validate = useCallback(
-        async (name?: FieldKey) => {
-            if (name) {
-                const key = name as string
-                return validateField(key, data[key])
-            }
-            return validateForm()
-        },
-        [data, validateField, validateForm],
-    )
+	const validate = useCallback(
+		async (name?: FieldKey) => {
+			if (name) {
+				const key = name as string
+				return validateField(key, data[key])
+			}
+			return validateForm()
+		},
+		[data, validateField, validateForm],
+	)
 
-    const resetForm = useCallback(() => {
-        setData(initialValues)
-        setErrors({})
-        setTouched({})
-        setDirty({})
-    }, [initialValues])
+	const resetForm = useCallback(() => {
+		setData(initialValues)
+		setErrors({})
+		setTouched({})
+		setDirty({})
+	}, [initialValues])
 
-    const getForm = useCallback(
-        (onSubmitHandler: (data: TypeFromDefinition<typeof formDefinition>) => void) => {
-            const onSubmit = async (e: FormEvent) => {
-                const formEl = e.currentTarget as HTMLFormElement
-                e.preventDefault()
-                const isValid = await validate()
-                if (isValid) {
-                    onSubmitHandler(data as TypeFromDefinition<typeof formDefinition>)
-                    formEl.reset()
-                }
-            }
+	const getForm = useCallback(
+		(onSubmitHandler: (data: TypeFromDefinition<typeof formDefinition>) => void) => {
+			const onSubmit = async (e: FormEvent) => {
+				const formEl = e.currentTarget as HTMLFormElement
+				e.preventDefault()
+				const isValid = await validate()
+				if (isValid) {
+					onSubmitHandler(data as TypeFromDefinition<typeof formDefinition>)
+					formEl.reset()
+				}
+			}
 
-            const onFocus = (e: FocusEvent<HTMLFormElement>) => {
-                const field = e.target.name
-                if (!field || !(field in flatFormDefinition)) return
+			const onFocus = (e: FocusEvent<HTMLFormElement>) => {
+				const field = e.target.name
+				if (!field || !(field in flatFormDefinition)) return
 
-                setTouched((prev) => ({ ...prev, [field]: true }))
-                setErrors((prev) => ({ ...prev, [field]: "" }))
-            }
+				setTouched((prev) => ({ ...prev, [field]: true }))
+				setErrors((prev) => ({ ...prev, [field]: "" }))
+			}
 
-            const onBlur = async (e: FocusEvent<HTMLFormElement>) => {
-                const field = e.target.name
-                if (!field || !(field in flatFormDefinition)) return
+			const onBlur = async (e: FocusEvent<HTMLFormElement>) => {
+				const field = e.target.name
+				if (!field || !(field in flatFormDefinition)) return
 
-                const value = e.target.value
-                const initial = (initialValues as Record<string, unknown>)[field]
-                const isDirty = value !== initial
+				const value = e.target.value
+				const initial = (initialValues as Record<string, unknown>)[field]
+				const isDirty = value !== initial
 
-                setTouched((prev) => ({ ...prev, [field]: true }))
-                setData((prev) => ({ ...prev, [field]: value }))
+				setTouched((prev) => ({ ...prev, [field]: true }))
+				setData((prev) => ({ ...prev, [field]: value }))
 
-                if (isDirty) {
-                    setDirty((prev) => ({ ...prev, [field]: true }))
-                    await validateField(field, value)
-                }
-            }
+				if (isDirty) {
+					setDirty((prev) => ({ ...prev, [field]: true }))
+					await validateField(field, value)
+				}
+			}
 
-            const onReset = () => resetForm()
+			const onReset = () => resetForm()
 
-            return { onSubmit, onFocus, onBlur, onReset }
-        },
-        [flatFormDefinition, data, initialValues, resetForm, validateField, validate],
-    )
+			return { onSubmit, onFocus, onBlur, onReset }
+		},
+		[flatFormDefinition, data, initialValues, resetForm, validateField, validate],
+	)
 
-    const getField = useCallback(
-        (name: FieldKey) => {
-            const key = name as string
+	const getField = useCallback(
+		(name: FieldKey) => {
+			const key = name as string
 
-            const def = flatFormDefinition[key]
-            const describedById = `${key}-description`
-            const errorId = `${key}-error`
+			const def = flatFormDefinition[key]
+			const describedById = `${key}-description`
+			const errorId = `${key}-error`
 
-            if (!def) {
-                // Return a harmless inline-error representation rather than throwing so callers can render
-                return {
-                    label: "",
-                    description: undefined as string | undefined,
-                    name: key,
-                    defaultValue: "",
-                    error: `Field "${key}" not found`,
-                    touched: false,
-                    dirty: false,
-                    describedById,
-                    errorId,
-                }
-            }
+			if (!def) {
+				// Return a harmless inline-error representation rather than throwing so callers can render
+				return {
+					label: "",
+					description: undefined as string | undefined,
+					name: key,
+					defaultValue: "",
+					error: `Field "${key}" not found`,
+					touched: false,
+					dirty: false,
+					describedById,
+					errorId,
+				}
+			}
 
-            const { validate: _validate, ...fieldDef } = def
+			const { validate: _validate, ...fieldDef } = def
 
-            return {
-                ...fieldDef,
-                name: key,
-                defaultValue: (data as Record<string, string>)[key] ?? "",
-                error: (errors as Record<string, string>)[key] ?? "",
-                touched: Boolean((touched as Record<string, boolean>)[key]),
-                dirty: Boolean((dirty as Record<string, boolean>)[key]),
-                describedById,
-                errorId,
-            }
-        },
-        [flatFormDefinition, data, errors, touched, dirty],
-    )
+			return {
+				...fieldDef,
+				name: key,
+				defaultValue: (data as Record<string, string>)[key] ?? "",
+				error: (errors as Record<string, string>)[key] ?? "",
+				touched: Boolean((touched as Record<string, boolean>)[key]),
+				dirty: Boolean((dirty as Record<string, boolean>)[key]),
+				describedById,
+				errorId,
+			}
+		},
+		[flatFormDefinition, data, errors, touched, dirty],
+	)
 
-    const setField = useCallback(
-        async (name: FieldKey, value: string) => {
-            const field = name as string
-            const ok = await validateField(field, value)
-            if (ok) setData((prev) => ({ ...prev, [field]: value }))
-            setTouched((prev) => ({ ...prev, [field]: true }))
-            setDirty((prev) => ({ ...prev, [field]: true }))
-        },
-        [validateField],
-    )
+	const setField = useCallback(
+		async (name: FieldKey, value: string) => {
+			const field = name as string
+			const ok = await validateField(field, value)
+			if (ok) setData((prev) => ({ ...prev, [field]: value }))
+			setTouched((prev) => ({ ...prev, [field]: true }))
+			setDirty((prev) => ({ ...prev, [field]: true }))
+		},
+		[validateField],
+	)
 
-    const getErrors = useCallback(
-        (name?: FieldKey): ErrorEntry[] => {
-            if (name) {
-                const error = errors[name as string]
-                if (!error) return []
-                return [
-                    {
-                        name: name as string,
-                        error,
-                        label: flatFormDefinition[name as string]?.label,
-                    },
-                ]
-            }
+	const getErrors = useCallback(
+		(name?: FieldKey): ErrorEntry[] => {
+			if (name) {
+				const error = errors[name as string]
+				if (!error) return []
+				return [
+					{
+						name: name as string,
+						error,
+						label: flatFormDefinition[name as string]?.label,
+					},
+				]
+			}
 
-            const errorEntries: ErrorEntry[] = []
-            for (const key of formDefinitionKeys) {
-                const error = errors[key]
-                if (error) {
-                    errorEntries.push({
-                        name: key,
-                        error,
-                        label: flatFormDefinition[key].label,
-                    })
-                }
-            }
-            return errorEntries
-        },
-        [formDefinitionKeys, errors, flatFormDefinition],
-    )
+			const errorEntries: ErrorEntry[] = []
+			for (const key of formDefinitionKeys) {
+				const error = errors[key]
+				if (error) {
+					errorEntries.push({
+						name: key,
+						error,
+						label: flatFormDefinition[key].label,
+					})
+				}
+			}
+			return errorEntries
+		},
+		[formDefinitionKeys, errors, flatFormDefinition],
+	)
 
-    const isTouched = useCallback(
-        (name?: FieldKey) => {
-            if (name) {
-                const key = name as string
-                return Boolean(touched[key])
-            }
+	const isTouched = useCallback(
+		(name?: FieldKey) => {
+			if (name) {
+				const key = name as string
+				return Boolean(touched[key])
+			}
 
-            return Object.values(touched).some(Boolean)
-        },
-        [touched],
-    )
+			return Object.values(touched).some(Boolean)
+		},
+		[touched],
+	)
 
-    const isDirty = useCallback(
-        (name?: FieldKey) => {
-            if (name) {
-                const key = name as string
-                return Boolean(dirty[key])
-            }
+	const isDirty = useCallback(
+		(name?: FieldKey) => {
+			if (name) {
+				const key = name as string
+				return Boolean(dirty[key])
+			}
 
-            return Object.values(dirty).some(Boolean)
-        },
-        [dirty],
-    )
+			return Object.values(dirty).some(Boolean)
+		},
+		[dirty],
+	)
 
-    return {
-        resetForm,
-        getForm,
-        getField,
-        getErrors,
-        validate,
-        __dangerouslySetField: setField,
-        isTouched,
-        isDirty,
-    }
+	return {
+		resetForm,
+		getForm,
+		getField,
+		getErrors,
+		validate,
+		__dangerouslySetField: setField,
+		isTouched,
+		isDirty,
+	}
 }
 
 export { useStandardSchema, defineForm, toFormData }

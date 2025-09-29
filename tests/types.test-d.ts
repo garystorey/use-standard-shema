@@ -5,8 +5,13 @@ import { UseStandardSchemaReturn, useStandardSchema } from "../src"
 import { defineForm } from "../src/helpers"
 import type { TypeFromDefinition } from "../src/types"
 
+// Use a minimal StandardSchemaV1-shaped stub for the validator in a type-only way.
 const form = defineForm({
-	foo: { label: "Foo", defaultValue: "", validate: (() => null) as any },
+	foo: {
+		label: "Foo",
+		defaultValue: "",
+		validate: undefined as unknown as import("../src/types").FieldDefinition["validate"],
+	},
 })
 
 type Form = typeof form
