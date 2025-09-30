@@ -5,11 +5,11 @@ import type {
     ErrorEntry,
     Errors,
     FieldDefinition,
-    FieldDefintionProps,
     Flags,
     FormDefinition,
     FormValues,
     TypeFromDefinition,
+    UseStandardSchemaReturn,
 } from "./types"
 
 /**
@@ -17,23 +17,6 @@ import type {
  * @param formDefinition - The form definition.
  * @returns An object containing methods and state for managing the form.
  */
-export interface UseStandardSchemaReturn<T extends FormDefinition> {
-    resetForm: () => void
-    getForm: (onSubmitHandler: (data: TypeFromDefinition<T>) => void) => {
-        onSubmit: (e: FormEvent) => Promise<void>
-        onFocus: (e: FocusEvent<HTMLFormElement>) => void
-        onBlur: (e: FocusEvent<HTMLFormElement>) => Promise<void>
-        onReset: () => void
-    }
-    getField: (
-        name: DotPaths<T>,
-    ) => Partial<FieldDefintionProps> & { defaultValue?: string; error: string; touched?: boolean; dirty?: boolean }
-    getErrors: (name?: DotPaths<T>) => ErrorEntry[]
-    validate: (name?: DotPaths<T>) => Promise<boolean>
-    __dangerouslySetField: (name: DotPaths<T>, value: string) => Promise<void>
-    isTouched: (name?: DotPaths<T>) => boolean
-    isDirty: (name?: DotPaths<T>) => boolean
-}
 
 function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStandardSchemaReturn<T> {
     type FieldKey = DotPaths<T>
