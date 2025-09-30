@@ -141,6 +141,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
                 const isValid = await validate()
                 if (isValid) {
                     onSubmitHandler(data as TypeFromDefinition<typeof formDefinition>)
+                    resetForm()
                     formEl.reset()
                 }
             }
