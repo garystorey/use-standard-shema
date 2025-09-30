@@ -8,18 +8,16 @@ import type { AssertValidFormKeysDeep, FormDefinition, UseStandardSchemaReturn }
 type Validator = StandardSchemaV1<string>
 
 type TestFormDefinition = AssertValidFormKeysDeep<{
-        foo: {
-                label: "Foo"
-                defaultValue: ""
-                validate: Validator
-        }
+	foo: {
+		label: "Foo"
+		defaultValue: ""
+		validate: Validator
+	}
 }>
 
-type Hook = typeof useStandardSchema extends <T extends FormDefinition>(
-        formDefinition: TestFormDefinition,
-) => infer R
-        ? R
-        : never
+type Hook = typeof useStandardSchema extends <T extends FormDefinition>(formDefinition: TestFormDefinition) => infer R
+	? R
+	: never
 
 // Assert Hook matches exported UseStandardSchemaReturn<TestFormDefinition>
 type _Assert = Hook extends UseStandardSchemaReturn<TestFormDefinition> ? true : never
