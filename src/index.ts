@@ -1,63 +1,59 @@
 import { type FocusEvent, type FormEvent, useCallback, useMemo, useState } from "react"
 import { defineForm, flattenDefaults, flattenFormDefinition, toFormData } from "./helpers"
 import type {
-        DotPaths,
-        ErrorEntry,
-        Errors,
-        FieldDefinition,
-        Flags,
-        FormDefinition,
-        FormValues,
-        TypeFromDefinition,
-        UseStandardSchemaReturn,
+	DotPaths,
+	ErrorEntry,
+	Errors,
+	FieldDefinition,
+	Flags,
+	FormDefinition,
+	FormValues,
+	TypeFromDefinition,
+	UseStandardSchemaReturn,
 } from "./types"
 
 type SchemaValidator = FieldDefinition["validate"]["~standard"]["validate"]
-type StandardValidator =
-        | SchemaValidator
-        | ((value: string) => unknown | Promise<unknown>)
+type StandardValidator = SchemaValidator | ((value: string) => unknown | Promise<unknown>)
 
-const isValidatorFunction = (value: unknown): value is StandardValidator =>
-        typeof value === "function"
+const isValidatorFunction = (value: unknown): value is StandardValidator => typeof value === "function"
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-        typeof value === "object" && value !== null
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null
 
 const extractValidator = (value: unknown): StandardValidator | undefined => {
-        if (isValidatorFunction(value)) return value
+	if (isValidatorFunction(value)) return value
 
-        if (!isRecord(value)) return undefined
+	if (!isRecord(value)) return undefined
 
-        const standardValidator = value["~standard"]
-        if (isRecord(standardValidator) && isValidatorFunction(standardValidator.validate)) {
-                return standardValidator.validate
-        }
+	const standardValidator = value["~standard"]
+	if (isRecord(standardValidator) && isValidatorFunction(standardValidator.validate)) {
+		return standardValidator.validate
+	}
 
-        if (isValidatorFunction(value.validate)) {
-                return value.validate
-        }
+	if (isValidatorFunction(value.validate)) {
+		return value.validate
+	}
 
-        return undefined
+	return undefined
 }
 
 const deriveValidationMessage = (result: unknown): string => {
-        if (typeof result === "string") return result
-        if (!isRecord(result)) return ""
+	if (typeof result === "string") return result
+	if (!isRecord(result)) return ""
 
-        const issues = Array.isArray(result.issues) ? result.issues : []
-        for (const issue of issues) {
-                if (isRecord(issue) && typeof issue.message === "string") {
-                        return issue.message
-                }
-        }
+	const issues = Array.isArray(result.issues) ? result.issues : []
+	for (const issue of issues) {
+		if (isRecord(issue) && typeof issue.message === "string") {
+			return issue.message
+		}
+	}
 
-        return typeof result.message === "string" ? result.message : ""
+	return typeof result.message === "string" ? result.message : ""
 }
 
 const deriveThrownMessage = (error: unknown): string => {
-        if (error instanceof Error && error.message) return error.message
-        if (typeof error === "string" && error.trim().length > 0) return error
-        return "validation failed"
+	if (error instanceof Error && error.message) return error.message
+	if (typeof error === "string" && error.trim().length > 0) return error
+	return "validation failed"
 }
 
 /**
@@ -86,23 +82,23 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	const [dirty, setDirty] = useState<Flags>({})
 
 	// --- Pure per-field validator (no state updates)
-        const validateFieldValue = useCallback(
-                async (field: string, value: string): Promise<string> => {
-                        const fieldDef = flatFormDefinition[field]
-                        if (!fieldDef) return `Field "${String(field)}" not found`
+	const validateFieldValue = useCallback(
+		async (field: string, value: string): Promise<string> => {
+			const fieldDef = flatFormDefinition[field]
+			if (!fieldDef) return `Field "${String(field)}" not found`
 
-                        const validator = extractValidator(fieldDef.validate)
-                        if (!validator) return "validator not available"
+			const validator = extractValidator(fieldDef.validate)
+			if (!validator) return "validator not available"
 
-                        try {
-                                const result = await validator(value)
-                                return deriveValidationMessage(result)
-                        } catch (error) {
-                                return deriveThrownMessage(error)
-                        }
-                },
-                [flatFormDefinition],
-        )
+			try {
+				const result = await validator(value)
+				return deriveValidationMessage(result)
+			} catch (error) {
+				return deriveThrownMessage(error)
+			}
+		},
+		[flatFormDefinition],
+	)
 
 	// --- Single-field validate (updates state for that field)
 	const validateField = useCallback(
