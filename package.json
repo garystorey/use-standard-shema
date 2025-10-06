@@ -55,22 +55,22 @@
     "author": "Gary Storey <garystoreydev@gmail.com>",
     "license": "MIT",
     "peerDependencies": {
-        "react": "^19.1.1"
+        "react": "^19.2.0"
     },
     "devDependencies": {
-        "@biomejs/biome": "2.2.4",
-        "@testing-library/jest-dom": "^6.9.0",
+        "@biomejs/biome": "2.2.5",
+        "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.0",
         "@testing-library/user-event": "^14.6.1",
-        "@types/react": "^19.1.16",
-        "@types/react-dom": "^19.1.9",
+        "@types/react": "^19.2.0",
+        "@types/react-dom": "^19.2.0",
         "@vitejs/plugin-react": "^5.0.4",
         "globals": "^16.4.0",
         "jsdom": "^27.0.0",
-        "react": "^19.1.1",
-        "react-dom": "^19.1.1",
+        "react": "^19.2.0",
+        "react-dom": "^19.2.0",
         "tsup": "^8.5.0",
-        "typescript": "^5.9.2",
+        "typescript": "^5.9.3",
         "vitest": "^3.2.4",
         "zod": "^4.1.11"
     },
