@@ -1,16 +1,58 @@
 import { type FocusEvent, type FormEvent, useCallback, useMemo, useState } from "react"
 import { defineForm, flattenDefaults, flattenFormDefinition, toFormData } from "./helpers"
 import type {
-	DotPaths,
-	ErrorEntry,
-	Errors,
-	FieldDefinition,
-	Flags,
-	FormDefinition,
-	FormValues,
-	TypeFromDefinition,
-	UseStandardSchemaReturn,
+        DotPaths,
+        ErrorEntry,
+        Errors,
+        FieldDefinition,
+        Flags,
+        FormDefinition,
+        FormValues,
+        TypeFromDefinition,
+        UseStandardSchemaReturn,
 } from "./types"
+
+type StandardValidator = (value: string) => unknown | Promise<unknown>
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+        typeof value === "object" && value !== null
+
+const extractValidator = (value: unknown): StandardValidator | undefined => {
+        if (typeof value === "function") return value
+
+        if (!isRecord(value)) return undefined
+
+        const standardValidator = value["~standard"]
+        if (isRecord(standardValidator) && typeof standardValidator.validate === "function") {
+                return standardValidator.validate as StandardValidator
+        }
+
+        if (typeof value.validate === "function") {
+                return value.validate as StandardValidator
+        }
+
+        return undefined
+}
+
+const deriveValidationMessage = (result: unknown): string => {
+        if (typeof result === "string") return result
+        if (!isRecord(result)) return ""
+
+        const issues = Array.isArray(result.issues) ? result.issues : []
+        for (const issue of issues) {
+                if (isRecord(issue) && typeof issue.message === "string") {
+                        return issue.message
+                }
+        }
+
+        return typeof result.message === "string" ? result.message : ""
+}
+
+const deriveThrownMessage = (error: unknown): string => {
+        if (error instanceof Error && error.message) return error.message
+        if (typeof error === "string" && error.trim().length > 0) return error
+        return "validation failed"
+}
 
 /**
  * Custom hook to manage form state based on a form definition.
@@ -38,58 +80,23 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	const [dirty, setDirty] = useState<Flags>({})
 
 	// --- Pure per-field validator (no state updates)
-	const validateFieldValue = useCallback(
-		async (field: string, value: string): Promise<string> => {
-			const fieldDef = flatFormDefinition[field]
-			if (!fieldDef) return `Field "${String(field)}" not found`
+        const validateFieldValue = useCallback(
+                async (field: string, value: string): Promise<string> => {
+                        const fieldDef = flatFormDefinition[field]
+                        if (!fieldDef) return `Field "${String(field)}" not found`
 
-			// Validator shape follows the Standard Schema spec; be defensive in case of unexpected shape
-			const vs: unknown = fieldDef.validate
+                        const validator = extractValidator(fieldDef.validate)
+                        if (!validator) return "validator not available"
 
-			// Narrow unknown to object-like before property access
-			const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null
-
-			let validateFn: unknown
-			if (isObject(vs)) {
-				const std = (vs as Record<string, unknown>)["~standard"]
-				if (isObject(std) && typeof (std as Record<string, unknown>).validate === "function") {
-					validateFn = (std as Record<string, unknown>).validate
-				} else if (typeof (vs as Record<string, unknown>).validate === "function") {
-					validateFn = (vs as Record<string, unknown>).validate
-				}
-			}
-
-			if (typeof validateFn !== "function") {
-				// Return a validation-error-like message rather than throwing
-				return "validator not available"
-			}
-
-			let result: unknown
-			try {
-				result = await (validateFn as (v: string) => unknown | Promise<unknown>)(value)
-			} catch (error) {
-				if (error instanceof Error) {
-					return error.message || "validation failed"
-				}
-				if (typeof error === "string" && error.trim().length > 0) {
-					return error
-				}
-				return "validation failed"
-			}
-
-			// Narrow the unknown result to a shape we can safely inspect
-			const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : null
-			const issuesUnknown = resultObj?.issues
-			const issues = Array.isArray(issuesUnknown) ? issuesUnknown : undefined
-			const firstIssue = issues?.find((issue) => typeof issue === "object" && issue !== null) as
-				| Record<string, unknown>
-				| undefined
-			const issueMessage = typeof firstIssue?.message === "string" ? (firstIssue.message as string) : undefined
-			const fallbackMessage = typeof resultObj?.message === "string" ? (resultObj.message as string) : undefined
-			return issueMessage ?? fallbackMessage ?? ""
-		},
-		[flatFormDefinition],
-	)
+                        try {
+                                const result = await validator(value)
+                                return deriveValidationMessage(result)
+                        } catch (error) {
+                                return deriveThrownMessage(error)
+                        }
+                },
+                [flatFormDefinition],
+        )
 
 	// --- Single-field validate (updates state for that field)
 	const validateField = useCallback(
