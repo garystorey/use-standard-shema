@@ -85,11 +85,16 @@ const nameForm = defineForm({
 type NameFormData = TypeFromDefinition<typeof nameForm>;
 
 export function App() {
-  const { getForm, getField, resetForm, getErrors } = useStandardSchema(nameForm);
+  const {
+    getForm,
+    getField,
+    getErrors,
+    isDirty,
+    isTouched,
+  } = useStandardSchema(nameForm);
 
   const handleSubmit = (data: NameFormData) => {
     console.log(data);
-    resetForm();
   }
 
   const form = getForm(handleSubmit)
@@ -97,6 +102,8 @@ export function App() {
   const lastName = getField("lastName");
 
   const allErrors = getErrors()
+  const hasChanges = isDirty();
+  const hasInteraction = isTouched();
 
   return (
     <form {...form}>
@@ -104,8 +111,8 @@ export function App() {
       {/* show all errors */}
       {allErrors.length > 0 && (
         <div className="all-error-messages" role="alert">
-          {allErrors.map(({ key, error, label }) => (
-            <p key={key}>{label} is {error}</p>
+          {allErrors.map(({ name, error, label }) => (
+            <p key={name}>{label} is {error}</p>
           ))}
         </div>
       )}
@@ -143,11 +150,32 @@ export function App() {
       </div>
 
       <button type="submit">Submit</button>
+      <p className="form-status" role="status">
+        {hasChanges ? "You have unsaved changes" : "All changes saved"}
+      </p>
     </form>
   )
 }
 
 ```
+
+### Track form interaction state
+
+The hook returns helpers that expose the internal `touched` and `dirty` flags so you can react to
+user interaction without duplicating state.
+
+```tsx
+const { isTouched, isDirty } = useStandardSchema(nameForm);
+
+const hasUserInteracted = isTouched(); // true if any registered field has received focus
+const hasUnsavedChanges = isDirty(); // true if any registered field value differs from its default
+
+// Narrow the checks to a specific field
+const firstNameTouched = isTouched("firstName");
+const lastNameDirty = isDirty("lastName");
+```
+
+Use these helpers to drive button enablement, show “unsaved changes” banners, or block navigation.
 
 ## Examples
 
