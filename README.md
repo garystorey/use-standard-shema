@@ -159,10 +159,12 @@ export function App() {
 
 ```
 
+## Examples
+
 ### Track form interaction state
 
-The hook returns helpers that expose the internal `touched` and `dirty` flags so you can react to
-user interaction without duplicating state.
+The hook returns helpers that expose the the field/form's `touched` and `dirty` state so you can react to
+user interaction.
 
 ```tsx
 const { isTouched, isDirty } = useStandardSchema(nameForm);
@@ -174,10 +176,6 @@ const hasUnsavedChanges = isDirty(); // true if any registered field value diffe
 const firstNameTouched = isTouched("firstName");
 const lastNameDirty = isDirty("lastName");
 ```
-
-Use these helpers to drive button enablement, show “unsaved changes” banners, or block navigation.
-
-## Examples
 
 ### Nested object field
 
