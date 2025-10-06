@@ -1,4 +1,5 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec"
+import type { FocusEvent, FormEvent } from "react"
 
 /* =============================================================================
  * Core domain types
@@ -67,8 +68,6 @@ export type TypeFromDefinition<T extends FormDefinition> = {
 	[K in keyof DotPathsToValues<T>]: DotPathsToValues<T>[K]
 }
 
-export type FieldMapper<T> = (fieldDef: FieldDefinition, path: string) => T
-export type RecurseFn<T> = (subSchema: FormDefinition, path: string) => Record<string, T>
 export type ErrorEntry = { name: string; error: string; label: string }
 
 /* =============================================================================
@@ -159,7 +158,27 @@ export type AssertValidFormKeysDeep<T extends FormDefinition> = true extends _Ha
 
 export interface FieldDefintionProps extends FieldDefinition {
 	name: string
-	error: string
 	errorId: string
 	describedById: string
+	touched: boolean
+	dirty: boolean
+	error: string
+}
+
+export interface UseStandardSchemaReturn<T extends FormDefinition> {
+	resetForm: () => void
+	getForm: (onSubmitHandler: (data: TypeFromDefinition<T>) => void) => {
+		onSubmit: (e: FormEvent) => Promise<void>
+		onFocus: (e: FocusEvent<HTMLFormElement>) => void
+		onBlur: (e: FocusEvent<HTMLFormElement>) => Promise<void>
+		onReset: () => void
+	}
+	getField: (
+		name: DotPaths<T>,
+	) => Partial<FieldDefintionProps> & { defaultValue?: string; error: string; touched?: boolean; dirty?: boolean }
+	getErrors: (name?: DotPaths<T>) => ErrorEntry[]
+	validate: (name?: DotPaths<T>) => Promise<boolean>
+	__dangerouslySetField: (name: DotPaths<T>, value: string) => Promise<void>
+	isTouched: (name?: DotPaths<T>) => boolean
+	isDirty: (name?: DotPaths<T>) => boolean
 }

@@ -85,11 +85,16 @@ const nameForm = defineForm({
 type NameFormData = TypeFromDefinition<typeof nameForm>;
 
 export function App() {
-  const { getForm, getField, resetForm, getErrors } = useStandardSchema(nameForm);
+  const {
+    getForm,
+    getField,
+    getErrors,
+    isDirty,
+    isTouched,
+  } = useStandardSchema(nameForm);
 
   const handleSubmit = (data: NameFormData) => {
     console.log(data);
-    resetForm();
   }
 
   const form = getForm(handleSubmit)
@@ -97,6 +102,8 @@ export function App() {
   const lastName = getField("lastName");
 
   const allErrors = getErrors()
+  const hasChanges = isDirty();
+  const hasInteraction = isTouched();
 
   return (
     <form {...form}>
@@ -104,8 +111,8 @@ export function App() {
       {/* show all errors */}
       {allErrors.length > 0 && (
         <div className="all-error-messages" role="alert">
-          {allErrors.map(({ key, error, label }) => (
-            <p key={key}>{label} is {error}</p>
+          {allErrors.map(({ name, error, label }) => (
+            <p key={name}>{label} is {error}</p>
           ))}
         </div>
       )}
@@ -143,6 +150,9 @@ export function App() {
       </div>
 
       <button type="submit">Submit</button>
+      <p className="form-status" role="status">
+        {hasChanges ? "You have unsaved changes" : "All changes saved"}
+      </p>
     </form>
   )
 }
@@ -150,6 +160,22 @@ export function App() {
 ```
 
 ## Examples
+
+### Track form interaction state
+
+The hook returns helpers that expose the the field/form's `touched` and `dirty` state so you can react to
+user interaction.
+
+```tsx
+const { isTouched, isDirty } = useStandardSchema(nameForm);
+
+const hasUserInteracted = isTouched(); // true if any registered field has received focus
+const hasUnsavedChanges = isDirty(); // true if any registered field value differs from its default
+
+// Narrow the checks to a specific field
+const firstNameTouched = isTouched("firstName");
+const lastNameDirty = isDirty("lastName");
+```
 
 ### Nested object field
 
@@ -248,8 +274,8 @@ type FieldProps = FieldDefinitionProps & {
 | `getForm(onSubmit)`          | Returns event handlers for the form; submit handler only fires with valid data |
 | `getField(name)`             | Returns metadata for a given field (label, defaultValue, error, touched, dirty, ARIA ids) |
 | `resetForm()`                | Resets all form state to initial defaults |
-| `touched`                    | Read-only frozen object of touched fields |
-| `dirty`                      | Read-only frozen object of dirty fields |
+| `isTouched(name?)`           | Returns whether a field (or any field when omitted) has been touched |
+| `isDirty(name?)`             | Returns whether a field (or any field when omitted) has been modified |
 | `toFormData(data)`           | Helper to convert values to `FormData` |
 | `getErrors(name?)`                | Returns an array of `{ name, error, label }` for field or form |
 | `validate(name?)`            | Validates either the entire form or a single field |
@@ -279,6 +305,10 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## ChangeLog
 
+- **v0.3.0** - Harden validation and expose field state helpers.
+  - Added `isTouched` and `isDirty` helpers to the hook return value for quick form state checks.
+  - Improved validator extraction to accept broader Standard Schema shapes and gracefully surface thrown errors.
+  - Simplified validation flow so blur validation only runs on dirty fields while keeping internal helpers consistent.
 - **v0.2.7** - Improve error handling
   - Update the return of `getErrors` to be `{name, label, error}` for consistency.
   - `getErrors` will name accept an optional `name` prop and return only that error.

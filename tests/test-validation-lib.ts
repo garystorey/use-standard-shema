@@ -36,3 +36,20 @@ export function email(message: string = "Invalid email"): StringSchema {
 		},
 	}
 }
+
+export function throwing(message: string = "Boom!"): StringSchema {
+	return {
+		type: "string",
+		message,
+		"~standard": {
+			version: 1,
+			vendor: "tests",
+			async validate(value) {
+				if (typeof value !== "string" || value.trim().length === 0) {
+					throw new Error(message)
+				}
+				return { value }
+			},
+		},
+	}
+}

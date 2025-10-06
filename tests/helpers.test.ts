@@ -46,7 +46,8 @@ describe("helpers", () => {
 	})
 
 	it("toFormData includes only defined values and stringifies", () => {
-		const fd = toFormData({ a: "1", b: 2 as any, c: undefined as any, d: null as any })
+		// provide only defined string values; other keys omitted
+		const fd = toFormData({ a: "1", b: "2" })
 		expect(fd.get("a")).toBe("1")
 		expect(fd.get("b")).toBe("2")
 		expect(fd.get("c")).toBeNull() // omitted

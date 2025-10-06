@@ -9,14 +9,60 @@ import type {
 	FormDefinition,
 	FormValues,
 	TypeFromDefinition,
+	UseStandardSchemaReturn,
 } from "./types"
+
+type SchemaValidator = FieldDefinition["validate"]["~standard"]["validate"]
+type StandardValidator = SchemaValidator | ((value: string) => unknown | Promise<unknown>)
+
+const isValidatorFunction = (value: unknown): value is StandardValidator => typeof value === "function"
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null
+
+const extractValidator = (value: unknown): StandardValidator | undefined => {
+	if (isValidatorFunction(value)) return value
+
+	if (!isRecord(value)) return undefined
+
+	const standardValidator = value["~standard"]
+	if (isRecord(standardValidator) && isValidatorFunction(standardValidator.validate)) {
+		return standardValidator.validate
+	}
+
+	if (isValidatorFunction(value.validate)) {
+		return value.validate
+	}
+
+	return undefined
+}
+
+const deriveValidationMessage = (result: unknown): string => {
+	if (typeof result === "string") return result
+	if (!isRecord(result)) return ""
+
+	const issues = Array.isArray(result.issues) ? result.issues : []
+	for (const issue of issues) {
+		if (isRecord(issue) && typeof issue.message === "string") {
+			return issue.message
+		}
+	}
+
+	return typeof result.message === "string" ? result.message : ""
+}
+
+const deriveThrownMessage = (error: unknown): string => {
+	if (error instanceof Error && error.message) return error.message
+	if (typeof error === "string" && error.trim().length > 0) return error
+	return "validation failed"
+}
 
 /**
  * Custom hook to manage form state based on a form definition.
  * @param formDefinition - The form definition.
  * @returns An object containing methods and state for managing the form.
  */
-function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
+
+function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStandardSchemaReturn<T> {
 	type FieldKey = DotPaths<T>
 
 	// Derived data
@@ -39,8 +85,17 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 	const validateFieldValue = useCallback(
 		async (field: string, value: string): Promise<string> => {
 			const fieldDef = flatFormDefinition[field]
-			const result = await fieldDef.validate["~standard"].validate(value)
-			return result?.issues?.[0]?.message ?? ""
+			if (!fieldDef) return `Field "${String(field)}" not found`
+
+			const validator = extractValidator(fieldDef.validate)
+			if (!validator) return "validator not available"
+
+			try {
+				const result = await validator(value)
+				return deriveValidationMessage(result)
+			} catch (error) {
+				return deriveThrownMessage(error)
+			}
 		},
 		[flatFormDefinition],
 	)
@@ -95,6 +150,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 				const isValid = await validate()
 				if (isValid) {
 					onSubmitHandler(data as TypeFromDefinition<typeof formDefinition>)
+					resetForm()
 					formEl.reset()
 				}
 			}
@@ -136,21 +192,20 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 			const key = name as string
 
 			const def = flatFormDefinition[key]
-			if (!def) {
-				throw new Error(`Field "${key}" does not exist in the form definition.`)
-			}
-
-			const { validate: _validate, ...fieldDef } = def
 			const describedById = `${key}-description`
 			const errorId = `${key}-error`
+
+			if (!def) throw new Error(`Field "${key}" not found`)
+
+			const { validate: _validate, ...fieldDef } = def
 
 			return {
 				...fieldDef,
 				name: key,
 				defaultValue: data[key] ?? "",
 				error: errors[key] ?? "",
-				touched: touched[key] ? String(touched[key]) : "false",
-				dirty: dirty[key] ? String(dirty[key]) : "false",
+				touched: touched[key] ?? false,
+				dirty: dirty[key] ?? false,
 				describedById,
 				errorId,
 			}
@@ -172,13 +227,13 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 	const getErrors = useCallback(
 		(name?: FieldKey): ErrorEntry[] => {
 			if (name) {
-				const error = errors[name]
+				const error = errors[name as string]
 				if (!error) return []
 				return [
 					{
-						name,
+						name: name as string,
 						error,
-						label: flatFormDefinition[name]?.label,
+						label: flatFormDefinition[name as string]?.label,
 					},
 				]
 			}
@@ -199,8 +254,29 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 		[formDefinitionKeys, errors, flatFormDefinition],
 	)
 
-	const touchedFrozen = useMemo(() => Object.freeze({ ...touched }), [touched])
-	const dirtyFrozen = useMemo(() => Object.freeze({ ...dirty }), [dirty])
+	const isTouched = useCallback(
+		(name?: FieldKey) => {
+			if (name) {
+				const key = name as string
+				return Boolean(touched[key])
+			}
+
+			return Object.values(touched).some(Boolean)
+		},
+		[touched],
+	)
+
+	const isDirty = useCallback(
+		(name?: FieldKey) => {
+			if (name) {
+				const key = name as string
+				return Boolean(dirty[key])
+			}
+
+			return Object.values(dirty).some(Boolean)
+		},
+		[dirty],
+	)
 
 	return {
 		resetForm,
@@ -209,8 +285,8 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T) {
 		getErrors,
 		validate,
 		__dangerouslySetField: setField,
-		touched: touchedFrozen,
-		dirty: dirtyFrozen,
+		isTouched,
+		isDirty,
 	}
 }
 
