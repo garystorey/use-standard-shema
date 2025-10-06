@@ -1,12 +1,10 @@
 import type {
-	AnyFormPathKey,
-	AssertValidFormKeysDeep,
-	DotPaths,
-	FieldDefinition,
-	FieldMapper,
-	FormDefinition,
-	FormValues,
-	RecurseFn,
+        AnyFormPathKey,
+        AssertValidFormKeysDeep,
+        DotPaths,
+        FieldDefinition,
+        FormDefinition,
+        FormValues,
 } from "./types"
 
 /** Define and return the form definition as is. */
@@ -43,31 +41,10 @@ export function toFormData(data: Record<string, string>) {
 	return formData
 }
 
-/** Helper function to apply flattening logic recursively */
-/** This function modifies the resultMap in place. */
-/** It uses the fieldMapper to map FieldDefinitions and recurseFn to handle nested objects. */
-/** It checks if the currentValue is a FieldDefinition or a plain object and applies the appropriate logic. */
-function applyFlattening<T>(
-	resultMap: Record<string, T>,
-	currentValue: unknown,
-	currentPath: string,
-	fieldMapper: FieldMapper<T>,
-	recurseFn: RecurseFn<T>,
-): void {
-	if (isFieldDefinition(currentValue)) {
-		resultMap[currentPath] = fieldMapper(currentValue, currentPath)
-		return
-	}
-
-	if (isPlainObject(currentValue)) {
-		Object.assign(resultMap, recurseFn(currentValue as FormDefinition, currentPath))
-	}
-}
-
 // ---------------- flattenFormDefinition ----------------
 export function flattenFormDefinition<Def extends FormDefinition>(
-	formDefinition: Def,
-	parentPath?: string,
+        formDefinition: Def,
+        parentPath?: string,
 ): Record<DotPaths<Def>, FieldDefinition>
 
 export function flattenFormDefinition(
@@ -77,24 +54,25 @@ export function flattenFormDefinition(
 
 // implementation (unchanged body; note the general return type)
 export function flattenFormDefinition(
-	formDefinition: FormDefinition,
-	parentPath = "",
+        formDefinition: FormDefinition,
+        parentPath = "",
 ): Record<string, FieldDefinition> {
-	const flattened: Record<string, FieldDefinition> = {}
+        const flattened: Record<string, FieldDefinition> = {}
 
-	for (const [propertyKey, propertyValue] of Object.entries(formDefinition as Record<string, unknown>)) {
-		const fullPath = parentPath ? `${parentPath}.${propertyKey}` : propertyKey
+        for (const [propertyKey, propertyValue] of Object.entries(formDefinition as Record<string, unknown>)) {
+                const fullPath = parentPath ? `${parentPath}.${propertyKey}` : propertyKey
 
-		applyFlattening<FieldDefinition>(
-			flattened,
-			propertyValue,
-			fullPath,
-			(fieldDef: FieldDefinition) => fieldDef,
-			(subSchema: FormDefinition, path: string) => flattenFormDefinition(subSchema, path),
-		)
-	}
+                if (isFieldDefinition(propertyValue)) {
+                        flattened[fullPath] = propertyValue
+                        continue
+                }
 
-	return flattened
+                if (isPlainObject(propertyValue)) {
+                        Object.assign(flattened, flattenFormDefinition(propertyValue as FormDefinition, fullPath))
+                }
+        }
+
+        return flattened
 }
 
 // ---------------- flattenDefaults ----------------
@@ -107,19 +85,20 @@ export function flattenDefaults(formDefinition: FormDefinition, parentPath?: str
 
 // implementation (unchanged body; note the general return type)
 export function flattenDefaults(formDefinition: FormDefinition, parentPath = ""): Record<string, string> {
-	const flattened: Record<string, string> = {}
+        const flattened: Record<string, string> = {}
 
-	for (const [propertyKey, propertyValue] of Object.entries(formDefinition as Record<string, unknown>)) {
-		const fullPath = parentPath ? `${parentPath}.${propertyKey}` : propertyKey
+        for (const [propertyKey, propertyValue] of Object.entries(formDefinition as Record<string, unknown>)) {
+                const fullPath = parentPath ? `${parentPath}.${propertyKey}` : propertyKey
 
-		applyFlattening<string>(
-			flattened,
-			propertyValue,
-			fullPath,
-			(fieldDef: FieldDefinition) => fieldDef.defaultValue ?? "",
-			(subSchema: FormDefinition, path: string) => flattenDefaults(subSchema, path),
-		)
-	}
+                if (isFieldDefinition(propertyValue)) {
+                        flattened[fullPath] = propertyValue.defaultValue ?? ""
+                        continue
+                }
 
-	return flattened
+                if (isPlainObject(propertyValue)) {
+                        Object.assign(flattened, flattenDefaults(propertyValue as FormDefinition, fullPath))
+                }
+        }
+
+        return flattened
 }

@@ -68,8 +68,6 @@ export type TypeFromDefinition<T extends FormDefinition> = {
 	[K in keyof DotPathsToValues<T>]: DotPathsToValues<T>[K]
 }
 
-export type FieldMapper<T> = (fieldDef: FieldDefinition, path: string) => T
-export type RecurseFn<T> = (subSchema: FormDefinition, path: string) => Record<string, T>
 export type ErrorEntry = { name: string; error: string; label: string }
 
 /* =============================================================================
