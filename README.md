@@ -279,6 +279,10 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## ChangeLog
 
+- **v0.3.0** - Harden validation and expose field state helpers.
+  - Added `isTouched` and `isDirty` helpers to the hook return value for quick form state checks.
+  - Improved validator extraction to accept broader Standard Schema shapes and gracefully surface thrown errors.
+  - Simplified validation flow so blur validation only runs on dirty fields while keeping internal helpers consistent.
 - **v0.2.7** - Improve error handling
   - Update the return of `getErrors` to be `{name, label, error}` for consistency.
   - `getErrors` will name accept an optional `name` prop and return only that error.
