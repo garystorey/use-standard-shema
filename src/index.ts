@@ -64,12 +64,29 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 				return "validator not available"
 			}
 
-			const result = await (validateFn as (v: string) => Promise<unknown>)(value)
+			let result: unknown
+			try {
+				result = await (validateFn as (v: string) => unknown | Promise<unknown>)(value)
+			} catch (error) {
+				if (error instanceof Error) {
+					return error.message || "validation failed"
+				}
+				if (typeof error === "string" && error.trim().length > 0) {
+					return error
+				}
+				return "validation failed"
+			}
+
 			// Narrow the unknown result to a shape we can safely inspect
-			const issues = (result as Record<string, unknown> | null)?.issues as Array<Record<string, unknown>> | undefined
-			const first = issues && issues.length > 0 ? issues[0] : undefined
-			const message = first ? (first.message as string | undefined) : undefined
-			return message ?? ""
+			const resultObj = typeof result === "object" && result !== null ? (result as Record<string, unknown>) : null
+			const issuesUnknown = resultObj?.issues
+			const issues = Array.isArray(issuesUnknown) ? issuesUnknown : undefined
+			const firstIssue = issues?.find((issue) => typeof issue === "object" && issue !== null) as
+				| Record<string, unknown>
+				| undefined
+			const issueMessage = typeof firstIssue?.message === "string" ? (firstIssue.message as string) : undefined
+			const fallbackMessage = typeof resultObj?.message === "string" ? (resultObj.message as string) : undefined
+			return issueMessage ?? fallbackMessage ?? ""
 		},
 		[flatFormDefinition],
 	)

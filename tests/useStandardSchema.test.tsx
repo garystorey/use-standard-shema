@@ -5,11 +5,24 @@ import { describe, expect, it, vi } from "vitest"
 import { useStandardSchema } from "../src"
 import { defineForm } from "../src/helpers"
 import type { ErrorEntry } from "../src/types"
-import { email as emailValidator, string as reqString } from "./test-validation-lib"
+import { email as emailValidator, string as reqString, throwing as throwingValidator } from "./test-validation-lib"
 
 function makeForm() {
 	return defineForm({
 		name: { label: "Name", defaultValue: "Joe", validate: reqString() },
+		contact: {
+			email: { label: "Email", defaultValue: "", validate: emailValidator() },
+		},
+	})
+}
+
+function makeThrowingForm(): FormType {
+	return defineForm({
+		name: {
+			label: "Name",
+			defaultValue: "Joe",
+			validate: throwingValidator("Boom!"),
+		},
 		contact: {
 			email: { label: "Email", defaultValue: "", validate: emailValidator() },
 		},
@@ -116,6 +129,29 @@ describe("useStandardSchema (basic)", () => {
 			const allErrors = ref.current!.getErrors()
 			// email should be present in errors
 			expect(allErrors.some((e: ErrorEntry) => e.name === "contact.email")).toBe(true)
+		})
+	})
+
+	it("handles validators that throw errors without crashing", async () => {
+		const form = makeThrowingForm()
+		const ref = React.createRef<HookApi | null>()
+		render(<Harness ref={ref} formDef={form} />)
+
+		let thrown: unknown
+		await act(async () => {
+			try {
+				await ref.current!.__dangerouslySetField("name", "")
+			} catch (error) {
+				thrown = error
+			}
+		})
+
+		expect(thrown).toBeUndefined()
+
+		await waitFor(() => {
+			const errs = ref.current!.getErrors("name")
+			expect(errs).toHaveLength(1)
+			expect(errs[0].error).toContain("Boom!")
 		})
 	})
 })
