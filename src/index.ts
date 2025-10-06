@@ -12,23 +12,29 @@ import type {
         UseStandardSchemaReturn,
 } from "./types"
 
-type StandardValidator = (value: string) => unknown | Promise<unknown>
+type SchemaValidator = FieldDefinition["validate"]["~standard"]["validate"]
+type StandardValidator =
+        | SchemaValidator
+        | ((value: string) => unknown | Promise<unknown>)
+
+const isValidatorFunction = (value: unknown): value is StandardValidator =>
+        typeof value === "function"
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
         typeof value === "object" && value !== null
 
 const extractValidator = (value: unknown): StandardValidator | undefined => {
-        if (typeof value === "function") return value
+        if (isValidatorFunction(value)) return value
 
         if (!isRecord(value)) return undefined
 
         const standardValidator = value["~standard"]
-        if (isRecord(standardValidator) && typeof standardValidator.validate === "function") {
-                return standardValidator.validate as StandardValidator
+        if (isRecord(standardValidator) && isValidatorFunction(standardValidator.validate)) {
+                return standardValidator.validate
         }
 
-        if (typeof value.validate === "function") {
-                return value.validate as StandardValidator
+        if (isValidatorFunction(value.validate)) {
+                return value.validate
         }
 
         return undefined
