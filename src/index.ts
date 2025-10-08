@@ -1,4 +1,4 @@
-import { type FocusEvent, type FormEvent, useCallback, useMemo, useState } from "react"
+import { type FocusEvent, type FormEvent, useCallback, useEffect, useMemo, useState } from "react"
 import { defineForm, flattenDefaults, flattenFormDefinition, toFormData } from "./helpers"
 import type {
 	DotPaths,
@@ -80,6 +80,13 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	const [errors, setErrors] = useState<Errors>({})
 	const [touched, setTouched] = useState<Flags>({})
 	const [dirty, setDirty] = useState<Flags>({})
+
+	useEffect(() => {
+		setData(initialValues)
+		setErrors({})
+		setTouched({})
+		setDirty({})
+	}, [initialValues])
 
 	// --- Pure per-field validator (no state updates)
 	const validateFieldValue = useCallback(
