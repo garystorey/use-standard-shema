@@ -105,15 +105,46 @@ describe("useStandardSchema (basic)", () => {
 			ref.current!.resetForm()
 		})
 
-		await waitFor(() => {
-			const field = ref.current!.getField("name")
-			expect(field.defaultValue).toBe("Joe")
-			expect(ref.current!.isDirty()).toBe(false)
-			expect(ref.current!.isTouched()).toBe(false)
-		})
-	})
+                await waitFor(() => {
+                        const field = ref.current!.getField("name")
+                        expect(field.defaultValue).toBe("Joe")
+                        expect(ref.current!.isDirty()).toBe(false)
+                        expect(ref.current!.isTouched()).toBe(false)
+                })
+        })
 
-	it("full form validate reports errors for multiple fields", async () => {
+        it("resets state when form definition changes", async () => {
+                const firstForm = makeForm()
+                const ref = React.createRef<HookApi | null>()
+                const { rerender } = render(<Harness ref={ref} formDef={firstForm} />)
+
+                await act(async () => {
+                        await ref.current!.__dangerouslySetField("name", "")
+                })
+
+                await waitFor(() => {
+                        const errors = ref.current!.getErrors("name")
+                        expect(errors).toHaveLength(1)
+                })
+
+                const updatedForm = defineForm({
+                        name: { label: "Name", defaultValue: "Jane", validate: reqString() },
+                        contact: {
+                                email: { label: "Email", defaultValue: "", validate: emailValidator() },
+                        },
+                })
+
+                rerender(<Harness ref={ref} formDef={updatedForm} />)
+
+                await waitFor(() => {
+                        const field = ref.current!.getField("name")
+                        expect(field.defaultValue).toBe("Jane")
+                        expect(ref.current!.getErrors("name")).toHaveLength(0)
+                        expect(ref.current!.isDirty()).toBe(false)
+                        expect(ref.current!.isTouched()).toBe(false)
+                })
+        })
+        it("full form validate reports errors for multiple fields", async () => {
 		const form = makeForm()
 		const ref = React.createRef<HookApi | null>()
 		render(<Harness ref={ref} formDef={form} />)
@@ -157,35 +188,35 @@ describe("useStandardSchema (basic)", () => {
 })
 
 const FormHarness = forwardRef<
-	HookApi | null,
-	{ formDef: FormType; onSubmitSpy: (data: Record<string, unknown>) => void }
+        HookApi | null,
+        { formDef: FormType; onSubmitSpy: (data: Record<string, unknown>) => void }
 >(function FormHarness(props, ref) {
-	const api = useStandardSchema(props.formDef)
-	const handlers = api.getForm(props.onSubmitSpy)
+        const api = useStandardSchema(props.formDef)
+        const handlers = api.getForm(props.onSubmitSpy)
 
-	useImperativeHandle(ref, () => api, [api])
+        useImperativeHandle(ref, () => api, [api])
 
-	const nameField = api.getField("name")
-	const emailField = api.getField("contact.email")
+        const nameField = api.getField("name")
+        const emailField = api.getField("contact.email")
 
-	return (
-		<form
-			data-testid="form"
-			onSubmit={handlers.onSubmit}
-			onFocus={handlers.onFocus}
-			onBlur={handlers.onBlur}
-			onReset={handlers.onReset}
-		>
-			<label htmlFor="name">{nameField.label}</label>
-			<input id="name" name="name" defaultValue={nameField.defaultValue} />
+        return (
+                <form
+                        data-testid="form"
+                        onSubmit={handlers.onSubmit}
+                        onFocus={handlers.onFocus}
+                        onBlur={handlers.onBlur}
+                        onReset={handlers.onReset}
+                >
+                        <label htmlFor="name">{nameField.label}</label>
+                        <input id="name" name="name" defaultValue={nameField.defaultValue} />
 
-			<label htmlFor="email">{emailField.label}</label>
-			<input id="email" name="contact.email" defaultValue={emailField.defaultValue} />
+                        <label htmlFor="email">{emailField.label}</label>
+                        <input id="email" name="contact.email" defaultValue={emailField.defaultValue} />
 
-			<button type="submit">Submit</button>
-			<button type="reset">Reset</button>
-		</form>
-	)
+                        <button type="submit">Submit</button>
+                        <button type="reset">Reset</button>
+                </form>
+        )
 })
 
 describe("useStandardSchema getForm handlers (inline)", () => {
