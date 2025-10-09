@@ -57,102 +57,50 @@ pnpm add use-standard-schema
 
 ## Usage
 
-Example using [zod](https://zod.dev). This form has two fields: `firstName` and `lastName`. Both are required and must be at least two characters long.
+Example using [zod](https://zod.dev). This form has a single `email` field that is required.
 
 ```tsx
 import { defineForm, useStandardSchema, type TypeFromDefinition } from "use-standard-schema"
 import * as z from "zod"
 
-const validString = z.string().min(2, "Too short").max(100, "Too long")
-
-// create the form definition
-// nested objects are supported (e.g. address.street1)
-const nameForm = defineForm({
-  firstName: {
-    validate: validString,  // required
-    label: "First Name",     // required
-    description: "Enter your given name"
-  },
-  lastName: {
-    validate: validString,
-    label: "Last Name",
-    description: "Enter your surname",
-    defaultValue: ""         // optional initial value
-  },
+const emailForm = defineForm({
+  email: {
+    validate: z.email(),  // required
+    label: "Email Address",     // required
+    description: "Enter your email address to continue" // optional
+    defaultValue: ""  //optional
+  }
 })
 
-// get the type from the form definition
-type NameFormData = TypeFromDefinition<typeof nameForm>;
-
 export function App() {
-  const {
-    getForm,
-    getField,
-    getErrors,
-    isDirty,
-    isTouched,
-  } = useStandardSchema(nameForm);
 
-  const handleSubmit = (data: NameFormData) => {
-    console.log(data);
-  }
+  const { getForm, getField } = useStandardSchema(emailForm);
 
-  const form = getForm(handleSubmit)
-  const firstName = getField("firstName");
-  const lastName = getField("lastName");
-
-  const allErrors = getErrors()
-  const hasChanges = isDirty();
-  const hasInteraction = isTouched();
+  const handleSubmit = (data: TypeFromDefinition<typeof emailForm>) => console.log(data);
+  
+  const email = getField("email")
 
   return (
-    <form {...form}>
+    <form {...getForm(handleSubmit)}>
 
-      {/* show all errors */}
-      {allErrors.length > 0 && (
-        <div className="all-error-messages" role="alert">
-          {allErrors.map(({ name, error, label }) => (
-            <p key={name}>{label} is {error}</p>
-          ))}
-        </div>
-      )}
-
-      <div className={`field ${firstName.error ? "has-error" : ""}`}>
-        <label htmlFor={firstName.name}>{firstName.label}</label>
+      <div className={`field ${email.error ? "has-error" : ""}`}>
+        <label htmlFor={email.name}>{email.label}</label>
         <input
-          name={firstName.name}
-          defaultValue={firstName.defaultValue}
-          aria-describedby={firstName.describedById}
-          aria-errormessage={firstName.errorId}
+          name={email.name}
+          defaultValue={email.defaultValue}
+          aria-describedby={email.describedById}
+          aria-errormessage={email.errorId}
         />
-        <p id={firstName.describedById} className="description">
-          {firstName.description}
+        <p id={email.describedById} className="description">
+          {email.description}
         </p>
-        <p id={firstName.errorId} className="error">
-          {firstName.error}
-        </p>
-      </div>
-
-      <div className={`field ${lastName.error ? "has-error" : ""}`}>
-        <label htmlFor={lastName.name}>{lastName.label}</label>
-        <input
-          name={lastName.name}
-          defaultValue={lastName.defaultValue}
-          aria-describedby={lastName.describedById}
-          aria-errormessage={lastName.errorId}
-        />
-        <p id={lastName.describedById} className="description">
-          {lastName.description}
-        </p>
-        <p id={lastName.errorId} className="error">
-          {lastName.error}
+        <p id={email.errorId} className="error">
+          {email.error}
         </p>
       </div>
 
       <button type="submit">Submit</button>
-      <p className="form-status" role="status">
-        {hasChanges ? "You have unsaved changes" : "All changes saved"}
-      </p>
+
     </form>
   )
 }
@@ -160,22 +108,6 @@ export function App() {
 ```
 
 ## Examples
-
-### Track form interaction state
-
-The hook returns helpers that expose the field/form's `touched` and `dirty` state so you can react to
-user interaction.
-
-```tsx
-const { isTouched, isDirty } = useStandardSchema(nameForm);
-
-const hasUserInteracted = isTouched(); // true if any registered field has received focus
-const hasUnsavedChanges = isDirty(); // true if any registered field value differs from its default
-
-// Narrow the checks to a specific field
-const firstNameTouched = isTouched("firstName");
-const lastNameDirty = isDirty("lastName");
-```
 
 ### Nested object field
 
@@ -194,6 +126,48 @@ const addressForm = defineForm({
 const streetField = getField("address.street1");
 ```
 
+### Error Handling
+
+You can show all errors in one place using the `getError` method.  
+**Note**: `getError` can be used to get a single fields error as well.
+
+```tsx
+const allErrors = getError()
+
+{allErrors.length > 0 && (
+<div className="all-error-messages" role="alert">
+    {allErrors.map(({ name, error, label }) => (
+    <p key={name}>{label} is {error}</p>
+    ))}
+</div>
+)}
+```
+
+### Touched and Dirty
+
+The hook returns helpers that expose the field/form's `touched` and `dirty` state so you can react to
+user interaction.
+
+```tsx
+const { isTouched, isDirty } = useStandardSchema(nameForm);
+
+const hasUserInteracted = isTouched(); // true if any registered field has received focus
+const hasUnsavedChanges = isDirty(); // true if any registered field value differs from its default
+
+// Narrow the checks to a specific field
+const firstNameTouched = isTouched("firstName");
+const lastNameDirty = isDirty("lastName");
+```
+
+### Manual Validation
+
+Occasionally, manual validation is needed. For instance, if two fields are interdependent and the value of one field is based on a valid value in another field.  The following utility functions are available to help with this scenario:
+
+- `resetForm` - will reset the **form state** back to the initial values.
+- `validate` - a function to validate a field
+- `__dangerouslySetField` can be used to manually set a fields value and cause validation.
+- `toFormData` -  a function to convert the returned data to web standard FormData.
+
 ### Valid keys
 
 A `FormDefinition`'s key is an intersection between a valid JSON key and an HTML name attribute.
@@ -201,11 +175,11 @@ A `FormDefinition`'s key is an intersection between a valid JSON key and an HTML
 ```ts
 
 const definition = defineForm({
-    prefix: z.string(),                // valid
-    "first-name": z.string(),          // valid
-    "middle_name": z.string(),         // valid
-    "last:name": z.string(),           // valid
-    "street address": z.string()       // invalid
+    prefix: z.string(),                // ✔️ valid
+    "first-name": z.string(),          // ✔️ valid
+    "middle_name": z.string(),         // ✔️ valid
+    "last:name": z.string(),           // ✔️ valid
+    "street address": z.string()       // ❌ invalid
 })
 
 ```
@@ -227,11 +201,7 @@ const validString = v.pipe(
 // showing the updated form definition for completeness.  
 // no real changes here
 const formData = defineForm({
-  firstName: {
-    //... the same as previous example
-    validate: validString,
-  },
-  lastName: {
+  email: {
     //... the same as previous example
     validate: validString,
   }
