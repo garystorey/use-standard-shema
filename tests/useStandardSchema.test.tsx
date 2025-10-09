@@ -100,68 +100,69 @@ describe("useStandardSchema (basic)", () => {
 		expect(ref.current!.isDirty("name")).toBe(true)
 		expect(ref.current!.isTouched("name")).toBe(true)
 
-		// Reset and ensure defaults come back
-		act(() => {
-			ref.current!.resetForm()
-		})
+                // Reset and ensure defaults come back
+                act(() => {
+                        ref.current!.resetForm()
+                })
 
-				await waitFor(() => {
-						const field = ref.current!.getField("name")
-						expect(field.defaultValue).toBe("Joe")
-						expect(ref.current!.isDirty()).toBe(false)
-						expect(ref.current!.isTouched()).toBe(false)
-				})
-		})
+                await waitFor(() => {
+                        const field = ref.current!.getField("name")
+                        expect(field.defaultValue).toBe("Joe")
+                        expect(ref.current!.isDirty()).toBe(false)
+                        expect(ref.current!.isTouched()).toBe(false)
+                })
+        })
 
-		it("resets state when form definition changes", async () => {
-				const firstForm = makeForm()
-				const ref = React.createRef<HookApi | null>()
-				const { rerender } = render(<Harness ref={ref} formDef={firstForm} />)
+        it("resets state when form definition changes", async () => {
+                const firstForm = makeForm()
+                const ref = React.createRef<HookApi | null>()
+                const { rerender } = render(<Harness ref={ref} formDef={firstForm} />)
 
-				await act(async () => {
-						await ref.current!.__dangerouslySetField("name", "")
-				})
+                await act(async () => {
+                        await ref.current!.__dangerouslySetField("name", "")
+                })
 
-				await waitFor(() => {
-						const errors = ref.current!.getErrors("name")
-						expect(errors).toHaveLength(1)
-				})
+                await waitFor(() => {
+                        const errors = ref.current!.getErrors("name")
+                        expect(errors).toHaveLength(1)
+                })
 
-				const updatedForm = defineForm({
-						name: { label: "Name", defaultValue: "Jane", validate: reqString() },
-						contact: {
-								email: { label: "Email", defaultValue: "", validate: emailValidator() },
-						},
-				})
+                const updatedForm = defineForm({
+                        name: { label: "Name", defaultValue: "Jane", validate: reqString() },
+                        contact: {
+                                email: { label: "Email", defaultValue: "", validate: emailValidator() },
+                        },
+                })
 
-				rerender(<Harness ref={ref} formDef={updatedForm} />)
+                rerender(<Harness ref={ref} formDef={updatedForm} />)
 
-				await waitFor(() => {
-						const field = ref.current!.getField("name")
-						expect(field.defaultValue).toBe("Jane")
-						expect(ref.current!.getErrors("name")).toHaveLength(0)
-						expect(ref.current!.isDirty()).toBe(false)
-						expect(ref.current!.isTouched()).toBe(false)
-				})
-		})
-		it("full form validate reports errors for multiple fields", async () => {
-		const form = makeForm()
-		const ref = React.createRef<HookApi | null>()
-		render(<Harness ref={ref} formDef={form} />)
+                await waitFor(() => {
+                        const field = ref.current!.getField("name")
+                        expect(field.defaultValue).toBe("Jane")
+                        expect(ref.current!.getErrors("name")).toHaveLength(0)
+                        expect(ref.current!.isDirty()).toBe(false)
+                        expect(ref.current!.isTouched()).toBe(false)
+                })
+        })
 
-		// Ensure email is invalid by default (empty, email requires @)
-		await act(async () => {
-			await ref.current!.__dangerouslySetField("contact.email", "no-at-sign")
-		})
+        it("full form validate reports errors for multiple fields", async () => {
+                const form = makeForm()
+                const ref = React.createRef<HookApi | null>()
+                render(<Harness ref={ref} formDef={form} />)
 
-		await waitFor(async () => {
-			const ok = await ref.current!.validate()
-			expect(ok).toBe(false)
-			const allErrors = ref.current!.getErrors()
-			// email should be present in errors
-			expect(allErrors.some((e: ErrorEntry) => e.name === "contact.email")).toBe(true)
-		})
-	})
+                // Ensure email is invalid by default (empty, email requires @)
+                await act(async () => {
+                        await ref.current!.__dangerouslySetField("contact.email", "no-at-sign")
+                })
+
+                await waitFor(async () => {
+                        const ok = await ref.current!.validate()
+                        expect(ok).toBe(false)
+                        const allErrors = ref.current!.getErrors()
+                        // email should be present in errors
+                        expect(allErrors.some((e: ErrorEntry) => e.name === "contact.email")).toBe(true)
+                })
+        })
 
 	it("handles validators that throw errors without crashing", async () => {
 		const form = makeThrowingForm()
@@ -220,27 +221,45 @@ const FormHarness = forwardRef<
 })
 
 describe("useStandardSchema getForm handlers (inline)", () => {
-	it("onSubmit calls handler when form valid", async () => {
-		const form = makeForm()
-		const ref = React.createRef<HookApi | null>()
-		const spy = vi.fn()
-		render(<FormHarness ref={ref} formDef={form} onSubmitSpy={spy} />)
+        it("onSubmit calls handler when form valid", async () => {
+                const form = makeForm()
+                const ref = React.createRef<HookApi | null>()
+                const spy = vi.fn()
+                render(<FormHarness ref={ref} formDef={form} onSubmitSpy={spy} />)
 
-		const user = userEvent.setup()
-		const email = screen.getByLabelText("Email") as HTMLInputElement
-		await user.type(email, "user@example.com")
-		// blur to update data
-		fireEvent.blur(email)
+                const user = userEvent.setup()
+                const email = screen.getByLabelText("Email") as HTMLInputElement
+                await user.type(email, "user@example.com")
 
-		const formEl = screen.getByTestId("form") as HTMLFormElement
-		fireEvent.submit(formEl)
+                const formEl = screen.getByTestId("form") as HTMLFormElement
+                fireEvent.submit(formEl)
 
-		await waitFor(() => expect(spy).toHaveBeenCalled())
-		const calledWith = spy.mock.calls[0][0]
-		expect(calledWith).toHaveProperty("name")
-		expect(calledWith).toHaveProperty("contact.email")
-		expect(calledWith["contact.email"]).toBe("user@example.com")
-	})
+                await waitFor(() => expect(spy).toHaveBeenCalled())
+                const calledWith = spy.mock.calls[0][0]
+                expect(calledWith).toHaveProperty("name")
+                expect(calledWith).toHaveProperty("contact.email")
+                expect(calledWith["contact.email"]).toBe("user@example.com")
+        })
+
+        it("onSubmit retains programmatic updates when no DOM interaction occurs", async () => {
+                const form = makeForm()
+                const ref = React.createRef<HookApi | null>()
+                const spy = vi.fn()
+                render(<FormHarness ref={ref} formDef={form} onSubmitSpy={spy} />)
+
+                await act(async () => {
+                        await ref.current!.__dangerouslySetField("name", "Sally")
+                        await ref.current!.__dangerouslySetField("contact.email", "sally@example.com")
+                })
+
+                const formEl = screen.getByTestId("form") as HTMLFormElement
+                fireEvent.submit(formEl)
+
+                await waitFor(() => expect(spy).toHaveBeenCalled())
+                const calledWith = spy.mock.calls[0][0]
+                expect(calledWith["name"]).toBe("Sally")
+                expect(calledWith["contact.email"]).toBe("sally@example.com")
+        })
 
 	it("onFocus sets touched and clears error", async () => {
 		const form = makeForm()
