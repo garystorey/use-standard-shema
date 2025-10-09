@@ -20,9 +20,9 @@ const isValidatorFunction = (value: unknown): value is StandardValidator => type
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null
 
 const extractValidator = (value: unknown): StandardValidator | undefined => {
-        if (isValidatorFunction(value)) return value
+	if (isValidatorFunction(value)) return value
 
-        if (!isRecord(value)) return undefined
+	if (!isRecord(value)) return undefined
 
 	const standardValidator = value["~standard"]
 	if (isRecord(standardValidator) && isValidatorFunction(standardValidator.validate)) {
@@ -51,15 +51,15 @@ const deriveValidationMessage = (result: unknown): string => {
 }
 
 const deriveThrownMessage = (error: unknown): string => {
-        if (error instanceof Error && error.message) return error.message
-        if (typeof error === "string" && error.trim().length > 0) return error
-        return "validation failed"
+	if (error instanceof Error && error.message) return error.message
+	if (typeof error === "string" && error.trim().length > 0) return error
+	return "validation failed"
 }
 
 const toInputString = (value: unknown): string => {
-        if (typeof value === "string") return value
-        if (value == null) return ""
-        return String(value)
+	if (typeof value === "string") return value
+	if (value == null) return ""
+	return String(value)
 }
 
 /**
@@ -77,17 +77,17 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		FieldDefinition
 	>
 
-        const initialValues = useMemo(() => flattenDefaults(formDefinition), [formDefinition])
+	const initialValues = useMemo(() => flattenDefaults(formDefinition), [formDefinition])
 
-        const initialValueStrings = useMemo(() => {
-                const entries: Record<string, string> = {}
-                for (const [key, value] of Object.entries(initialValues)) {
-                        entries[key] = toInputString(value)
-                }
-                return entries
-        }, [initialValues])
+	const initialValueStrings = useMemo(() => {
+		const entries: Record<string, string> = {}
+		for (const [key, value] of Object.entries(initialValues)) {
+			entries[key] = toInputString(value)
+		}
+		return entries
+	}, [initialValues])
 
-        const formDefinitionKeys = useMemo(() => Object.keys(flatFormDefinition), [flatFormDefinition])
+	const formDefinitionKeys = useMemo(() => Object.keys(flatFormDefinition), [flatFormDefinition])
 
 	// State
 	const [data, setData] = useState<FormValues>(initialValues)
@@ -132,22 +132,22 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	)
 
 	// --- Full-form validate (batch state update, no flicker)
-        const validateForm = useCallback(
-                async (values?: FormValues) => {
-                        const sourceValues = values ?? data
-                        const newErrors: Errors = {}
+	const validateForm = useCallback(
+		async (values?: FormValues) => {
+			const sourceValues = values ?? data
+			const newErrors: Errors = {}
 
-                        await Promise.all(
-                                formDefinitionKeys.map(async (key) => {
-                                        newErrors[key] = await validateFieldValue(key, sourceValues[key] ?? "")
-                                }),
-                        )
+			await Promise.all(
+				formDefinitionKeys.map(async (key) => {
+					newErrors[key] = await validateFieldValue(key, sourceValues[key] ?? "")
+				}),
+			)
 
-                        setErrors(newErrors)
-                        return Object.values(newErrors).every((msg) => msg === "")
-                },
-                [formDefinitionKeys, data, validateFieldValue],
-        )
+			setErrors(newErrors)
+			return Object.values(newErrors).every((msg) => msg === "")
+		},
+		[formDefinitionKeys, data, validateFieldValue],
+	)
 
 	const validate = useCallback(
 		async (name?: FieldKey) => {
@@ -177,10 +177,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 				const formEntryValues = new Map<string, string>()
 				formData.forEach((value, key) => {
 					if (!formEntryValues.has(key)) {
-						formEntryValues.set(
-							key,
-							typeof value === "string" ? value : String(value),
-						)
+						formEntryValues.set(key, typeof value === "string" ? value : String(value))
 					}
 				})
 
@@ -192,16 +189,12 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 					const stateString = toInputString(stateValue)
 					const initialString = initialValueStrings[key] ?? ""
 
-					const formValue = formEntryValues.has(key)
-						? formEntryValues.get(key)
-						: undefined
+					const formValue = formEntryValues.has(key) ? formEntryValues.get(key) : undefined
 
 					let resolvedValue = stateValue
-					let resolvedString = stateString
 
 					if (formValue !== undefined) {
-						const shouldPreferState =
-							stateString !== initialString && formValue === initialString
+						const shouldPreferState = stateString !== initialString && formValue === initialString
 
 						// When a user edits a field and then reverts it back to the
 						// default inside the DOM before submit, FormData reports the
@@ -212,7 +205,6 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 
 						if (!shouldPreferState) {
 							resolvedValue = formValue
-							resolvedString = formValue
 						}
 					}
 
@@ -264,17 +256,17 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 
 			return { onSubmit, onFocus, onBlur, onReset }
 		},
-                [
-                        flatFormDefinition,
-                        data,
-                        initialValues,
-                        initialValueStrings,
-                        resetForm,
-                        validateField,
-                        formDefinitionKeys,
-                        validateForm,
-                ],
-        )
+		[
+			flatFormDefinition,
+			data,
+			initialValues,
+			initialValueStrings,
+			resetForm,
+			validateField,
+			formDefinitionKeys,
+			validateForm,
+		],
+	)
 
 	const getField = useCallback(
 		(name: FieldKey) => {
@@ -302,18 +294,18 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		[flatFormDefinition, data, errors, touched, dirty],
 	)
 
-        const setField = useCallback(
-                async (name: FieldKey, value: string) => {
-                        const field = name as string
+	const setField = useCallback(
+		async (name: FieldKey, value: string) => {
+			const field = name as string
 
-                        setData((prev) => ({ ...prev, [field]: value }))
-                        setTouched((prev) => ({ ...prev, [field]: true }))
-                        setDirty((prev) => ({ ...prev, [field]: true }))
+			setData((prev) => ({ ...prev, [field]: value }))
+			setTouched((prev) => ({ ...prev, [field]: true }))
+			setDirty((prev) => ({ ...prev, [field]: true }))
 
-                        await validateField(field, value)
-                },
-                [validateField],
-        )
+			await validateField(field, value)
+		},
+		[validateField],
+	)
 
 	const getErrors = useCallback(
 		(name?: FieldKey): ErrorEntry[] => {
