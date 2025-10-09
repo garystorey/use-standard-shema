@@ -7,20 +7,20 @@ import { defineForm } from "../src/helpers"
 import type { ErrorEntry } from "../src/types"
 import { email as emailValidator, string as reqString, throwing as throwingValidator } from "./test-validation-lib"
 
-function makeForm() {
-	return defineForm({
-		name: { label: "Name", defaultValue: "Joe", validate: reqString() },
-		contact: {
-			email: { label: "Email", defaultValue: "", validate: emailValidator() },
-		},
-	})
+function makeForm(nameDefault: string = "Joe") {
+        return defineForm({
+                name: { label: "Name", defaultValue: nameDefault, validate: reqString() },
+                contact: {
+                        email: { label: "Email", defaultValue: "", validate: emailValidator() },
+                },
+        })
 }
 
 function makeThrowingForm(): FormType {
-	return defineForm({
-		name: {
-			label: "Name",
-			defaultValue: "Joe",
+        return defineForm({
+                name: {
+                        label: "Name",
+                        defaultValue: "Joe",
 			validate: throwingValidator("Boom!"),
 		},
 		contact: {
@@ -33,9 +33,9 @@ type FormType = ReturnType<typeof makeForm>
 type HookApi = ReturnType<typeof useStandardSchema<FormType>>
 
 const Harness = forwardRef<HookApi | null, { formDef: FormType }>(function Harness(props, ref) {
-	const api = useStandardSchema(props.formDef)
-	useImperativeHandle(ref, () => api, [api])
-	return null
+        const api = useStandardSchema(props.formDef)
+        useImperativeHandle(ref, () => api, [api])
+        return null
 })
 
 // Test helpers to reduce repetition in tests
@@ -131,12 +131,7 @@ describe("useStandardSchema (basic)", () => {
                         expect(errors).toHaveLength(1)
                 })
 
-                const updatedForm = defineForm({
-                        name: { label: "Name", defaultValue: "Jane", validate: reqString() },
-                        contact: {
-                                email: { label: "Email", defaultValue: "", validate: emailValidator() },
-                        },
-                })
+                const updatedForm = makeForm("Jane")
 
                 rerender(<Harness ref={ref} formDef={updatedForm} />)
 
@@ -193,8 +188,8 @@ describe("useStandardSchema (basic)", () => {
 })
 
 const FormHarness = forwardRef<
-		HookApi | null,
-		{ formDef: FormType; onSubmitSpy: (data: Record<string, unknown>) => void }
+                HookApi | null,
+                { formDef: FormType; onSubmitSpy: (data: Record<string, unknown>) => void }
 >(function FormHarness(props, ref) {
 		const api = useStandardSchema(props.formDef)
 		const handlers = api.getForm(props.onSubmitSpy)
