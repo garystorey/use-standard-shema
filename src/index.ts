@@ -302,16 +302,18 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		[flatFormDefinition, data, errors, touched, dirty],
 	)
 
-	const setField = useCallback(
-		async (name: FieldKey, value: string) => {
-			const field = name as string
-			const ok = await validateField(field, value)
-			if (ok) setData((prev) => ({ ...prev, [field]: value }))
-			setTouched((prev) => ({ ...prev, [field]: true }))
-			setDirty((prev) => ({ ...prev, [field]: true }))
-		},
-		[validateField],
-	)
+        const setField = useCallback(
+                async (name: FieldKey, value: string) => {
+                        const field = name as string
+
+                        setData((prev) => ({ ...prev, [field]: value }))
+                        setTouched((prev) => ({ ...prev, [field]: true }))
+                        setDirty((prev) => ({ ...prev, [field]: true }))
+
+                        await validateField(field, value)
+                },
+                [validateField],
+        )
 
 	const getErrors = useCallback(
 		(name?: FieldKey): ErrorEntry[] => {
@@ -380,4 +382,4 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 }
 
 export { useStandardSchema, defineForm, toFormData }
-export { FieldDefinition, FormDefinition, TypeFromDefinition } from "./types"
+export { FieldDefinition, FieldDefinitionProps, FormDefinition, TypeFromDefinition } from "./types"

@@ -73,11 +73,15 @@ describe("useStandardSchema (basic)", () => {
 			await ref.current!.__dangerouslySetField("name", "")
 		})
 
-		await waitFor(() => {
-			const errs = ref.current!.getErrors("name")
-			expect(errs.length).toBe(1)
-			expect(errs[0].error).toBe("Required")
-		})
+                await waitFor(() => {
+                        const errs = ref.current!.getErrors("name")
+                        expect(errs.length).toBe(1)
+                        expect(errs[0].error).toBe("Required")
+
+                        const field = ref.current!.getField("name")
+                        expect(field.defaultValue).toBe("")
+                        expect(field.error).toBe("Required")
+                })
 
 		expect(ref.current!.isDirty("name")).toBe(true)
 		expect(ref.current!.isTouched("name")).toBe(true)

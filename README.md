@@ -163,7 +163,7 @@ export function App() {
 
 ### Track form interaction state
 
-The hook returns helpers that expose the the field/form's `touched` and `dirty` state so you can react to
+The hook returns helpers that expose the field/form's `touched` and `dirty` state so you can react to
 user interaction.
 
 ```tsx
@@ -249,6 +249,7 @@ In this instance, we simply update the `validString` validator from `zod` to `va
 It is recommended to use `useStandardSchema` with your own custom React components.  This enables you to simply spread the result of the `getField` call directly without creating individual props. You can extend the `FieldDefinitionProps` interface provided.
 
 ```ts
+import type { FieldDefinitionProps } from "use-standard-schema"
 
 interface FieldProps extends FieldDefinitionProps {
     // your props here
