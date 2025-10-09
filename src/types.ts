@@ -156,13 +156,13 @@ export type AssertValidFormKeysDeep<T extends FormDefinition> = true extends _Ha
 	? never
 	: { [K in keyof T]: T[K] extends FormDefinition ? AssertValidFormKeysDeep<T[K]> : T[K] }
 
-export interface FieldDefintionProps extends FieldDefinition {
-	name: string
-	errorId: string
-	describedById: string
-	touched: boolean
-	dirty: boolean
-	error: string
+export interface FieldDefinitionProps extends FieldDefinition {
+        name: string
+        errorId: string
+        describedById: string
+        touched: boolean
+        dirty: boolean
+        error: string
 }
 
 export interface UseStandardSchemaReturn<T extends FormDefinition> {
@@ -175,7 +175,7 @@ export interface UseStandardSchemaReturn<T extends FormDefinition> {
 	}
 	getField: (
 		name: DotPaths<T>,
-	) => Partial<FieldDefintionProps> & { defaultValue?: string; error: string; touched?: boolean; dirty?: boolean }
+        ) => Partial<FieldDefinitionProps> & { defaultValue?: string; error: string; touched?: boolean; dirty?: boolean }
 	getErrors: (name?: DotPaths<T>) => ErrorEntry[]
 	validate: (name?: DotPaths<T>) => Promise<boolean>
 	__dangerouslySetField: (name: DotPaths<T>, value: string) => Promise<void>
