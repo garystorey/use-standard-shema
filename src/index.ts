@@ -62,6 +62,19 @@ const toInputString = (value: unknown): string => {
 	return String(value)
 }
 
+const mergeFormValues = (base: FormValues, updates: Record<string, string>): FormValues => {
+	if (Object.keys(updates).length === 0) {
+		return base
+	}
+
+	const nextValues: FormValues = { ...base }
+	for (const [key, value] of Object.entries(updates)) {
+		nextValues[key] = value
+	}
+
+	return nextValues
+}
+
 /**
  * Custom hook to manage form state based on a form definition.
  * @param formDefinition - The form definition.
