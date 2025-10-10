@@ -4,7 +4,7 @@ import React, { act, forwardRef, useImperativeHandle } from "react"
 import { describe, expect, it, vi } from "vitest"
 import { useStandardSchema } from "../src"
 import { defineForm } from "../src/helpers"
-import type { ErrorEntry } from "../src/types"
+import type { ErrorEntry, UseStandardSchemaReturn } from "../src/types"
 import { email as emailValidator, string as reqString, throwing as throwingValidator } from "./test-validation-lib"
 
 function makeForm(nameDefault: string = "Joe") {
@@ -30,18 +30,17 @@ function makeThrowingForm(): FormType {
 }
 
 type FormType = ReturnType<typeof makeForm>
-type HookApi = ReturnType<typeof useStandardSchema<FormType>>
 
-const Harness = forwardRef<HookApi | null, { formDef: FormType }>(function Harness(props, ref) {
+const Harness = forwardRef<UseStandardSchemaReturn<FormType> | null, { formDef: FormType }>(function Harness(props, ref) {
 	const api = useStandardSchema(props.formDef)
 	useImperativeHandle(ref, () => api, [api])
 	return null
 })
 
 // Test helpers to reduce repetition in tests
-function setupHarness(): { form: ReturnType<typeof makeForm>; ref: React.RefObject<HookApi | null> } {
+function setupHarness(): { form: ReturnType<typeof makeForm>; ref: React.RefObject<UseStandardSchemaReturn<FormType> | null> } {
 	const form = makeForm()
-	const ref = React.createRef<HookApi | null>()
+	const ref = React.createRef<UseStandardSchemaReturn<FormType> | null>()
 	render(<Harness ref={ref} formDef={form} />)
 	return { form, ref }
 }
@@ -119,7 +118,7 @@ describe("useStandardSchema (basic)", () => {
 
 	it("resets state when form definition changes", async () => {
 		const firstForm = makeForm()
-		const ref = React.createRef<HookApi | null>()
+		const ref = React.createRef<UseStandardSchemaReturn<FormType> | null>()
 		const { rerender } = render(<Harness ref={ref} formDef={firstForm} />)
 
 		await act(async () => {
@@ -146,7 +145,7 @@ describe("useStandardSchema (basic)", () => {
 
 	it("full form validate reports errors for multiple fields", async () => {
 		const form = makeForm()
-		const ref = React.createRef<HookApi | null>()
+		const ref = React.createRef<UseStandardSchemaReturn<FormType> | null>()
 		render(<Harness ref={ref} formDef={form} />)
 
 		// Ensure email is invalid by default (empty, email requires @)
@@ -165,7 +164,7 @@ describe("useStandardSchema (basic)", () => {
 
 	it("handles validators that throw errors without crashing", async () => {
 		const form = makeThrowingForm()
-		const ref = React.createRef<HookApi | null>()
+		const ref = React.createRef<UseStandardSchemaReturn<FormType> | null>()
 		render(<Harness ref={ref} formDef={form} />)
 
 		let thrown: unknown
@@ -188,7 +187,7 @@ describe("useStandardSchema (basic)", () => {
 })
 
 const FormHarness = forwardRef<
-	HookApi | null,
+	UseStandardSchemaReturn<FormType> | null,
 	{ formDef: FormType; onSubmitSpy: (data: Record<string, unknown>) => void }
 >(function FormHarness(props, ref) {
 	const api = useStandardSchema(props.formDef)
@@ -222,7 +221,7 @@ const FormHarness = forwardRef<
 describe("useStandardSchema getForm handlers (inline)", () => {
 	it("onSubmit calls handler when form valid", async () => {
 		const form = makeForm()
-		const ref = React.createRef<HookApi | null>()
+		const ref = React.createRef<UseStandardSchemaReturn<FormType> | null>()
 		const spy = vi.fn()
 		render(<FormHarness ref={ref} formDef={form} onSubmitSpy={spy} />)
 
@@ -242,7 +241,7 @@ describe("useStandardSchema getForm handlers (inline)", () => {
 
 	it("onSubmit retains programmatic updates when no DOM interaction occurs", async () => {
 		const form = makeForm()
-		const ref = React.createRef<HookApi | null>()
+		const ref = React.createRef<UseStandardSchemaReturn<FormType> | null>()
 		const spy = vi.fn()
 		render(<FormHarness ref={ref} formDef={form} onSubmitSpy={spy} />)
 
@@ -262,7 +261,7 @@ describe("useStandardSchema getForm handlers (inline)", () => {
 
 	it("onFocus sets touched and clears error", async () => {
 		const form = makeForm()
-		const ref = React.createRef<HookApi | null>()
+		const ref = React.createRef<UseStandardSchemaReturn<FormType> | null>()
 		const spy = vi.fn()
 		render(<FormHarness ref={ref} formDef={form} onSubmitSpy={spy} />)
 
@@ -288,7 +287,7 @@ describe("useStandardSchema getForm handlers (inline)", () => {
 
 	it("onBlur updates data and sets dirty when changed", async () => {
 		const form = makeForm()
-		const ref = React.createRef<HookApi | null>()
+		const ref = React.createRef<UseStandardSchemaReturn<FormType> | null>()
 		const spy = vi.fn()
 		render(<FormHarness ref={ref} formDef={form} onSubmitSpy={spy} />)
 
@@ -308,7 +307,7 @@ describe("useStandardSchema getForm handlers (inline)", () => {
 
 	it("onReset restores defaults and clears flags", async () => {
 		const form = makeForm()
-		const ref = React.createRef<HookApi | null>()
+		const ref = React.createRef<UseStandardSchemaReturn<FormType> | null>()
 		const spy = vi.fn()
 		render(<FormHarness ref={ref} formDef={form} onSubmitSpy={spy} />)
 
