@@ -125,7 +125,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	const validateField = useCallback(
 		async (field: string, value: string) => {
 			const message = await validateFieldValue(field, value)
-			setErrors((prev) => ({ ...prev, [field]: message }))
+			setErrors((prev) => (prev[field] === message ? prev : { ...prev, [field]: message }))
 			return message === ""
 		},
 		[validateFieldValue],
@@ -173,50 +173,49 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 				const formEl = e.currentTarget as HTMLFormElement
 				e.preventDefault()
 
-				const formData = new FormData(formEl)
-				const formEntryValues = new Map<string, string>()
-				formData.forEach((value, key) => {
-					if (!formEntryValues.has(key)) {
-						formEntryValues.set(key, typeof value === "string" ? value : String(value))
+				const submissionEntries = new Map<string, string>()
+				for (const [key, rawValue] of new FormData(formEl).entries()) {
+					if (!submissionEntries.has(key)) {
+						submissionEntries.set(key, typeof rawValue === "string" ? rawValue : String(rawValue))
 					}
-				})
+				}
 
-				let nextValues: FormValues | null = null
+				const changedValues: Record<string, string> = {}
+				let hasChanges = false
 
 				for (const key of formDefinitionKeys) {
-					const workingValues = nextValues ?? data
-					const stateValue = workingValues[key]
+					const stateValue = data[key]
 					const stateString = toInputString(stateValue)
 					const initialString = initialValueStrings[key] ?? ""
+					const submissionValue = submissionEntries.get(key)
 
-					const formValue = formEntryValues.has(key) ? formEntryValues.get(key) : undefined
+					let resolvedValue: string = stateValue
 
-					let resolvedValue = stateValue
-
-					if (formValue !== undefined) {
-						const shouldPreferState = stateString !== initialString && formValue === initialString
+					if (submissionValue !== undefined) {
+						const shouldPreferState = stateString !== initialString && submissionValue === initialString
 
 						// When a user edits a field and then reverts it back to the
 						// default inside the DOM before submit, FormData reports the
-						// default string.  Earlier versions overwrote programmatic
+						// default string. Earlier versions overwrote programmatic
 						// updates in that scenario which meant consumers received stale
-						// values.  The extra guard preserves the latest state value
+						// values. The extra guard preserves the latest state value
 						// unless the DOM truly diverges from what we already hold.
 
 						if (!shouldPreferState) {
-							resolvedValue = formValue
+							resolvedValue = submissionValue
 						}
 					}
 
 					if (!Object.is(stateValue, resolvedValue)) {
-						if (!nextValues) nextValues = { ...data }
-						nextValues[key] = resolvedValue
+						hasChanges = true
+						changedValues[key] = resolvedValue
 					}
 				}
 
-				const finalValues = nextValues ?? data
-				if (nextValues) {
-					setData(nextValues)
+				const finalValues: FormValues = hasChanges ? { ...data, ...changedValues } : data
+
+				if (hasChanges) {
+					setData(finalValues)
 				}
 
 				const isValid = await validateForm(finalValues)
@@ -231,8 +230,8 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 				const field = e.target.name
 				if (!field || !(field in flatFormDefinition)) return
 
-				setTouched((prev) => ({ ...prev, [field]: true }))
-				setErrors((prev) => ({ ...prev, [field]: "" }))
+				setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
+				setErrors((prev) => (prev[field] === "" ? prev : { ...prev, [field]: "" }))
 			}
 
 			const onBlur = async (e: FocusEvent<HTMLFormElement>) => {
@@ -240,14 +239,14 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 				if (!field || !(field in flatFormDefinition)) return
 
 				const value = e.target.value
-				const initial = (initialValues as Record<string, unknown>)[field]
-				const isDirty = value !== initial
+				const initialValue = initialValueStrings[field] ?? ""
+				const isDirty = value !== initialValue
 
-				setTouched((prev) => ({ ...prev, [field]: true }))
-				setData((prev) => ({ ...prev, [field]: value }))
+				setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
+				setData((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }))
 
 				if (isDirty) {
-					setDirty((prev) => ({ ...prev, [field]: true }))
+					setDirty((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
 					await validateField(field, value)
 				}
 			}
@@ -256,16 +255,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 
 			return { onSubmit, onFocus, onBlur, onReset }
 		},
-		[
-			flatFormDefinition,
-			data,
-			initialValues,
-			initialValueStrings,
-			resetForm,
-			validateField,
-			formDefinitionKeys,
-			validateForm,
-		],
+		[flatFormDefinition, data, initialValueStrings, resetForm, validateField, formDefinitionKeys, validateForm],
 	)
 
 	const getField = useCallback(
@@ -298,9 +288,9 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		async (name: FieldKey, value: string) => {
 			const field = name as string
 
-			setData((prev) => ({ ...prev, [field]: value }))
-			setTouched((prev) => ({ ...prev, [field]: true }))
-			setDirty((prev) => ({ ...prev, [field]: true }))
+			setData((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }))
+			setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
+			setDirty((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
 
 			await validateField(field, value)
 		},
