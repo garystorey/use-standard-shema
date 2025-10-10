@@ -122,14 +122,14 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	)
 
 	// --- Single-field validate (updates state for that field)
-	const validateField = useCallback(
-		async (field: string, value: string) => {
-			const message = await validateFieldValue(field, value)
-			setErrors((prev) => (prev[field] === message ? prev : { ...prev, [field]: message }))
-			return message === ""
-		},
-		[validateFieldValue],
-	)
+        const validateField = useCallback(
+                async (field: string, value: string) => {
+                        const message = await validateFieldValue(field, value)
+                        setErrors((prev) => (prev[field] === message ? prev : { ...prev, [field]: message }))
+                        return message === ""
+                },
+                [validateFieldValue],
+        )
 
 	// --- Full-form validate (batch state update, no flicker)
 	const validateForm = useCallback(
@@ -169,87 +169,91 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 
 	const getForm = useCallback(
 		(onSubmitHandler: (data: TypeFromDefinition<typeof formDefinition>) => void) => {
-			const onSubmit = async (e: FormEvent) => {
-				const formEl = e.currentTarget as HTMLFormElement
-				e.preventDefault()
+                        const onSubmit = async (e: FormEvent) => {
+                                const formEl = e.currentTarget as HTMLFormElement
+                                e.preventDefault()
 
-				const submissionEntries = new Map<string, string>()
-				for (const [key, rawValue] of new FormData(formEl).entries()) {
-					if (!submissionEntries.has(key)) {
-						submissionEntries.set(key, typeof rawValue === "string" ? rawValue : String(rawValue))
-					}
-				}
+                                const submissionEntries = new Map<string, string>()
+                                for (const [key, rawValue] of new FormData(formEl).entries()) {
+                                        if (!submissionEntries.has(key)) {
+                                                submissionEntries.set(
+                                                        key,
+                                                        typeof rawValue === "string" ? rawValue : String(rawValue),
+                                                )
+                                        }
+                                }
 
-				const changedValues: Record<string, string> = {}
-				let hasChanges = false
+                                const updates: Partial<FormValues> = {}
+                                let hasChanges = false
 
-				for (const key of formDefinitionKeys) {
-					const stateValue = data[key]
-					const stateString = toInputString(stateValue)
-					const initialString = initialValueStrings[key] ?? ""
-					const submissionValue = submissionEntries.get(key)
+                                for (const key of formDefinitionKeys) {
+                                        const stateValue = data[key]
+                                        const stateString = toInputString(stateValue)
+                                        const initialString = initialValueStrings[key] ?? ""
+                                        const submissionValue = submissionEntries.get(key)
 
-					let resolvedValue = stateValue
+                                        let resolvedValue = stateValue
 
-					if (submissionValue !== undefined) {
-						const shouldPreferState = stateString !== initialString && submissionValue === initialString
+                                        if (submissionValue !== undefined) {
+                                                const shouldPreferState =
+                                                        stateString !== initialString && submissionValue === initialString
 
-						// When a user edits a field and then reverts it back to the
-						// default inside the DOM before submit, FormData reports the
-						// default string. Earlier versions overwrote programmatic
-						// updates in that scenario which meant consumers received stale
-						// values. The extra guard preserves the latest state value
-						// unless the DOM truly diverges from what we already hold.
+                                                // When a user edits a field and then reverts it back to the
+                                                // default inside the DOM before submit, FormData reports the
+                                                // default string. Earlier versions overwrote programmatic
+                                                // updates in that scenario which meant consumers received stale
+                                                // values. The extra guard preserves the latest state value
+                                                // unless the DOM truly diverges from what we already hold.
 
-						if (!shouldPreferState) {
-							resolvedValue = submissionValue
-						}
-					}
+                                                if (!shouldPreferState) {
+                                                        resolvedValue = submissionValue
+                                                }
+                                        }
 
-					if (!Object.is(stateValue, resolvedValue)) {
-						hasChanges = true
-						changedValues[key] = resolvedValue
-					}
-				}
+                                        if (!Object.is(stateValue, resolvedValue)) {
+                                                updates[key] = resolvedValue
+                                                hasChanges = true
+                                        }
+                                }
 
-				const finalValues: FormValues = hasChanges ? { ...data, ...changedValues } : data
+                                const finalValues: FormValues = hasChanges ? { ...data, ...updates } : data
 
-				if (hasChanges) {
-					setData(finalValues)
-				}
+                                if (hasChanges) {
+                                        setData(finalValues)
+                                }
 
-				const isValid = await validateForm(finalValues)
-				if (isValid) {
-					onSubmitHandler(finalValues as TypeFromDefinition<typeof formDefinition>)
-					resetForm()
-					formEl.reset()
-				}
-			}
+                                const isValid = await validateForm(finalValues)
+                                if (isValid) {
+                                        onSubmitHandler(finalValues as TypeFromDefinition<typeof formDefinition>)
+                                        resetForm()
+                                        formEl.reset()
+                                }
+                        }
 
 			const onFocus = (e: FocusEvent<HTMLFormElement>) => {
 				const field = e.target.name
 				if (!field || !(field in flatFormDefinition)) return
 
-				setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
-				setErrors((prev) => (prev[field] === "" ? prev : { ...prev, [field]: "" }))
+                                setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
+                                setErrors((prev) => (prev[field] === "" ? prev : { ...prev, [field]: "" }))
 			}
 
 			const onBlur = async (e: FocusEvent<HTMLFormElement>) => {
 				const field = e.target.name
 				if (!field || !(field in flatFormDefinition)) return
 
-				const value = e.target.value
-				const initialValue = initialValueStrings[field] ?? ""
-				const isDirty = value !== initialValue
+                                const value = e.target.value
+                                const initialValue = initialValueStrings[field] ?? ""
+                                const isDirty = value !== initialValue
 
-				setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
-				setData((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }))
+                                setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
+                                setData((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }))
 
-				if (isDirty) {
-					setDirty((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
-					await validateField(field, value)
-				}
-			}
+                                if (isDirty) {
+                                        setDirty((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
+                                        await validateField(field, value)
+                                }
+                        }
 
 			const onReset = () => resetForm()
 
@@ -270,32 +274,32 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 
 			const { validate: _validate, ...fieldDef } = def
 
-			return {
-				...fieldDef,
-				name: key,
-				defaultValue: data[key] ?? "",
-				error: errors[key] ?? "",
-				touched: touched[key] ?? false,
-				dirty: dirty[key] ?? false,
-				describedById,
-				errorId,
-			}
-		},
-		[flatFormDefinition, data, errors, touched, dirty],
-	)
+                        return {
+                                ...fieldDef,
+                                name: key,
+                                defaultValue: data[key] ?? "",
+                                error: errors[key] ?? "",
+                                touched: touched[key] ?? false,
+                                dirty: dirty[key] ?? false,
+                                describedById,
+                                errorId,
+                        }
+                },
+                [flatFormDefinition, data, errors, touched, dirty],
+        )
 
-	const setField = useCallback(
-		async (name: FieldKey, value: string) => {
-			const field = name as string
+        const setField = useCallback(
+                async (name: FieldKey, value: string) => {
+                        const field = name as string
 
-			setData((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }))
-			setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
-			setDirty((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
+                        setData((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }))
+                        setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
+                        setDirty((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
 
-			await validateField(field, value)
-		},
-		[validateField],
-	)
+                        await validateField(field, value)
+                },
+                [validateField],
+        )
 
 	const getErrors = useCallback(
 		(name?: FieldKey): ErrorEntry[] => {
