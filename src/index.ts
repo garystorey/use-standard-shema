@@ -212,9 +212,10 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 					}
 				}
 
-				const finalValues: FormValues = hasChanges ? { ...data, ...changedValues } : data
+				let finalValues: FormValues = data
 
 				if (hasChanges) {
+					finalValues = { ...data, ...changedValues }
 					setData(finalValues)
 				}
 
