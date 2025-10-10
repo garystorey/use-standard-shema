@@ -259,16 +259,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 
 			return { onSubmit, onFocus, onBlur, onReset }
 		},
-		[
-			flatFormDefinition,
-			data,
-			initialValues,
-			initialValueStrings,
-			resetForm,
-			validateField,
-			formDefinitionKeys,
-			validateForm,
-		],
+		[flatFormDefinition, data, initialValueStrings, resetForm, validateField, formDefinitionKeys, validateForm],
 	)
 
 	const getField = useCallback(
