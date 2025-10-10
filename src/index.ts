@@ -180,7 +180,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 					}
 				}
 
-				let nextValues: FormValues = data
+				const updates: Record<string, string> = {}
 				let hasChanges = false
 
 				for (const key of formDefinitionKeys) {
@@ -207,16 +207,12 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 					}
 
 					if (!Object.is(stateValue, resolvedValue)) {
-						if (!hasChanges) {
-							nextValues = { ...data }
-							hasChanges = true
-						}
-
-						nextValues[key] = resolvedValue
+						updates[key] = resolvedValue
+						hasChanges = true
 					}
 				}
 
-				const finalValues: FormValues = nextValues
+				const finalValues: FormValues = hasChanges ? { ...data, ...updates } : data
 
 				if (hasChanges) {
 					setData(finalValues)
