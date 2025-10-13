@@ -174,7 +174,7 @@ Occasionally, manual validation is needed. For instance, if two fields are inter
 
 The hook can keep two fields in sync by updating the second field whenever the first one changes. In this example, the available
 `state` options depend on the selected `country`. We call `setField` inside the change handler so the form state
-updates immediately, and `useEffect` ensures the state select always has a valid value.
+updates immediately, and `setError` inside `useEffect` surfaces a manual error whenever the state no longer matches the selected country.
 
 ```tsx
 import { useEffect } from "react"
@@ -211,7 +211,7 @@ const statesByCountry = {
 } as const
 
 export function LocationForm() {
-  const { getForm, getField, setField } = useStandardSchema(locationForm)
+  const { getForm, getField, setField, setError } = useStandardSchema(locationForm)
   const handlers = getForm((data) => console.log(data))
 
   const country = getField("country")
@@ -219,10 +219,20 @@ export function LocationForm() {
   const stateOptions = statesByCountry[country.defaultValue as keyof typeof statesByCountry] ?? []
 
   useEffect(() => {
-    if (!stateOptions.some((option) => option.value === state.defaultValue)) {
-      void setField("state", stateOptions[0]?.value ?? "")
+    if (stateOptions.length === 0) {
+      void setField("state", "")
+      setError("state", "No regions available for the selected country")
+      return
     }
-  }, [stateOptions, state.defaultValue, setField])
+
+    if (!stateOptions.some((option) => option.value === state.defaultValue)) {
+      void setField("state", "")
+      setError("state", "Select a region for the chosen country")
+      return
+    }
+
+    setError("state", null)
+  }, [stateOptions, state.defaultValue, setField, setError])
 
   return (
     <form {...handlers}>
