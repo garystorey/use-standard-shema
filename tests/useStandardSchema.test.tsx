@@ -39,7 +39,7 @@ describe("useStandardSchema (basic)", () => {
 
 		// Now set to empty explicitly (this will run single-field validation)
 		await act(async () => {
-			await ref.current!.__dangerouslySetField("name", "")
+			await ref.current!.setField("name", "")
 		})
 
 		await waitFor(() => {
@@ -60,7 +60,7 @@ describe("useStandardSchema (basic)", () => {
 		const { ref } = renderHookHarness()
 
 		await act(async () => {
-			await ref.current!.__dangerouslySetField("name", "")
+			await ref.current!.setField("name", "")
 		})
 
 		await waitFor(() => {
@@ -80,7 +80,7 @@ describe("useStandardSchema (basic)", () => {
 
 		// Set a valid name
 		await act(async () => {
-			await ref.current!.__dangerouslySetField("name", "Alice")
+			await ref.current!.setField("name", "Alice")
 		})
 
 		await waitFor(() => {
@@ -109,7 +109,7 @@ describe("useStandardSchema (basic)", () => {
 		const { ref } = renderHookHarness()
 
 		await act(async () => {
-			await ref.current!.__dangerouslySetField("name", "Alice")
+			await ref.current!.setField("name", "Alice")
 		})
 
 		await waitFor(() => {
@@ -117,7 +117,7 @@ describe("useStandardSchema (basic)", () => {
 		})
 
 		await act(async () => {
-			await ref.current!.__dangerouslySetField("name", "Joe")
+			await ref.current!.setField("name", "Joe")
 		})
 
 		await waitFor(() => {
@@ -132,7 +132,7 @@ describe("useStandardSchema (basic)", () => {
 		const { ref, rerenderWith } = renderHookHarness(firstForm)
 
 		await act(async () => {
-			await ref.current!.__dangerouslySetField("name", "")
+			await ref.current!.setField("name", "")
 		})
 
 		await waitFor(() => {
@@ -158,7 +158,7 @@ describe("useStandardSchema (basic)", () => {
 
 		// Ensure email is invalid by default (empty, email requires @)
 		await act(async () => {
-			await ref.current!.__dangerouslySetField("contact.email", "no-at-sign")
+			await ref.current!.setField("contact.email", "no-at-sign")
 		})
 
 		await waitFor(async () => {
@@ -176,7 +176,7 @@ describe("useStandardSchema (basic)", () => {
 		let thrown: unknown
 		await act(async () => {
 			try {
-				await ref.current!.__dangerouslySetField("name", "")
+				await ref.current!.setField("name", "")
 			} catch (error) {
 				thrown = error
 			}
@@ -249,8 +249,8 @@ describe("useStandardSchema getForm handlers (inline)", () => {
 		const { ref } = renderFormHarness({ formDef: makeForm(), onSubmitSpy: spy })
 
 		await act(async () => {
-			await ref.current!.__dangerouslySetField("name", "Sally")
-			await ref.current!.__dangerouslySetField("contact.email", "sally@example.com")
+			await ref.current!.setField("name", "Sally")
+			await ref.current!.setField("contact.email", "sally@example.com")
 		})
 
 		const formEl = screen.getByTestId("form") as HTMLFormElement
@@ -268,7 +268,7 @@ describe("useStandardSchema getForm handlers (inline)", () => {
 
 		// create an error by setting invalid value
 		await act(async () => {
-			await ref.current!.__dangerouslySetField("name", "")
+			await ref.current!.setField("name", "")
 		})
 
 		await waitFor(() => {

@@ -382,7 +382,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		getField,
 		getErrors,
 		validate,
-		__dangerouslySetField: setField,
+		setField,
 		isTouched,
 		isDirty,
 	}
