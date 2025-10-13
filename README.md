@@ -242,7 +242,7 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## ChangeLog
 
-- **v0.3.1** - Improve form state synchronization and ergonomics.
+- **v0.4.0** - Improve form state synchronization and ergonomics.
   - **Breaking**: Removed the imperative `validate()` method from the hook return; rely on `setField`, `setError`, and `getErrors()` for manual flows.
   - Renamed the field payload type to `FieldData` (previously `FieldDefinitionProps`).
   - Added a Valibot example.
