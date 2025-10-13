@@ -128,11 +128,11 @@ const streetField = getField("address.street1");
 
 ### Error Handling
 
-You can show all errors in one place using the `getError` method.  
-**Note**: `getError` can be used to get a single fields error as well.
+You can show all errors in one place using the `getErrors` method.
+**Note**: `getErrors` can be used to get a single field's error as well.
 
 ```tsx
-const allErrors = getError()
+const allErrors = getErrors()
 
 {allErrors.length > 0 && (
 <div className="all-error-messages" role="alert">
