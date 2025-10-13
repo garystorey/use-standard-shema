@@ -372,6 +372,12 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## ChangeLog
 
+- **v0.3.1** - Improve form state synchronization and ergonomics.
+  - Renamed `__dangerouslySetField` to `setField` and ensured programmatic updates always mark fields touched/dirty while re-validating.
+  - Reworked event handlers to merge DOM and state values on submit, clear errors on focus, and reset dirty/touched flags when inputs revert or definitions change.
+  - Prevented stale validations by reusing the latest values during full-form checks and dropping dirty flags once values match their defaults.
+  - Refactored the test harness into shared utilities with expanded coverage for interactions and throwing validators.
+  - Updated React, TypeScript, and testing dependencies to their latest patch releases.
 - **v0.3.0** - Harden validation and expose field state helpers.
   - Added `isTouched` and `isDirty` helpers to the hook return value for quick form state checks.
   - Improved validator extraction to accept broader Standard Schema shapes and gracefully surface thrown errors.
