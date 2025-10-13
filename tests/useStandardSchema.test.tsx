@@ -16,6 +16,16 @@ describe("useStandardSchema (basic)", () => {
 		expect(field.error).toBe("")
 	})
 
+	it("getField surfaces accessibility ids and flag defaults", () => {
+		const { ref } = renderHookHarness()
+
+		const field = ref.current!.getField("contact.email")
+		expect(field.describedById).toBe("contact.email-description")
+		expect(field.errorId).toBe("contact.email-error")
+		expect(field.touched).toBe(false)
+		expect(field.dirty).toBe(false)
+	})
+
 	it("validate a missing required field produces an error and isDirty/isTouched are set", async () => {
 		const { ref } = renderHookHarness()
 
@@ -44,6 +54,25 @@ describe("useStandardSchema (basic)", () => {
 
 		expect(ref.current!.isDirty("name")).toBe(true)
 		expect(ref.current!.isTouched("name")).toBe(true)
+	})
+
+	it("getErrors aggregates field metadata when collecting all errors", async () => {
+		const { ref } = renderHookHarness()
+
+		await act(async () => {
+			await ref.current!.__dangerouslySetField("name", "")
+		})
+
+		await waitFor(() => {
+			const errors = ref.current!.getErrors()
+			expect(errors).toEqual([
+				{
+					name: "name",
+					error: "Required",
+					label: "Name",
+				},
+			])
+		})
 	})
 
 	it("setting a valid value clears the error and updates data; resetForm restores defaults", async () => {
@@ -158,6 +187,39 @@ describe("useStandardSchema getForm handlers (inline)", () => {
 		expect(calledWith).toHaveProperty("name")
 		expect(calledWith).toHaveProperty("contact.email")
 		expect(calledWith["contact.email"]).toBe("user@example.com")
+	})
+
+	it("successful submit resets form state and clears flags", async () => {
+		const spy = vi.fn()
+		const { ref } = renderFormHarness({ formDef: makeForm(), onSubmitSpy: spy })
+
+		const user = userEvent.setup()
+		const nameInput = screen.getByLabelText("Name") as HTMLInputElement
+		const emailInput = screen.getByLabelText("Email") as HTMLInputElement
+
+		await user.clear(nameInput)
+		await user.type(nameInput, "Janet")
+		fireEvent.blur(nameInput)
+
+		await waitFor(() => {
+			const field = ref.current!.getField("name")
+			expect(field.defaultValue).toBe("Janet")
+			expect(ref.current!.isDirty()).toBe(true)
+			expect(ref.current!.isTouched()).toBe(true)
+		})
+
+		await user.type(emailInput, "janet@example.com")
+
+		const formEl = screen.getByTestId("form") as HTMLFormElement
+		fireEvent.submit(formEl)
+
+		await waitFor(() => {
+			expect(spy).toHaveBeenCalled()
+			const field = ref.current!.getField("name")
+			expect(field.defaultValue).toBe("Joe")
+			expect(ref.current!.isDirty()).toBe(false)
+			expect(ref.current!.isTouched()).toBe(false)
+		})
 	})
 
 	it("onSubmit retains programmatic updates when no DOM interaction occurs", async () => {
