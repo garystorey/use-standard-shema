@@ -105,6 +105,28 @@ describe("useStandardSchema (basic)", () => {
 		})
 	})
 
+	it("programmatic updates clear dirty flag when value matches default", async () => {
+		const { ref } = renderHookHarness()
+
+		await act(async () => {
+			await ref.current!.__dangerouslySetField("name", "Alice")
+		})
+
+		await waitFor(() => {
+			expect(ref.current!.isDirty("name")).toBe(true)
+		})
+
+		await act(async () => {
+			await ref.current!.__dangerouslySetField("name", "Joe")
+		})
+
+		await waitFor(() => {
+			expect(ref.current!.isDirty("name")).toBe(false)
+			const field = ref.current!.getField("name")
+			expect(field.defaultValue).toBe("Joe")
+		})
+	})
+
 	it("resets state when form definition changes", async () => {
 		const firstForm = makeForm()
 		const { ref, rerenderWith } = renderHookHarness(firstForm)
@@ -279,6 +301,33 @@ describe("useStandardSchema getForm handlers (inline)", () => {
 			expect(field.defaultValue).toBe("Janet")
 			expect(ref.current!.isDirty("name")).toBe(true)
 			expect(ref.current!.isTouched("name")).toBe(true)
+		})
+	})
+
+	it("onBlur clears dirty when value reverts to default", async () => {
+		const spy = vi.fn()
+		const { ref } = renderFormHarness({ formDef: makeForm(), onSubmitSpy: spy })
+
+		const user = userEvent.setup()
+		const name = screen.getByLabelText("Name") as HTMLInputElement
+
+		await user.clear(name)
+		await user.type(name, "Janet")
+		fireEvent.blur(name)
+
+		await waitFor(() => {
+			expect(ref.current!.isDirty("name")).toBe(true)
+		})
+
+		await user.click(name)
+		await user.clear(name)
+		await user.type(name, "Joe")
+		fireEvent.blur(name)
+
+		await waitFor(() => {
+			const field = ref.current!.getField("name")
+			expect(field.defaultValue).toBe("Joe")
+			expect(ref.current!.isDirty("name")).toBe(false)
 		})
 	})
 
