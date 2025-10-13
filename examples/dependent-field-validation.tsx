@@ -24,7 +24,7 @@ type CountryValue = (typeof countryOptions)[number]["value"]
 
 const statesByCountry: Record<CountryValue, { value: string; label: string }[]> = {
 	usa: [
-		{ value: "ca", label: "California" },
+		{ value: "ga", label: "Georgia" },
 		{ value: "ny", label: "New York" },
 	],
 	canada: [
@@ -60,7 +60,15 @@ export function DependentFieldValidationExample() {
 		}
 
 		setError("state", "")
-	}, [setError, setField, state.defaultValue, stateOptions])
+	}, [state.defaultValue, stateOptions])
+
+    const setCountry = (value: string) => {
+        setField("country", value);
+        setField("state", ""); // Reset state when country changes
+    }
+    
+    const setRegion = (value: string) => setField("state", value);
+   
 
 	return (
 		<form {...handlers}>
@@ -69,7 +77,7 @@ export function DependentFieldValidationExample() {
 				id={country.name}
 				name={country.name}
 				value={country.defaultValue}
-				onChange={(event) => void setField("country", event.target.value)}
+				onChange={(event) => setCountry(event.target.value)}
 			>
 				{countryOptions.map((option) => (
 					<option key={option.value} value={option.value}>
@@ -83,7 +91,7 @@ export function DependentFieldValidationExample() {
 				id={state.name}
 				name={state.name}
 				value={state.defaultValue}
-				onChange={(event) => void setField("state", event.target.value)}
+				onChange={(event) => setRegion(event.target.value)}
 				aria-describedby={state.describedById}
 				aria-errormessage={state.errorId}
 			>

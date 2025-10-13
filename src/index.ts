@@ -170,17 +170,6 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		[formDefinitionKeys, data, validateFieldValue],
 	)
 
-	const validate = useCallback(
-		async (name?: FieldKey) => {
-			if (name) {
-				const key = name as string
-				return validateField(key, data[key])
-			}
-			return validateForm()
-		},
-		[data, validateField, validateForm],
-	)
-
 	const resetForm = useCallback(() => {
 		setData(initialValues)
 		setErrors({})
@@ -428,7 +417,6 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		getForm,
 		getField,
 		getErrors,
-		validate,
 		setField,
 		setError,
 		isTouched,
@@ -438,9 +426,9 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 
 export { useStandardSchema, defineForm, toFormData }
 export type {
-	ErrorInfo,
+	ErrorEntry,
+	FieldData,
 	FieldDefinition,
-	FieldDefinitionProps,
 	FormDefinition,
 	TypeFromDefinition,
 	UseStandardSchemaReturn,

@@ -67,23 +67,25 @@ import * as z from "zod"
 const subscriptionForm = defineForm({
   email: {
     label: "Email",
-    description: "We'll send occasional updates.",
-    defaultValue: "",
-    validate: z.string().email("Enter a valid email"),
+    validate: z.email("Enter a valid email address"),
+    description: "We'll send occasional updates.", // optional
+    defaultValue: "", // optional
   },
 })
 
-const submitHandler = (values: TypeFromDefinition<typeof subscriptionForm>) => {
+type SubscriptionFormData = TypeFromDefinition<typeof subscriptionForm>
+
+const submitHandler = (values : SubscriptionFormData) => {
   console.log("Submitted:", values)
 }
 
 export function SubscriptionForm() {
   const { getForm, getField } = useStandardSchema(subscriptionForm)
-  const handlers = getForm(submitHandler)
+  const formHandlers = getForm(submitHandler)
   const email = getField("email")
 
   return (
-    <form {...handlers}>
+    <form {...formHandlers}>
       <label htmlFor={email.name}>{email.label}</label>
       <input
         id={email.name}
@@ -103,17 +105,22 @@ export function SubscriptionForm() {
 }
 ```
 
+**Note:** It is recommended to create custom components that extend `FieldData` for ease of use.
+
 ## Examples
 
 Browse additional snippets in [`examples/`](examples):
 
-- [dependent-field-validation.tsx](examples/dependent-field-validation.tsx) – Keep related selects in sync with `setField` and `setError`.
-- [custom-field-component.tsx](examples/custom-field-component.tsx) – Share reusable inputs via `FieldDefinitionProps`.
+- [dependent-field-validation.tsx](examples/dependent-field-validation.tsx) – An example that keeps two related fields in sync using `setField` and `setError`.
+- [custom-field-component.tsx](examples/custom-field-component.tsx) – Share reusable inputs via `FieldData`.
+- [valibot-login.tsx](examples/valibot-login.tsx) – Build a simple login form powered by Valibot validators.
 
-### Nested object field
+### Nested object fields
+
+Nested objects are supported.
 
 ```tsx
-import { defineForm, useStandardSchema, type TypeFromDefinition } from "use-standard-schema"
+import { defineForm } from "use-standard-schema"
 import * as z from "zod"
 
 const addressForm = defineForm({
@@ -122,97 +129,38 @@ const addressForm = defineForm({
   },
 })
 
-const submitHandler = (values: TypeFromDefinition<typeof addressForm>) => {
-  console.log(values)
-}
-
-export function AddressForm() {
-  const { getForm, getField } = useStandardSchema(addressForm)
-  const handlers = getForm(submitHandler)
-  const street = getField("address.street1")
-
-  return (
-    <form {...handlers}>
-      <label htmlFor={street.name}>{street.label}</label>
-      <input id={street.name} name={street.name} defaultValue={street.defaultValue} />
-      <p>{street.error}</p>
-    </form>
-  )
-}
 ```
 
-### Error banner
+### Error handling
+
+`useStandardSchema` returns the `getErrors` method that returns all of the current validations errors. This can be useful for giving all form error messages in one location. Additionally, the `getField` method returns the errors for the given field.
 
 ```tsx
-import { defineForm, useStandardSchema, type TypeFromDefinition } from "use-standard-schema"
-import * as z from "zod"
 
-const loginForm = defineForm({
-  email: { label: "Email", defaultValue: "", validate: z.string().email("Required") },
-  password: { label: "Password", defaultValue: "", validate: z.string().min(8, "Too short") },
-})
+const { getErrors, type ErrorInfo } = useStandardSchema(loginForm)
+const errors = getErrors()
 
-const submitHandler = (values: TypeFromDefinition<typeof loginForm>) => {
-  console.log(values)
-}
-
-export function LoginForm() {
-  const { getForm, getField, getErrors } = useStandardSchema(loginForm)
-  const handlers = getForm(submitHandler)
-  const email = getField("email")
-  const password = getField("password")
-  const errors = getErrors()
-
-  return (
-    <form {...handlers}>
-      {errors.length > 0 && (
-        <div role="alert">
-          {errors.map(({ name, error }) => (
-            <p key={name}>{error}</p>
-          ))}
-        </div>
-      )}
-      <input name={email.name} defaultValue={email.defaultValue} />
-      <input name={password.name} type="password" defaultValue={password.defaultValue} />
-      <button type="submit">Sign in</button>
-    </form>
-  )
-}
+{errors.length > 0 && (
+<div role="alert">
+{errors.map(({ name, label, error }: ErrorInfo) => (
+    <p key={name}>{label}: {error}</p>
+))}
+</div>
+)}
 ```
 
 ### Touched and dirty helpers
 
+Use the `isTouched` and `isDirty` helper methods to check whether or not the form, or a given field, has been modified or focused by the user.
+
 ```tsx
-import { defineForm, useStandardSchema, type TypeFromDefinition } from "use-standard-schema"
-import * as z from "zod"
+  const { isTouched, isDirty } = useStandardSchema(addressForm)
 
-const profileForm = defineForm({
-  firstName: { label: "First name", defaultValue: "Ada", validate: z.string().min(1) },
-  lastName: { label: "Last name", defaultValue: "Lovelace", validate: z.string().min(1) },
-})
+  const isStreetTouched = isTouched("address.street1")
+  const isStreetDirty = isDirty("address.street1")
 
-const submitHandler = (values: TypeFromDefinition<typeof profileForm>) => {
-  console.log(values)
-}
-
-export function ProfileForm() {
-  const { getForm, getField, isTouched, isDirty } = useStandardSchema(profileForm)
-  const handlers = getForm(submitHandler)
-  const first = getField("firstName")
-  const last = getField("lastName")
-
-  return (
-    <form {...handlers}>
-      <p>Touched: {isTouched() ? "yes" : "no"}</p>
-      <p>Dirty: {isDirty() ? "yes" : "no"}</p>
-      <input name={first.name} defaultValue={first.defaultValue} />
-      <input name={last.name} defaultValue={last.defaultValue} />
-      <button type="submit" disabled={!isDirty()}>
-        Save
-      </button>
-    </form>
-  )
-}
+  const isFormTouched = isTouched()
+  const isFormDirty = isDirty()
 ```
 
 ### Dependent field validation
@@ -220,15 +168,13 @@ export function ProfileForm() {
 Occasionally, manual validation is needed—especially when two fields are interdependent and the value of one field is based on a valid value in another field. The following utility functions support these scenarios:
 
 - `resetForm` - will reset the **form state** back to the initial values.
-- `validate` - a function to validate a field
 - `setField` can be used to manually set a field's value and cause validation.
-- `setError` - manually set or clear an error message for any registered field. Accepts either a string message, an `Error`
+- `setError` - manually sets or clears an error message for any registered field. Accepts either a string message, an `Error`
   instance, or an object with a `message` property.
 - `toFormData` -  a function to convert the returned data to web standard FormData.
 
 The hook can keep two fields in sync by updating the second field whenever the first one changes. The
-[dependent-field-validation.tsx example](examples/dependent-field-validation.tsx) combines `setField` and `setError`
-so the `state` select always reflects the currently selected `country` while surfacing meaningful manual errors.
+[dependent field validation example](examples/dependent-field-validation.tsx) combines `setField` and `setError` so that a `region/state` select always reflects the currently selected `country` while surfacing meaningful manual errors.
 
 ### Valid keys
 
@@ -236,7 +182,7 @@ A `FormDefinition`'s key is an intersection between a valid JSON key and an HTML
 
 ```ts
 
-const definition = defineForm({
+const formDefinition = defineForm({
     prefix: z.string(),                // ✔️ valid
     "first-name": z.string(),          // ✔️ valid
     "middle_name": z.string(),         // ✔️ valid
@@ -250,13 +196,13 @@ const definition = defineForm({
 
 Switching to another validator is straightforward. Update the `validate` property in your form definition to call the
 Standard Schema-compliant library of your choice (e.g. Zod, ArkType, Valibot). The runnable samples in
-[`examples/`](examples) all demonstrate swapping validators without changing the surrounding form code.
+[`examples/`](examples) demonstrate mixing both Zod and Valibot without changing the surrounding form code.
 
 ---
 
 ## Custom Components
 
-It is recommended to use `useStandardSchema` with your own custom React components.  This enables you to simply spread the result of the `getField` call directly without creating individual props. See [examples/custom-field-component.tsx](examples/custom-field-component.tsx) for a fully wired `TextField` abstraction that shows how to extend the returned props safely.
+It is recommended to use `useStandardSchema` with your own custom React components.  This enables you to simply spread the result of the `getField` call directly without creating individual props. See the [custom component example](examples/custom-field-component.tsx) for a fully wired `TextField` abstraction that shows how to extend the returned props safely.
 
 ## API
 
@@ -270,7 +216,6 @@ It is recommended to use `useStandardSchema` with your own custom React componen
 | `isDirty(name?)`             | Returns whether a field (or any field when omitted) has been modified |
 | `toFormData(data)`           | Helper to convert values to `FormData` |
 | `getErrors(name?)`                | Returns an array of `{ name, error, label }` for field or form |
-| `validate(name?)`            | Validates either the entire form or a single field |
 | `setField(name, value)` | Sets a field’s value directly and validates it |
 
 ---
@@ -298,19 +243,22 @@ If you encounter issues or have feature requests, [open an issue](https://github
 ## ChangeLog
 
 - **v0.3.1** - Improve form state synchronization and ergonomics.
+  - **Breaking**: Removed the imperative `validate()` method from the hook return; rely on `setField`, `setError`, and `getErrors()` for manual flows.
+  - Renamed the field payload type to `FieldData` (previously `FieldDefinitionProps`).
+  - Added a Valibot example.
   - Renamed `__dangerouslySetField` to `setField` and ensured programmatic updates always mark fields touched/dirty while re-validating.
-  - Reworked event handlers to merge DOM and state values on submit, clear errors on focus, and reset dirty/touched flags when inputs revert or definitions change.
   - Prevented stale validations by reusing the latest values during full-form checks and dropping dirty flags once values match their defaults.
   - Refactored the test harness into shared utilities with expanded coverage for interactions and throwing validators.
   - Updated React, TypeScript, and testing dependencies to their latest patch releases.
 - **v0.3.0** - Harden validation and expose field state helpers.
+  - **Breaking**: Removed `dirty` and `touched` objects.
   - Added `isTouched` and `isDirty` helpers to the hook return value for quick form state checks.
   - Improved validator extraction to accept broader Standard Schema shapes and gracefully surface thrown errors.
   - Simplified validation flow so blur validation only runs on dirty fields while keeping internal helpers consistent.
 - **v0.2.7** - Improve error handling
   - Update the return of `getErrors` to be `{name, label, error}` for consistency.
   - `getErrors` will name accept an optional `name` prop and return only that error.
-  - Add `FieldDefinitionProps` interface for easy extension for custom components.
+  - Add field metadata typing for easy extension of custom components.
 - **v0.2.6** - Better error handling
   - Add `label` to type `ErrorEntry`. This allows users to use the label in error messages.
 - **v0.2.5** - Add tests.

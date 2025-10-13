@@ -29,13 +29,9 @@ describe("useStandardSchema (basic)", () => {
 	it("validate a missing required field produces an error and isDirty/isTouched are set", async () => {
 		const { ref } = renderHookHarness()
 
-		// Validate an empty value for name
-		let ok: boolean
-		await act(async () => {
-			ok = await ref.current!.validate("name")
-		})
-		// validate returns false because defaultValue 'Joe' is valid; to test invalid we set empty via dangerous setter
-		expect(ok!).toBe(true)
+		// Defaults are valid with no errors reported
+		expect(ref.current!.getField("name").error).toBe("")
+		expect(ref.current!.getErrors("name")).toHaveLength(0)
 
 		// Now set to empty explicitly (this will run single-field validation)
 		await act(async () => {
@@ -205,9 +201,7 @@ describe("useStandardSchema (basic)", () => {
 			await ref.current!.setField("contact.email", "no-at-sign")
 		})
 
-		await waitFor(async () => {
-			const ok = await ref.current!.validate()
-			expect(ok).toBe(false)
+		await waitFor(() => {
 			const allErrors = ref.current!.getErrors()
 			// email should be present in errors
 			expect(allErrors.some((e: ErrorEntry) => e.name === "contact.email")).toBe(true)

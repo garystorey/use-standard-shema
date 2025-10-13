@@ -1,11 +1,6 @@
 import React from "react"
 import type { ComponentPropsWithoutRef } from "react"
-import {
-	defineForm,
-	useStandardSchema,
-	type FieldDefinitionProps,
-	type TypeFromDefinition,
-} from "use-standard-schema"
+import { defineForm, useStandardSchema, type FieldData, type TypeFromDefinition } from "use-standard-schema"
 import * as z from "zod"
 
 const profileForm = defineForm({
@@ -21,9 +16,12 @@ const profileForm = defineForm({
 	},
 })
 
-type NativeInputProps = Omit<ComponentPropsWithoutRef<"input">, keyof FieldDefinitionProps>
+type ProfileFormData = TypeFromDefinition<typeof profileForm>
 
-interface TextFieldProps extends Partial<FieldDefinitionProps>, NativeInputProps {}
+/* =========================================================================*/
+
+type NativeInputProps = Omit<ComponentPropsWithoutRef<"input">, keyof FieldData>
+interface TextFieldProps extends Partial<FieldData>, NativeInputProps {}
 
 function TextField({
 	name,
@@ -61,19 +59,19 @@ function TextField({
 				aria-invalid={Boolean(errorMessage)}
 				{...inputProps}
 			/>
-			{resolvedDescription && <p id={describedBy}>{resolvedDescription}</p>}
-			<p id={resolvedErrorId} role="alert">
-				{errorMessage}
-			</p>
+			<p id={describedBy}>{resolvedDescription}</p>
+			<p id={resolvedErrorId}>{errorMessage}</p>
 		</div>
 	)
 }
 
-export function CustomFieldComponentExample() {
-	const submitHandler = (values: TypeFromDefinition<typeof profileForm>) => {
-		console.log("Profile submitted:", values)
-	}
+/* =========================================================================*/
 
+const submitHandler = (values: ProfileFormData) => {
+    console.log("Profile submitted:", values)
+}
+
+export function CustomFieldFormExample() {
 	const { getForm, getField } = useStandardSchema(profileForm)
 	const handlers = getForm(submitHandler)
 
