@@ -166,6 +166,8 @@ Occasionally, manual validation is needed. For instance, if two fields are inter
 - `resetForm` - will reset the **form state** back to the initial values.
 - `validate` - a function to validate a field
 - `setField` can be used to manually set a field's value and cause validation.
+- `setError` - manually set or clear an error message for any registered field. Accepts either a string message, an `Error`
+  instance, or an object with a `message` property.
 - `toFormData` -  a function to convert the returned data to web standard FormData.
 
 ### Dependent select fields
