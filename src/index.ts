@@ -245,10 +245,21 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 				setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
 				setData((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }))
 
-				if (isDirty) {
-					setDirty((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
-					await validateField(field, value)
-				}
+				setDirty((prev) => {
+					const wasDirty = Boolean(prev[field])
+					if (isDirty) {
+						if (wasDirty) return prev
+						return { ...prev, [field]: true }
+					}
+
+					if (!wasDirty) return prev
+
+					const next = { ...prev }
+					delete next[field]
+					return next
+				})
+
+				await validateField(field, value)
 			}
 
 			const onReset = () => resetForm()
@@ -287,14 +298,28 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	const setField = useCallback(
 		async (name: FieldKey, value: string) => {
 			const field = name as string
+			const initialValue = initialValueStrings[field] ?? ""
+			const isDirty = value !== initialValue
 
 			setData((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }))
 			setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
-			setDirty((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
+			setDirty((prev) => {
+				const wasDirty = Boolean(prev[field])
+				if (isDirty) {
+					if (wasDirty) return prev
+					return { ...prev, [field]: true }
+				}
+
+				if (!wasDirty) return prev
+
+				const next = { ...prev }
+				delete next[field]
+				return next
+			})
 
 			await validateField(field, value)
 		},
-		[validateField],
+		[validateField, initialValueStrings],
 	)
 
 	const getErrors = useCallback(
