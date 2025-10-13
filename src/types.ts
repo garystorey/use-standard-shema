@@ -178,7 +178,7 @@ export interface UseStandardSchemaReturn<T extends FormDefinition> {
 	) => Partial<FieldDefinitionProps> & { defaultValue?: string; error: string; touched?: boolean; dirty?: boolean }
 	getErrors: (name?: DotPaths<T>) => ErrorEntry[]
 	validate: (name?: DotPaths<T>) => Promise<boolean>
-        setField: (name: DotPaths<T>, value: string) => Promise<void>
+	setField: (name: DotPaths<T>, value: string) => Promise<void>
 	isTouched: (name?: DotPaths<T>) => boolean
 	isDirty: (name?: DotPaths<T>) => boolean
 }
