@@ -165,8 +165,104 @@ Occasionally, manual validation is needed. For instance, if two fields are inter
 
 - `resetForm` - will reset the **form state** back to the initial values.
 - `validate` - a function to validate a field
-- `__dangerouslySetField` can be used to manually set a fields value and cause validation.
+- `setField` can be used to manually set a field's value and cause validation.
 - `toFormData` -  a function to convert the returned data to web standard FormData.
+
+### Dependent select fields
+
+The hook can keep two fields in sync by updating the second field whenever the first one changes. In this example, the available
+`state` options depend on the selected `country`. We call `setField` inside the change handler so the form state
+updates immediately, and `useEffect` ensures the state select always has a valid value.
+
+```tsx
+import { useEffect } from "react"
+import { defineForm, useStandardSchema } from "use-standard-schema"
+import * as z from "zod"
+
+const locationForm = defineForm({
+  country: {
+    label: "Country",
+    defaultValue: "usa",
+    validate: z.enum(["usa", "canada"]),
+  },
+  state: {
+    label: "State / Province",
+    defaultValue: "ca",
+    validate: z.string().min(1, "Select a region"),
+  },
+})
+
+const countryOptions = [
+  { value: "usa", label: "United States" },
+  { value: "canada", label: "Canada" },
+] as const
+
+const statesByCountry = {
+  usa: [
+    { value: "ca", label: "California" },
+    { value: "ny", label: "New York" },
+  ],
+  canada: [
+    { value: "on", label: "Ontario" },
+    { value: "qc", label: "Quebec" },
+  ],
+} as const
+
+export function LocationForm() {
+  const { getForm, getField, setField } = useStandardSchema(locationForm)
+  const handlers = getForm((data) => console.log(data))
+
+  const country = getField("country")
+  const state = getField("state")
+  const stateOptions = statesByCountry[country.defaultValue as keyof typeof statesByCountry] ?? []
+
+  useEffect(() => {
+    if (!stateOptions.some((option) => option.value === state.defaultValue)) {
+      void setField("state", stateOptions[0]?.value ?? "")
+    }
+  }, [stateOptions, state.defaultValue, setField])
+
+  return (
+    <form {...handlers}>
+      <label htmlFor="country">{country.label}</label>
+      <select
+        id="country"
+        name={country.name}
+        value={country.defaultValue}
+        onChange={(event) => void setField("country", event.target.value)}
+      >
+        {countryOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="state">{state.label}</label>
+      <select
+        id="state"
+        name={state.name}
+        value={state.defaultValue}
+        onChange={(event) => void setField("state", event.target.value)}
+        aria-describedby={state.describedById}
+        aria-errormessage={state.errorId}
+      >
+        {stateOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+
+      <p id={state.errorId} role="alert">
+        {state.error}
+      </p>
+
+      <button type="submit">Submit</button>
+    </form>
+  )
+}
+```
 
 ### Valid keys
 
@@ -250,7 +346,7 @@ type FieldProps = FieldDefinitionProps & {
 | `toFormData(data)`           | Helper to convert values to `FormData` |
 | `getErrors(name?)`                | Returns an array of `{ name, error, label }` for field or form |
 | `validate(name?)`            | Validates either the entire form or a single field |
-| `__dangerouslySetField(name, value)` | Sets a field’s value directly and validates it |
+| `setField(name, value)` | Sets a field’s value directly and validates it |
 
 ---
 
