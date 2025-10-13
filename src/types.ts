@@ -9,6 +9,12 @@ export type FormValues = Record<string, string>
 export type Flags = Record<string, boolean>
 export type Errors = Record<string, string>
 
+export type ErrorDetails = {
+	message?: string | null
+}
+
+export type ErrorInfo = string | Error | ErrorDetails | null | undefined
+
 export interface FieldDefinition {
 	label: string
 	description?: string
@@ -179,6 +185,7 @@ export interface UseStandardSchemaReturn<T extends FormDefinition> {
 	getErrors: (name?: DotPaths<T>) => ErrorEntry[]
 	validate: (name?: DotPaths<T>) => Promise<boolean>
 	setField: (name: DotPaths<T>, value: string) => Promise<void>
+	setError: (name: DotPaths<T>, info: ErrorInfo) => void
 	isTouched: (name?: DotPaths<T>) => boolean
 	isDirty: (name?: DotPaths<T>) => boolean
 }

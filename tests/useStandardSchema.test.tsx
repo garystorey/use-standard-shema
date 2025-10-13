@@ -127,6 +127,50 @@ describe("useStandardSchema (basic)", () => {
 		})
 	})
 
+	it("setError allows manual control over field errors", async () => {
+		const { ref } = renderHookHarness()
+
+		act(() => {
+			ref.current!.setError("name", "  Custom issue  ")
+		})
+
+		await waitFor(() => {
+			expect(ref.current!.getField("name").error).toBe("Custom issue")
+		})
+
+		act(() => {
+			ref.current!.setError("name", { message: "Another problem" })
+		})
+
+		await waitFor(() => {
+			expect(ref.current!.getField("name").error).toBe("Another problem")
+		})
+
+		act(() => {
+			ref.current!.setError("name", new Error("Boom"))
+		})
+
+		await waitFor(() => {
+			expect(ref.current!.getField("name").error).toBe("Boom")
+		})
+
+		act(() => {
+			ref.current!.setError("name", { message: "   " })
+		})
+
+		await waitFor(() => {
+			expect(ref.current!.getField("name").error).toBe("")
+		})
+
+		act(() => {
+			ref.current!.setError("name", null)
+		})
+
+		await waitFor(() => {
+			expect(ref.current!.getField("name").error).toBe("")
+		})
+	})
+
 	it("resets state when form definition changes", async () => {
 		const firstForm = makeForm()
 		const { ref, rerenderWith } = renderHookHarness(firstForm)

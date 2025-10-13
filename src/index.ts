@@ -3,6 +3,7 @@ import { defineForm, flattenDefaults, flattenFormDefinition, toFormData } from "
 import type {
 	DotPaths,
 	ErrorEntry,
+	ErrorInfo,
 	Errors,
 	FieldDefinition,
 	Flags,
@@ -54,6 +55,26 @@ const deriveThrownMessage = (error: unknown): string => {
 	if (error instanceof Error && error.message) return error.message
 	if (typeof error === "string" && error.trim().length > 0) return error
 	return "validation failed"
+}
+
+const resolveManualErrorMessage = (info: ErrorInfo): string | null => {
+	if (info == null) return null
+	if (typeof info === "string") {
+		const trimmed = info.trim()
+		return trimmed.length > 0 ? trimmed : null
+	}
+
+	if (info instanceof Error) {
+		const message = info.message?.trim()
+		return message && message.length > 0 ? message : null
+	}
+
+	if (typeof info.message === "string") {
+		const message = info.message.trim()
+		return message.length > 0 ? message : null
+	}
+
+	return null
 }
 
 const toInputString = (value: unknown): string => {
@@ -322,6 +343,32 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		[validateField, initialValueStrings],
 	)
 
+	const setError = useCallback(
+		(name: FieldKey, info: ErrorInfo) => {
+			const field = name as string
+
+			if (!(field in flatFormDefinition)) {
+				throw new Error(`Field "${field}" not found`)
+			}
+
+			const message = resolveManualErrorMessage(info)
+
+			setErrors((prev) => {
+				const current = prev[field]
+
+				if (message == null) {
+					if (current === undefined) return prev
+					const next = { ...prev }
+					delete next[field]
+					return next
+				}
+
+				return current === message ? prev : { ...prev, [field]: message }
+			})
+		},
+		[flatFormDefinition],
+	)
+
 	const getErrors = useCallback(
 		(name?: FieldKey): ErrorEntry[] => {
 			if (name) {
@@ -383,10 +430,11 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		getErrors,
 		validate,
 		setField,
+		setError,
 		isTouched,
 		isDirty,
 	}
 }
 
 export { useStandardSchema, defineForm, toFormData }
-export { FieldDefinition, FieldDefinitionProps, FormDefinition, TypeFromDefinition } from "./types"
+export { ErrorInfo, FieldDefinition, FieldDefinitionProps, FormDefinition, TypeFromDefinition } from "./types"
