@@ -3,7 +3,7 @@ import type { StandardSchemaV1 } from "@standard-schema/spec"
 /** ----------------------------------------------------------------
  * Typed schema helpers compatible with Standard Schema V1
  * ---------------------------------------------------------------- */
-interface StringSchema extends StandardSchemaV1<string> {
+export interface StringSchema extends StandardSchemaV1<string> {
 	type: "string"
 	message: string
 }

@@ -9,12 +9,21 @@ export type FormValues = Record<string, string>
 export type Flags = Record<string, boolean>
 export type Errors = Record<string, string>
 
+export type ErrorDetails = {
+	message?: string | null
+}
+
+export type ErrorInfo = string | Error | ErrorDetails | null | undefined
+
 export interface FieldDefinition {
 	label: string
 	description?: string
 	defaultValue?: string
 	validate: StandardSchemaV1
 }
+
+export type SchemaValidator = FieldDefinition["validate"]["~standard"]["validate"]
+export type StandardValidator = SchemaValidator | ((value: string) => unknown | Promise<unknown>)
 
 /** A form schema tree: keys map to either fields or nested groups. */
 export type FormDefinition = {
@@ -156,8 +165,11 @@ export type AssertValidFormKeysDeep<T extends FormDefinition> = true extends _Ha
 	? never
 	: { [K in keyof T]: T[K] extends FormDefinition ? AssertValidFormKeysDeep<T[K]> : T[K] }
 
-export interface FieldDefintionProps extends FieldDefinition {
+export interface FieldData {
 	name: string
+	label: string
+	description?: string
+	defaultValue?: string
 	errorId: string
 	describedById: string
 	touched: boolean
@@ -175,10 +187,10 @@ export interface UseStandardSchemaReturn<T extends FormDefinition> {
 	}
 	getField: (
 		name: DotPaths<T>,
-	) => Partial<FieldDefintionProps> & { defaultValue?: string; error: string; touched?: boolean; dirty?: boolean }
+	) => Partial<FieldData> & { defaultValue?: string; error: string; touched?: boolean; dirty?: boolean }
 	getErrors: (name?: DotPaths<T>) => ErrorEntry[]
-	validate: (name?: DotPaths<T>) => Promise<boolean>
-	__dangerouslySetField: (name: DotPaths<T>, value: string) => Promise<void>
+	setField: (name: DotPaths<T>, value: string) => Promise<void>
+	setError: (name: DotPaths<T>, info: ErrorInfo) => void
 	isTouched: (name?: DotPaths<T>) => boolean
 	isDirty: (name?: DotPaths<T>) => boolean
 }

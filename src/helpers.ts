@@ -2,9 +2,11 @@ import type {
 	AnyFormPathKey,
 	AssertValidFormKeysDeep,
 	DotPaths,
+	ErrorInfo,
 	FieldDefinition,
 	FormDefinition,
 	FormValues,
+	StandardValidator,
 } from "./types"
 
 /** Define and return the form definition as is. */
@@ -73,6 +75,85 @@ export function flattenFormDefinition(
 	}
 
 	return flattened
+}
+
+/* =============================================================================
+ * Validator + messaging helpers
+ * ========================================================================== */
+
+export function isValidatorFunction(value: unknown): value is StandardValidator {
+	return typeof value === "function"
+}
+
+export function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null
+}
+
+export function extractValidator(value: unknown): StandardValidator | undefined {
+	if (isValidatorFunction(value)) return value
+
+	if (!isRecord(value)) return undefined
+
+	const recordValue = value as Record<string, unknown>
+	const standardValidator = recordValue["~standard"]
+	if (isRecord(standardValidator) && isValidatorFunction((standardValidator as { validate?: unknown }).validate)) {
+		return (standardValidator as { validate: StandardValidator }).validate
+	}
+
+	const directValidator = (recordValue as { validate?: unknown }).validate
+	if (isValidatorFunction(directValidator)) {
+		return directValidator
+	}
+
+	return undefined
+}
+
+export function deriveValidationMessage(result: unknown): string {
+	if (typeof result === "string") return result
+	if (!isRecord(result)) return ""
+
+	const resultRecord = result as Record<string, unknown> & { issues?: unknown; message?: unknown }
+	const issues = Array.isArray(resultRecord.issues) ? resultRecord.issues : []
+	for (const issue of issues) {
+		if (isRecord(issue) && typeof issue.message === "string") {
+			return issue.message
+		}
+	}
+
+	return typeof resultRecord.message === "string" ? resultRecord.message : ""
+}
+
+export function deriveThrownMessage(error: unknown): string {
+	if (error instanceof Error && error.message) return error.message
+	if (typeof error === "string" && error.trim().length > 0) return error
+	return "validation failed"
+}
+
+export function resolveManualErrorMessage(info: ErrorInfo): string | null {
+	if (info == null) return null
+	if (typeof info === "string") {
+		const trimmed = info.trim()
+		return trimmed.length > 0 ? trimmed : null
+	}
+
+	if (info instanceof Error) {
+		const message = info.message?.trim()
+		return message && message.length > 0 ? message : null
+	}
+
+	const details = info as { message?: unknown }
+	if (typeof details.message === "string") {
+		const message = details.message.trim()
+		return message.length > 0 ? message : null
+	}
+
+	return null
+}
+
+export function toInputString(value: unknown): string {
+	if (typeof value === "string") return value
+	if (value == null) return ""
+	return String(value)
 }
 
 // ---------------- flattenDefaults ----------------

@@ -1,6 +1,6 @@
 {
     "name": "use-standard-schema",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "description": "A React hook for managing form state using any standard schema compliant validation library.",
     "main": "dist/index.js",
     "module": "dist/index.mjs",
@@ -35,7 +35,9 @@
         "use-standard-schema",
         "useStandardSchema",
         "standard schema",
-        "validation",
+        "validation", 
+        "validator",
+        "validate",
         "form",
         "react",
         "hook",
@@ -58,12 +60,12 @@
         "react": "^19.2.0"
     },
     "devDependencies": {
-        "@biomejs/biome": "2.2.5",
+        "@biomejs/biome": "2.2.6",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.0",
         "@testing-library/user-event": "^14.6.1",
-        "@types/react": "^19.2.0",
-        "@types/react-dom": "^19.2.0",
+        "@types/react": "^19.2.2",
+        "@types/react-dom": "^19.2.2",
         "@vitejs/plugin-react": "^5.0.4",
         "globals": "^16.4.0",
         "jsdom": "^27.0.0",
@@ -71,8 +73,9 @@
         "react-dom": "^19.2.0",
         "tsup": "^8.5.0",
         "typescript": "^5.9.3",
+        "valibot": "^1.1.0",
         "vitest": "^3.2.4",
-        "zod": "^4.1.11"
+        "zod": "^4.1.12"
     },
     "dependencies": {
         "@standard-schema/spec": "^1.0.0"
