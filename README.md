@@ -75,11 +75,11 @@ const onSubmitHandler = (values: SubscriptionForm) => console.log("Submitted:", 
 export function SubscriptionForm() {
 
   const { getForm, getField } = useStandardSchema(subscriptionForm)
-  const form = getForm(onSubmitHandler)
+  const formHandlers = getForm(onSubmitHandler)
   const email = getField("email")
 
   return (
-    <form {...form}>
+    <form {...formHandlers}>
         
       <label htmlFor={email.name}>{email.label}</label>
       <input
@@ -98,9 +98,9 @@ export function SubscriptionForm() {
 }
 ```
 
-- **`getForm(onSubmit)`**: Returns event handlers for the `<form>`. `onSubmit` obly runs when valid.
-- **`getField(name)`**: Supplies the field metadata.
-- **`getErrors(name?)`**: Returns structured errors.
+- **`getForm(onSubmit)`**: Returns event handlers for the `<form>`. `onSubmit` only runs when valid.
+- **`getField(name)`**: Returns the given field's metadata.
+- **`getErrors(name?)`**: Returns structured errors for the form or for a field.
 
 ## Examples
 
@@ -137,11 +137,11 @@ const { getErrors, type ErrorInfo } = useStandardSchema(loginForm)
 const errors = getErrors()
 
 {errors.length > 0 && (
-<div role="alert">
-{errors.map(({ name, label, error }: ErrorInfo) => (
-    <p key={name}>{label}: {error}</p>
-))}
-</div>
+  <div role="alert">
+    {errors.map(({ name, label, error }: ErrorInfo) => (
+      <p key={name}>{label}: {error}</p>
+    ))}
+  </div>
 )}
 ```
 
@@ -222,7 +222,7 @@ const email = getField("email")
   aria-describedby={email.describedById}
   aria-errormessage={email.errorId}
 />
-{email.error && <span id={email.errorId}>{email.error}</span>}
+<span id={email.errorId}>{email.error}</span>
 ```
 
 ### `setField(name, value)`
