@@ -22,6 +22,9 @@ export interface FieldDefinition {
 	validate: StandardSchemaV1
 }
 
+export type SchemaValidator = FieldDefinition["validate"]["~standard"]["validate"]
+export type StandardValidator = SchemaValidator | ((value: string) => unknown | Promise<unknown>)
+
 /** A form schema tree: keys map to either fields or nested groups. */
 export type FormDefinition = {
 	[key: string]: FieldDefinition | FormDefinition
