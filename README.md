@@ -16,16 +16,15 @@
 - [Usage](#usage)
 - [Examples](#examples)
 - [API](#api)
-- [Best Practices](#best-practices)
 - [Feedback & Support](#feedback--support)
-- [ChangeLog](#changelog)
+- [Changelog](#changelog)
 - [License](#license)
 
 ---
 
 ## Overview
 
-`useStandardSchema` wraps a [Standard Schema](https://standardschema.dev)–compliant form definition (e.g. Zod, Valibot, ArkType, etc.) into a React hook for form handling. It streamlines validation, state, error handling, and submission—all with type safety via the Standard Schema interface.
+`useStandardSchema` wraps a [Standard Schema](https://standardschema.dev)-compliant form definition (e.g. Zod, Valibot, ArkType, etc.) into a React hook for form handling. It streamlines validation, state, error handling, and submission with type safety via the Standard Schema interface.
 
 ### Why useStandardSchema?
 
@@ -57,35 +56,32 @@ pnpm add use-standard-schema
 
 ## Usage
 
-`useStandardSchema` pairs `getForm` for wiring the form element and `getField` for reading per-field metadata.
+Define your form once with `defineForm`, then consume it inside a component with `useStandardSchema`.
 
 ```tsx
-import React from "react"
 import { defineForm, useStandardSchema, type TypeFromDefinition } from "use-standard-schema"
 import * as z from "zod"
 
 const subscriptionForm = defineForm({
   email: {
     label: "Email",
-    validate: z.email("Enter a valid email address"),
-    description: "We'll send occasional updates.", // optional
-    defaultValue: "", // optional
+    validate: z.string().email("Enter a valid email address"),
+    defaultValue: "",
+    description: "We'll send occasional updates.",
   },
 })
 
-type SubscriptionFormData = TypeFromDefinition<typeof subscriptionForm>
-
-const submitHandler = (values : SubscriptionFormData) => {
-  console.log("Submitted:", values)
-}
+type SubscriptionForm = TypeFromDefinition<typeof subscriptionForm>
 
 export function SubscriptionForm() {
   const { getForm, getField } = useStandardSchema(subscriptionForm)
-  const formHandlers = getForm(submitHandler)
+  const form = getForm((values: SubscriptionForm) => {
+    console.log("Submitted:", values)
+  })
   const email = getField("email")
 
   return (
-    <form {...formHandlers}>
+    <form {...form}>
       <label htmlFor={email.name}>{email.label}</label>
       <input
         id={email.name}
@@ -94,26 +90,29 @@ export function SubscriptionForm() {
         aria-describedby={email.describedById}
         aria-errormessage={email.errorId}
       />
-      <p id={email.describedById}>{email.description}</p>
-      <p id={email.errorId} role="alert">
-        {email.error}
-      </p>
-
+      {email.description && <p id={email.describedById}>{email.description}</p>}
+      {email.error && (
+        <p id={email.errorId} role="alert">
+          {email.error}
+        </p>
+      )}
       <button type="submit">Subscribe</button>
     </form>
   )
 }
 ```
 
-**Note:** It is recommended to create custom components that extend `FieldData` for ease of use.
+- **`getForm(onSubmit)`**: Spread onto `<form>`; your handler runs only when the data is valid.
+- **`getField(name)`**: Supplies the field metadata (`name`, `defaultValue`, `error`, ARIA ids`) you spread onto inputs and messages.
+- **`getErrors(name?)`**: Returns structured errors you can surface in toast notifications or summaries.
 
 ## Examples
 
 Browse additional snippets in [`examples/`](examples):
 
-- [dependent-field-validation.tsx](examples/dependent-field-validation.tsx) – An example that keeps two related fields in sync using `setField` and `setError`.
-- [custom-field-component.tsx](examples/custom-field-component.tsx) – Share reusable inputs via `FieldData`.
-- [valibot-login.tsx](examples/valibot-login.tsx) – Build a simple login form powered by Valibot validators.
+- [dependent-field-validation.tsx](examples/dependent-field-validation.tsx) - An example that keeps two related fields in sync using `setField` and `setError`.
+- [custom-field-component.tsx](examples/custom-field-component.tsx) - Share reusable inputs via `FieldData`.
+- [valibot-login.tsx](examples/valibot-login.tsx) - Build a simple login form powered by Valibot validators.
 
 ### Nested object fields
 
@@ -165,7 +164,7 @@ Use the `isTouched` and `isDirty` helper methods to check whether or not the for
 
 ### Dependent field validation
 
-Occasionally, manual validation is needed—especially when two fields are interdependent and the value of one field is based on a valid value in another field. The following utility functions support these scenarios:
+Occasionally, manual validation is needed, especially when two fields are interdependent and the value of one field depends on a valid value in another field. The following utility functions support these scenarios:
 
 - `resetForm` - will reset the **form state** back to the initial values.
 - `setField` can be used to manually set a field's value and cause validation.
@@ -183,11 +182,11 @@ A `FormDefinition`'s key is an intersection between a valid JSON key and an HTML
 ```ts
 
 const formDefinition = defineForm({
-    prefix: z.string(),                // ✔️ valid
-    "first-name": z.string(),          // ✔️ valid
-    "middle_name": z.string(),         // ✔️ valid
-    "last:name": z.string(),           // ✔️ valid
-    "street address": z.string()       // ❌ invalid
+    prefix: z.string(),                // valid
+    "first-name": z.string(),          // valid
+    "middle_name": z.string(),         // valid
+    "last:name": z.string(),           // valid
+    "street address": z.string()       // invalid
 })
 
 ```
@@ -195,8 +194,7 @@ const formDefinition = defineForm({
 ### Using other validators
 
 Switching to another validator is straightforward. Update the `validate` property in your form definition to call the
-Standard Schema-compliant library of your choice (e.g. Zod, ArkType, Valibot). The runnable samples in
-[`examples/`](examples) demonstrate mixing both Zod and Valibot without changing the surrounding form code.
+Standard Schema-compliant library of your choice (e.g. Zod, ArkType, Valibot). A [`valibot example`](examples/valibot-login.tsx) is also available.
 
 ---
 
@@ -206,33 +204,92 @@ It is recommended to use `useStandardSchema` with your own custom React componen
 
 ## API
 
-| Hook / Function              | Description                                                                 |
-|------------------------------|-----------------------------------------------------------------------------|
-| `useStandardSchema(formDefinition)` | Initialize form state and validation with a form definition |
-| `getForm(onSubmit)`          | Returns event handlers for the form; submit handler only fires with valid data |
-| `getField(name)`             | Returns metadata for a given field (label, defaultValue, error, touched, dirty, ARIA ids) |
-| `resetForm()`                | Resets all form state to initial defaults |
-| `isTouched(name?)`           | Returns whether a field (or any field when omitted) has been touched |
-| `isDirty(name?)`             | Returns whether a field (or any field when omitted) has been modified |
-| `toFormData(data)`           | Helper to convert values to `FormData` |
-| `getErrors(name?)`                | Returns an array of `{ name, error, label }` for field or form |
-| `setField(name, value)` | Sets a field’s value directly and validates it |
+`useStandardSchema` returns a toolbox of helpers for wiring form elements, reading state, and issuing manual updates.
 
----
+### `useStandardSchema(formDefinition)`
 
-## Best Practices
+Create the hook by passing a `defineForm` definition. The return value exposes the rest of the helpers documented below.
 
-- **Type Safety**: Use `TypeFromDefinition<typeof form>` for your submit handler if you need type safety. This ensures your form data matches the form definition.
-- **Error Display**: Use `getErrors()` for global errors and `field.error` for field-level errors.
-- **Performance**: Handlers and derived values (`getForm`, `getField`, `getErrors`) are memoized internally. You don’t need extra `useMemo` unless you’re doing heavy custom work.
-- **Reset Strategy**: Call `resetForm()` after successful submission to clear touched/dirty/errors and restore defaults.
-- **Nested Fields**: Use dot notation for nested keys (e.g. `"address.street1"`). TypeScript support ensures autocomplete for these paths.
-- **Accessibility**: Always wire `describedById` and `errorId` into your markup to keep your forms screen-reader friendly.
-  - `getField` provides `describedById` and `errorId` for use with `aria-describedby` and/or `aria-errormessage`.
-  - Ensures that developers can add proper screen reader support for error messages.
-  - Group-level errors can be presented with `role="alert"`.
+```ts
+const { getForm, getField, getErrors, setField, setError, resetForm, isTouched, isDirty } =
+  useStandardSchema(myFormDefinition)
+```
 
----
+### `getForm(onSubmit)`
+
+Returns the props you spread onto `<form>`. It validates all fields and only invokes your handler when everything passes.
+
+```tsx
+const form = getForm((values) => console.log(values))
+
+return <form {...form}>...</form>
+```
+
+### `getField(name)`
+
+Returns metadata and ARIA ids for a specific field so you can wire inputs, labels, and helper text.
+
+```tsx
+const email = getField("email")
+
+<input
+  name={email.name}
+  defaultValue={email.defaultValue}
+  aria-describedby={email.describedById}
+  aria-errormessage={email.errorId}
+/>
+{email.error && <span id={email.errorId}>{email.error}</span>}
+```
+
+### `setField(name, value)`
+
+Updates a field's value programmatically (for dependent fields, custom widgets, or multi-step wizards) and re-validates it.
+
+```ts
+setField("address.postalCode", nextPostalCode)
+```
+
+### `setError(name, error)`
+
+Surfaces a manual error message for any field. Pass `null` or `undefined` to clear it.
+
+```ts
+setError("email", new Error("Email already registered"))
+```
+
+### `getErrors(name?)`
+
+Returns structured `{ name, label, error }` entries for the whole form or for one specific field - perfect for summary banners or toast notifications.
+
+```ts
+const allErrors = getErrors()
+const emailErrors = getErrors("email")
+```
+
+### `resetForm()`
+
+Clears errors, touched/dirty flags, and restores the original defaults. The hook calls this automatically after a successful submit, but you can use it for explicit "Start over" buttons.
+
+```ts
+resetForm()
+```
+
+### `isTouched(name?)` and `isDirty(name?)`
+
+Report whether a field - or any field when called without arguments - has been interacted with or changed.
+
+```ts
+const hasEditedAnything = isDirty()
+const isEmailTouched = isTouched("email")
+```
+
+### `toFormData(data)`
+
+Helper that converts a values object into a browser `FormData` instance for interoperability with fetch/XHR uploads.
+
+```ts
+const formData = toFormData(values)
+```
 
 ## Feedback & Support
 
@@ -240,42 +297,10 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ---
 
-## ChangeLog
+## Changelog
 
-- **v0.4.0** - Improve form state synchronization and ergonomics.
-  - **Breaking**: Removed the imperative `validate()` method from the hook return; rely on `setField`, `setError`, and `getErrors()` for manual flows.
-  - Renamed the field payload type to `FieldData` (previously `FieldDefinitionProps`).
-  - Added a Valibot example.
-  - Renamed `__dangerouslySetField` to `setField` and ensured programmatic updates always mark fields touched/dirty while re-validating.
-  - Prevented stale validations by reusing the latest values during full-form checks and dropping dirty flags once values match their defaults.
-  - Refactored the test harness into shared utilities with expanded coverage for interactions and throwing validators.
-  - Updated React, TypeScript, and testing dependencies to their latest patch releases.
-- **v0.3.0** - Harden validation and expose field state helpers.
-  - **Breaking**: Removed `dirty` and `touched` objects.
-  - Added `isTouched` and `isDirty` helpers to the hook return value for quick form state checks.
-  - Improved validator extraction to accept broader Standard Schema shapes and gracefully surface thrown errors.
-  - Simplified validation flow so blur validation only runs on dirty fields while keeping internal helpers consistent.
-- **v0.2.7** - Improve error handling
-  - Update the return of `getErrors` to be `{name, label, error}` for consistency.
-  - `getErrors` will name accept an optional `name` prop and return only that error.
-  - Add field metadata typing for easy extension of custom components.
-- **v0.2.6** - Better error handling
-  - Add `label` to type `ErrorEntry`. This allows users to use the label in error messages.
-- **v0.2.5** - Add tests.
-  - Add vitest and testing-library.
-  - Add tests for all existing functionality.
-  - Created a stricter `FormDefinition` type.
-    - Keys must be an intersection of a valid json key and an html name attribute.
-- **v0.2.4** - Improve validation.
-  - remove "schema" from function names internally and externally.
-  - Validation is handled consistently internally.
-  - Update `getErrors` to return ordered `{ key, error }[]`.
-  - fix issue with resetForm not clearing form
-- **v0.2.3** - Fix recursion error in `isFormDefinition` that caused an infinite loop.
-- **v0.2.2** - Fix recursion error in `flattenSchema`.
-- **v0.2.1** - Rename `defineSchema` to `defineForm`. Rename `schema` to `validate`.
-- **v0.2.0** - Add nested object support.
-- **v0.1.0** - Initial release.
+- **v0.4.0** - Improved form state synchronization, renamed the `FieldDefinitionProps` type to `FieldData`, and ensured programmatic updates stay validated while tracking touched/dirty status.
+- [View the full changelog](./CHANGELOG.md) for earlier releases.
 
 ---
 
