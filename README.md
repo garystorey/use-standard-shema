@@ -1,7 +1,5 @@
 # useStandardSchema
 
-<div style="max-width:100ch">
-
 *A React hook for managing form state using any Standard Schema-compliant validator.*
 
 [![License](https://img.shields.io/badge/license-MIT-%230172ad)](https://github.com/garystorey/use-standard-schema/blob/master/LICENSE.md)
@@ -65,23 +63,24 @@ import * as z from "zod"
 const subscriptionForm = defineForm({
   email: {
     label: "Email",
-    validate: z.string().email("Enter a valid email address"),
-    defaultValue: "",
-    description: "We'll send occasional updates.",
+    validate: z.email("Enter a valid email address"),
+    defaultValue: "",  // optional
+    description: "We'll send occasional updates.", // optional
   },
 })
 
 type SubscriptionForm = TypeFromDefinition<typeof subscriptionForm>
+const onSubmitHandler = (values: SubscriptionForm) => console.log("Submitted:", values)
 
 export function SubscriptionForm() {
+
   const { getForm, getField } = useStandardSchema(subscriptionForm)
-  const form = getForm((values: SubscriptionForm) => {
-    console.log("Submitted:", values)
-  })
+  const form = getForm(onSubmitHandler)
   const email = getField("email")
 
   return (
     <form {...form}>
+        
       <label htmlFor={email.name}>{email.label}</label>
       <input
         id={email.name}
@@ -90,21 +89,18 @@ export function SubscriptionForm() {
         aria-describedby={email.describedById}
         aria-errormessage={email.errorId}
       />
-      {email.description && <p id={email.describedById}>{email.description}</p>}
-      {email.error && (
-        <p id={email.errorId} role="alert">
-          {email.error}
-        </p>
-      )}
+      <p id={email.describedById}>{email.description}</p>
+      <p id={email.errorId} role="alert">{email.error}</p>
+
       <button type="submit">Subscribe</button>
     </form>
   )
 }
 ```
 
-- **`getForm(onSubmit)`**: Spread onto `<form>`; your handler runs only when the data is valid.
-- **`getField(name)`**: Supplies the field metadata (`name`, `defaultValue`, `error`, ARIA ids`) you spread onto inputs and messages.
-- **`getErrors(name?)`**: Returns structured errors you can surface in toast notifications or summaries.
+- **`getForm(onSubmit)`**: Returns event handlers for the `<form>`. `onSubmit` obly runs when valid.
+- **`getField(name)`**: Supplies the field metadata.
+- **`getErrors(name?)`**: Returns structured errors.
 
 ## Examples
 
@@ -125,7 +121,7 @@ import * as z from "zod"
 
 const addressForm = defineForm({
   address: {
-    street1: { label: "Street", defaultValue: "", validate: z.string().min(2) },
+    street1: { label: "Street", validate: z.string().min(2) },
   },
 })
 
@@ -162,19 +158,6 @@ Use the `isTouched` and `isDirty` helper methods to check whether or not the for
   const isFormTouched = isTouched()
   const isFormDirty = isDirty()
 ```
-
-### Dependent field validation
-
-Occasionally, manual validation is needed, especially when two fields are interdependent and the value of one field depends on a valid value in another field. The following utility functions support these scenarios:
-
-- `resetForm` - will reset the **form state** back to the initial values.
-- `setField` can be used to manually set a field's value and cause validation.
-- `setError` - manually sets or clears an error message for any registered field. Accepts either a string message, an `Error`
-  instance, or an object with a `message` property.
-- `toFormData` -  a function to convert the returned data to web standard FormData.
-
-The hook can keep two fields in sync by updating the second field whenever the first one changes. The
-[dependent field validation example](examples/dependent-field-validation.tsx) combines `setField` and `setError` so that a `region/state` select always reflects the currently selected `country` while surfacing meaningful manual errors.
 
 ### Valid keys
 
@@ -308,5 +291,3 @@ If you encounter issues or have feature requests, [open an issue](https://github
 ## License
 
 [MIT License](./LICENSE.md)
-
-</div>
