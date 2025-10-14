@@ -110,9 +110,10 @@ export function SubscriptionForm() {
 
 Browse additional snippets in [`examples/`](examples):
 
-- [dependent-field-validation.tsx](examples/dependent-field-validation.tsx) - An example that keeps two related fields in sync using `setField` and `setError`.
-- [custom-field-component.tsx](examples/custom-field-component.tsx) - Share reusable inputs via `FieldData`.
-- [valibot-login.tsx](examples/valibot-login.tsx) - Build a simple login form powered by Valibot validators.
+- [CodeSandbox Demo](https://codesandbox.io/p/sandbox/use-standard-schema-vthys3?file=%2Fsrc%2FApp.tsx) - Try the hook in a live React playground.
+- [Dependent Fields example](examples/dependent-field-validation.tsx) - An example that keeps two related fields in sync using `setField` and `setError`.
+- [Custom Component example](examples/custom-field-component.tsx) - Share reusable inputs via `FieldData`.
+- [Valibot example](examples/valibot-login.tsx) - Build a simple login form powered by Valibot validators.
 
 ### Nested object fields
 
