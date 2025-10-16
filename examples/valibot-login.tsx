@@ -52,9 +52,7 @@ export function ValibotLoginExample() {
 				aria-errormessage={emailField.errorId}
 			/>
 			<p id={emailField.describedById}>We use your email to send confirmations.</p>
-			<p id={emailField.errorId} role="alert">
-				{emailField.error}
-			</p>
+			<p id={emailField.errorId}>{emailField.error}</p>
 
 			<label htmlFor={passwordField.name}>{passwordField.label}</label>
 			<input
@@ -66,9 +64,7 @@ export function ValibotLoginExample() {
 				aria-errormessage={passwordField.errorId}
 			/>
 			<p id={passwordField.describedById}>Choose something memorable with letters and numbers.</p>
-			<p id={passwordField.errorId} role="alert">
-				{passwordField.error}
-			</p>
+			<p id={passwordField.errorId}>{passwordField.error}</p>
 
 			<button type="submit">Log in</button>
 		</form>
