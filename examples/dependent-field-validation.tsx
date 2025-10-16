@@ -66,8 +66,6 @@ export function DependentFieldValidationExample() {
         setField("country", value);
         setField("state", ""); // Reset state when country changes
     }
-    
-    const setRegion = (value: string) => setField("state", value);
    
 
 	return (
@@ -91,7 +89,6 @@ export function DependentFieldValidationExample() {
 				id={state.name}
 				name={state.name}
 				value={state.defaultValue}
-				onChange={(event) => setRegion(event.target.value)}
 				aria-describedby={state.describedById}
 				aria-errormessage={state.errorId}
 			>

@@ -33,13 +33,13 @@ export function ValibotLoginExample() {
 	return (
 		<form {...formHandlers}>
 			{errors.length > 0 && (
-				<div role="alert">
-					<ul>
-						{errors.map((error:ErrorEntry) => (
-							<li key={error.name}>{error.label}:{error.error}</li>
-						))}
-					</ul>
-				</div>
+            <div role="alert">
+                <ul>
+                    {errors.map((error:ErrorEntry) => (
+                        <li key={error.name}>{error.label}:{error.error}</li>
+                    ))}
+                </ul>
+            </div>
 			)}
 
 			<label htmlFor={emailField.name}>{emailField.label}</label>
