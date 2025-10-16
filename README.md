@@ -213,22 +213,6 @@ const email = getField("email")
 <span id={email.errorId}>{email.error}</span>
 ```
 
-### `setField(name, value)`
-
-Updates a field's value programmatically (for dependent fields, custom widgets, or multi-step wizards) and re-validates it.
-
-```ts
-setField("address.postalCode", nextPostalCode)
-```
-
-### `setError(name, error)`
-
-Sets a manual error message for any field. Pass `null` or `undefined` to clear it.
-
-```ts
-setError("email", new Error("Email already registered"))
-```
-
 ### `getErrors(name?)`
 
 Returns structured error data of type `ErrorEntry` for the whole form or for one specific field - perfect for summary banners or toast notifications.
@@ -261,6 +245,24 @@ Helper that converts a values object into a browser `FormData` instance for inte
 
 ```ts
 const formData = toFormData(values)
+```
+
+### `setField(name, value)`
+
+Updates a field's value (*for dependent fields, custom widgets, or multi-step wizards*) and re-validates it.
+**IMPORTANT NOTE**: You do not need to call this manually in most situations. It will occur automatically.
+
+```ts
+setField("address.postalCode", nextPostalCode)
+```
+
+### `setError(name, error)`
+
+Sets a manual error message for any field. Pass `null` or `undefined` to clear it.
+**IMPORTANT NOTE**: You do not need to call this manually in most situations. It will occur automatically.
+
+```ts
+setError("email", new Error("Email already registered"))
 ```
 
 ## Feedback & Support
