@@ -15,12 +15,15 @@ const loginForm = defineForm({
 	},
 })
 
-export function ValibotLoginExample() {
-	const submitHandler = (values: TypeFromDefinition<typeof loginForm>) => {
-		console.log("Valibot login submitted:", values)
-	}
+const submitHandler = (values: TypeFromDefinition<typeof loginForm>) => {
+    console.log("Valibot login submitted:", values)
+}
 
-	const { getForm, getField, setField, getErrors} = useStandardSchema(loginForm)
+
+export function ValibotLoginExample() {
+
+
+	const { getForm, getField, getErrors} = useStandardSchema(loginForm)
 	const formHandlers = getForm(submitHandler)
 
 	const emailField = getField("email")
@@ -45,7 +48,6 @@ export function ValibotLoginExample() {
 				name={emailField.name}
 				type="email"
 				value={emailField.defaultValue ?? ""}
-				onChange={(event) => void setField("email", event.target.value)}
 				aria-describedby={emailField.describedById}
 				aria-errormessage={emailField.errorId}
 			/>
@@ -60,7 +62,6 @@ export function ValibotLoginExample() {
 				name={passwordField.name}
 				type="password"
 				value={passwordField.defaultValue ?? ""}
-				onChange={(event) => void setField("password", event.target.value)}
 				aria-describedby={passwordField.describedById}
 				aria-errormessage={passwordField.errorId}
 			/>
