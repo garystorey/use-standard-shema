@@ -18,7 +18,7 @@ const profileForm = defineForm({
 
 type ProfileFormData = TypeFromDefinition<typeof profileForm>
 
-/* =========================================================================*/
+/* ========================================================================= */
 
 type NativeInputProps = Omit<ComponentPropsWithoutRef<"input">, keyof FieldData>
 interface TextFieldProps extends Partial<FieldData>, NativeInputProps {}
@@ -65,7 +65,7 @@ function TextField({
 	)
 }
 
-/* =========================================================================*/
+/* ========================================================================= */
 
 const submitHandler = (values: ProfileFormData) => {
     console.log("Profile submitted:", values)

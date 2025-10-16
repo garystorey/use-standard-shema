@@ -15,12 +15,15 @@ const loginForm = defineForm({
 	},
 })
 
-export function ValibotLoginExample() {
-	const submitHandler = (values: TypeFromDefinition<typeof loginForm>) => {
-		console.log("Valibot login submitted:", values)
-	}
+const submitHandler = (values: TypeFromDefinition<typeof loginForm>) => {
+    console.log("Valibot login submitted:", values)
+}
 
-	const { getForm, getField, setField, getErrors} = useStandardSchema(loginForm)
+
+export function ValibotLoginExample() {
+
+
+	const { getForm, getField, getErrors} = useStandardSchema(loginForm)
 	const formHandlers = getForm(submitHandler)
 
 	const emailField = getField("email")
@@ -30,13 +33,13 @@ export function ValibotLoginExample() {
 	return (
 		<form {...formHandlers}>
 			{errors.length > 0 && (
-				<div role="alert">
-					<ul>
-						{errors.map((error:ErrorEntry) => (
-							<li key={error.name}>{error.label}:{error.error}</li>
-						))}
-					</ul>
-				</div>
+            <div role="alert">
+                <ul>
+                    {errors.map((error:ErrorEntry) => (
+                        <li key={error.name}>{error.label}:{error.error}</li>
+                    ))}
+                </ul>
+            </div>
 			)}
 
 			<label htmlFor={emailField.name}>{emailField.label}</label>
@@ -45,14 +48,11 @@ export function ValibotLoginExample() {
 				name={emailField.name}
 				type="email"
 				value={emailField.defaultValue ?? ""}
-				onChange={(event) => void setField("email", event.target.value)}
 				aria-describedby={emailField.describedById}
 				aria-errormessage={emailField.errorId}
 			/>
 			<p id={emailField.describedById}>We use your email to send confirmations.</p>
-			<p id={emailField.errorId} role="alert">
-				{emailField.error}
-			</p>
+			<p id={emailField.errorId}>{emailField.error}</p>
 
 			<label htmlFor={passwordField.name}>{passwordField.label}</label>
 			<input
@@ -60,14 +60,11 @@ export function ValibotLoginExample() {
 				name={passwordField.name}
 				type="password"
 				value={passwordField.defaultValue ?? ""}
-				onChange={(event) => void setField("password", event.target.value)}
 				aria-describedby={passwordField.describedById}
 				aria-errormessage={passwordField.errorId}
 			/>
 			<p id={passwordField.describedById}>Choose something memorable with letters and numbers.</p>
-			<p id={passwordField.errorId} role="alert">
-				{passwordField.error}
-			</p>
+			<p id={passwordField.errorId}>{passwordField.error}</p>
 
 			<button type="submit">Log in</button>
 		</form>

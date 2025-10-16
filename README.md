@@ -100,11 +100,10 @@ export function SubscriptionForm() {
 
 - **`getForm(onSubmit)`**: Returns event handlers for the `<form>`. `onSubmit` only runs when valid.
 - **`getField(name)`**: Returns the given field's metadata.
-- **`getErrors(name?)`**: Returns structured errors for the form or for a field.
 
 ## Examples
 
-Browse additional snippets in [`examples/`](examples):
+Additonal examples are available.
 
 - [CodeSandbox Demo](https://codesandbox.io/p/sandbox/use-standard-schema-vthys3?file=%2Fsrc%2FApp.tsx) - Try the hook in a live React playground.
 - [Dependent Fields example](examples/dependent-field-validation.tsx) - An example that keeps two related fields in sync using `setField` and `setError`.
@@ -175,17 +174,6 @@ const formDefinition = defineForm({
 
 ```
 
-### Using other validators
-
-Switching to another validator is straightforward. Update the `validate` property in your form definition to call the
-Standard Schema-compliant library of your choice (e.g. Zod, ArkType, Valibot). A [`valibot example`](examples/valibot-login.tsx) is also available.
-
----
-
-## Custom Components
-
-It is recommended to use `useStandardSchema` with your own custom React components.  This enables you to simply spread the result of the `getField` call directly without creating individual props. See the [custom component example](examples/custom-field-component.tsx) for a fully wired `TextField` abstraction that shows how to extend the returned props safely.
-
 ## API
 
 `useStandardSchema` returns a toolbox of helpers for wiring form elements, reading state, and issuing manual updates.
@@ -211,7 +199,7 @@ return <form {...form}>...</form>
 
 ### `getField(name)`
 
-Returns metadata and ARIA ids for a specific field so you can wire inputs, labels, and helper text.
+Returns metadata for a specific field so you can wire inputs, labels, and helper text.
 
 ```tsx
 const email = getField("email")
@@ -225,25 +213,9 @@ const email = getField("email")
 <span id={email.errorId}>{email.error}</span>
 ```
 
-### `setField(name, value)`
-
-Updates a field's value programmatically (for dependent fields, custom widgets, or multi-step wizards) and re-validates it.
-
-```ts
-setField("address.postalCode", nextPostalCode)
-```
-
-### `setError(name, error)`
-
-Surfaces a manual error message for any field. Pass `null` or `undefined` to clear it.
-
-```ts
-setError("email", new Error("Email already registered"))
-```
-
 ### `getErrors(name?)`
 
-Returns structured `{ name, label, error }` entries for the whole form or for one specific field - perfect for summary banners or toast notifications.
+Returns structured error data of type `ErrorEntry` for the whole form or for one specific field - perfect for summary banners or toast notifications.
 
 ```ts
 const allErrors = getErrors()
@@ -275,6 +247,24 @@ Helper that converts a values object into a browser `FormData` instance for inte
 const formData = toFormData(values)
 ```
 
+### `setField(name, value)`
+
+Updates a field's value (*for dependent fields, custom widgets, or multi-step wizards*) and re-validates it.
+**IMPORTANT NOTE**: You do not need to call this manually in most situations. It will occur automatically.
+
+```ts
+setField("address.postalCode", nextPostalCode)
+```
+
+### `setError(name, error)`
+
+Sets a manual error message for any field. Pass `null` or `undefined` to clear it.
+**IMPORTANT NOTE**: You do not need to call this manually in most situations. It will occur automatically.
+
+```ts
+setError("email", new Error("Email already registered"))
+```
+
 ## Feedback & Support
 
 If you encounter issues or have feature requests, [open an issue](https://github.com/garystorey/use-standard-schema/issues) on GitHub.
@@ -283,6 +273,7 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## Changelog
 
+- **v0.4.1** - Minor code fixes and documentation updates
 - **v0.4.0** - Improved form state synchronization, renamed the `FieldDefinitionProps` type to `FieldData`, and ensured programmatic updates stay validated while tracking touched/dirty status.
 - [View the full changelog](./CHANGELOG.md) for earlier releases.
 
