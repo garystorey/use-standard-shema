@@ -241,7 +241,7 @@ describe("useStandardSchema (basic)", () => {
 describe("useStandardSchema getForm handlers (inline)", () => {
 	it("onSubmit calls handler when form valid", async () => {
 		const spy = vi.fn()
-		const { ref } = renderFormHarness({ formDef: makeForm(), onSubmitSpy: spy })
+		renderFormHarness({ formDef: makeForm(), onSubmitSpy: spy })
 
 		const user = userEvent.setup()
 		const email = screen.getByLabelText("Email") as HTMLInputElement
