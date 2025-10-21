@@ -123,6 +123,14 @@ describe("useStandardSchema (basic)", () => {
 		})
 	})
 
+	it("surface errors when interacting with unknown fields", () => {
+		const { ref } = renderHookHarness()
+
+		expect(() => ref.current!.getField("missing" as never)).toThrowError('Field "missing" not found')
+
+		expect(() => ref.current!.setError("missing" as never, "Boom")).toThrowError('Field "missing" not found')
+	})
+
 	it("setError allows manual control over field errors", async () => {
 		const { ref } = renderHookHarness()
 
