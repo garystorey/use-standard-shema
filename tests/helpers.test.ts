@@ -1,6 +1,7 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec"
 import { describe, expect, it } from "vitest"
-import { defineForm, flattenDefaults, flattenFormDefinition, isFieldDefinition } from "../src/helpers"
+import { defineForm, flattenDefaults, flattenFormDefinition, isFieldDefinition, toFormData } from "../src/helpers"
+import type { FormValues } from "../src/types"
 
 interface StringSchema extends StandardSchemaV1<string> {
 	type: "string"
@@ -49,5 +50,29 @@ describe("helpers", () => {
 		expect(isFieldDefinition({ label: "X", validate: noopString() })).toBe(true)
 		expect(isFieldDefinition({ label: "X" })).toBe(false)
 		expect(isFieldDefinition(null)).toBe(false)
+	})
+
+	it("toFormData stringifies defined values and excludes nullish entries", () => {
+		const values = {
+			username: "alice",
+			age: 42,
+			empty: "",
+			city: null,
+			optional: undefined,
+		} satisfies Record<string, string | number | null | undefined>
+
+		const formData = toFormData(values as unknown as FormValues)
+		const entries: Array<[string, string]> = []
+
+		for (const [key, value] of formData.entries()) {
+			entries.push([key, value as string])
+			expect(typeof value).toBe("string")
+		}
+
+		expect(entries).toEqual([
+			["username", "alice"],
+			["age", "42"],
+			["empty", ""],
+		])
 	})
 })
