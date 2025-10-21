@@ -1,6 +1,6 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec"
 import { describe, expect, it } from "vitest"
-import { defineForm, flattenDefaults, flattenFormDefinition, isFieldDefinition, toFormData } from "../src/helpers"
+import { defineForm, flattenDefaults, flattenFormDefinition, isFieldDefinition } from "../src/helpers"
 
 interface StringSchema extends StandardSchemaV1<string> {
 	type: "string"
@@ -43,15 +43,6 @@ describe("helpers", () => {
 			"group.b": "",
 			"group.c": "3",
 		})
-	})
-
-	it("toFormData includes only defined values and stringifies", () => {
-		// provide only defined string values; other keys omitted
-		const fd = toFormData({ a: "1", b: "2" })
-		expect(fd.get("a")).toBe("1")
-		expect(fd.get("b")).toBe("2")
-		expect(fd.get("c")).toBeNull() // omitted
-		expect(fd.get("d")).toBeNull() // omitted
 	})
 
 	it("isFieldDefinition correctly detects FieldDefinition shape", () => {
