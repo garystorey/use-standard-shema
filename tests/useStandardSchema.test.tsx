@@ -6,27 +6,31 @@ import type { ErrorEntry } from "../src/types"
 import { makeForm, makeThrowingForm, renderFormHarness, renderHookHarness } from "./test-utils"
 
 describe("useStandardSchema (basic)", () => {
-	it("getField returns metadata and default value", () => {
+	it("getField surfaces metadata, accessibility ids, and default flags", () => {
 		const { ref } = renderHookHarness()
 
-		const field = ref.current!.getField("name")
-		expect(field.name).toBe("name")
-		expect(field.label).toBe("Name")
-		expect(field.defaultValue).toBe("Joe")
-		expect(field.error).toBe("")
+		const nameField = ref.current!.getField("name")
+		expect(nameField.name).toBe("name")
+		expect(nameField.label).toBe("Name")
+		expect(nameField.defaultValue).toBe("Joe")
+		expect(nameField.error).toBe("")
+		expect(nameField.describedById).toBe("name-description")
+		expect(nameField.errorId).toBe("name-error")
+		expect(nameField.touched).toBe(false)
+		expect(nameField.dirty).toBe(false)
+
+		const emailField = ref.current!.getField("contact.email")
+		expect(emailField.name).toBe("contact.email")
+		expect(emailField.label).toBe("Email")
+		expect(emailField.defaultValue).toBe("")
+		expect(emailField.error).toBe("")
+		expect(emailField.describedById).toBe("contact.email-description")
+		expect(emailField.errorId).toBe("contact.email-error")
+		expect(emailField.touched).toBe(false)
+		expect(emailField.dirty).toBe(false)
 	})
 
-	it("getField surfaces accessibility ids and flag defaults", () => {
-		const { ref } = renderHookHarness()
-
-		const field = ref.current!.getField("contact.email")
-		expect(field.describedById).toBe("contact.email-description")
-		expect(field.errorId).toBe("contact.email-error")
-		expect(field.touched).toBe(false)
-		expect(field.dirty).toBe(false)
-	})
-
-	it("validate a missing required field produces an error and isDirty/isTouched are set", async () => {
+	it("records validation errors and exposes them through getErrors helpers", async () => {
 		const { ref } = renderHookHarness()
 
 		// Defaults are valid with no errors reported
@@ -39,29 +43,16 @@ describe("useStandardSchema (basic)", () => {
 		})
 
 		await waitFor(() => {
+			const field = ref.current!.getField("name")
+			expect(field.defaultValue).toBe("")
+			expect(field.error).toBe("Required")
+
 			const errs = ref.current!.getErrors("name")
 			expect(errs.length).toBe(1)
 			expect(errs[0].error).toBe("Required")
 
-			const field = ref.current!.getField("name")
-			expect(field.defaultValue).toBe("")
-			expect(field.error).toBe("Required")
-		})
-
-		expect(ref.current!.isDirty("name")).toBe(true)
-		expect(ref.current!.isTouched("name")).toBe(true)
-	})
-
-	it("getErrors aggregates field metadata when collecting all errors", async () => {
-		const { ref } = renderHookHarness()
-
-		await act(async () => {
-			await ref.current!.setField("name", "")
-		})
-
-		await waitFor(() => {
-			const errors = ref.current!.getErrors()
-			expect(errors).toEqual([
+			const aggregate = ref.current!.getErrors()
+			expect(aggregate).toEqual([
 				{
 					name: "name",
 					error: "Required",
@@ -69,9 +60,12 @@ describe("useStandardSchema (basic)", () => {
 				},
 			])
 		})
+
+		expect(ref.current!.isDirty("name")).toBe(true)
+		expect(ref.current!.isTouched("name")).toBe(true)
 	})
 
-	it("setting a valid value clears the error and updates data; resetForm restores defaults", async () => {
+	it("setField updates values, manages dirty tracking, and resetForm restores defaults", async () => {
 		const { ref } = renderHookHarness()
 
 		// Set a valid name
@@ -83,10 +77,31 @@ describe("useStandardSchema (basic)", () => {
 			const field = ref.current!.getField("name")
 			expect(field.defaultValue).toBe("Alice")
 			expect(field.error).toBe("")
+			expect(ref.current!.isDirty("name")).toBe(true)
+			expect(ref.current!.isTouched("name")).toBe(true)
 		})
 
-		expect(ref.current!.isDirty("name")).toBe(true)
-		expect(ref.current!.isTouched("name")).toBe(true)
+		// Reverting back to the default should clear the dirty flag
+		await act(async () => {
+			await ref.current!.setField("name", "Joe")
+		})
+
+		await waitFor(() => {
+			const field = ref.current!.getField("name")
+			expect(field.defaultValue).toBe("Joe")
+			expect(ref.current!.isDirty("name")).toBe(false)
+		})
+
+		// Update again so that resetForm has state to clear
+		await act(async () => {
+			await ref.current!.setField("name", "Grace")
+		})
+
+		await waitFor(() => {
+			const field = ref.current!.getField("name")
+			expect(field.defaultValue).toBe("Grace")
+			expect(ref.current!.isDirty("name")).toBe(true)
+		})
 
 		// Reset and ensure defaults come back
 		act(() => {
@@ -98,28 +113,6 @@ describe("useStandardSchema (basic)", () => {
 			expect(field.defaultValue).toBe("Joe")
 			expect(ref.current!.isDirty()).toBe(false)
 			expect(ref.current!.isTouched()).toBe(false)
-		})
-	})
-
-	it("programmatic updates clear dirty flag when value matches default", async () => {
-		const { ref } = renderHookHarness()
-
-		await act(async () => {
-			await ref.current!.setField("name", "Alice")
-		})
-
-		await waitFor(() => {
-			expect(ref.current!.isDirty("name")).toBe(true)
-		})
-
-		await act(async () => {
-			await ref.current!.setField("name", "Joe")
-		})
-
-		await waitFor(() => {
-			expect(ref.current!.isDirty("name")).toBe(false)
-			const field = ref.current!.getField("name")
-			expect(field.defaultValue).toBe("Joe")
 		})
 	})
 
