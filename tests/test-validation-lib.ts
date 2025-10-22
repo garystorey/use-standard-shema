@@ -38,10 +38,10 @@ export function email(message: string = "Invalid email"): StringSchema {
 }
 
 export function throwing(message: string = "Boom!"): StringSchema {
-	return {
-		type: "string",
-		message,
-		"~standard": {
+        return {
+                type: "string",
+                message,
+                "~standard": {
 			version: 1,
 			vendor: "tests",
 			async validate(value) {
@@ -49,7 +49,30 @@ export function throwing(message: string = "Boom!"): StringSchema {
 					throw new Error(message)
 				}
 				return { value }
-			},
-		},
-	}
+                        },
+                },
+        }
+}
+
+export function delayed(
+        message: string = "Async required",
+        invalidDelayMs: number = 25,
+): StringSchema {
+        return {
+                type: "string",
+                message,
+                "~standard": {
+                        version: 1,
+                        vendor: "tests",
+                        async validate(value) {
+                                if (typeof value !== "string" || value.trim().length === 0) {
+                                        await new Promise((resolve) => setTimeout(resolve, invalidDelayMs))
+                                        return { issues: [{ message }] }
+                                }
+
+                                await new Promise((resolve) => setTimeout(resolve, 0))
+                                return { value }
+                        },
+                },
+        }
 }
