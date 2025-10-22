@@ -258,8 +258,7 @@ setField("address.postalCode", nextPostalCode)
 
 ### `setError(name, error)`
 
-Sets a manual error message for any field. Pass `null` or `undefined` to clear it.
-**IMPORTANT NOTE**: You do not need to call this manually in most situations. It will occur automatically.
+Sets a manual error message for any field  (*for dependent fields, custom widgets, or multi-step wizards*). Pass `null` or `undefined` to clear it. **IMPORTANT NOTE**: You do not need to call this manually in most situations. It will occur automatically.
 
 ```ts
 setError("email", new Error("Email already registered"))
