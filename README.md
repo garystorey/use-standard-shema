@@ -103,7 +103,7 @@ export function SubscriptionForm() {
 
 ## Examples
 
-Additonal examples are available.
+Additional examples are available.
 
 - [CodeSandbox Demo](https://codesandbox.io/p/sandbox/use-standard-schema-vthys3?file=%2Fsrc%2FApp.tsx) - Try the hook in a live React playground.
 - [Dependent Fields example](examples/dependent-field-validation.tsx) - An example that keeps two related fields in sync using `setField` and `setError`.

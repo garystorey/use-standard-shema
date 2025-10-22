@@ -204,7 +204,7 @@ describe("useStandardSchema (basic)", () => {
 	it("full form validate reports errors for multiple fields", async () => {
 		const { ref } = renderHookHarness()
 
-		// Ensure email is invalid by default (empty, email requires @)
+                // Intentionally set email to an invalid value (missing "@") before validating
 		await act(async () => {
 			await ref.current!.setField("contact.email", "no-at-sign")
 		})
