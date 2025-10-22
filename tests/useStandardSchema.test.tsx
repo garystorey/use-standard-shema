@@ -2,10 +2,9 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import React, { act, forwardRef, useImperativeHandle } from "react"
 import { describe, expect, it, vi } from "vitest"
-import type { ErrorEntry } from "../src/types"
 import { useStandardSchema } from "../src"
 import { defineForm } from "../src/helpers"
-import type { UseStandardSchemaReturn } from "../src/types"
+import type { ErrorEntry, UseStandardSchemaReturn } from "../src/types"
 import { makeForm, makeThrowingForm, renderFormHarness, renderHookHarness } from "./test-utils"
 import { delayed } from "./test-validation-lib"
 
@@ -120,17 +119,15 @@ describe("useStandardSchema (basic)", () => {
 		})
 	})
 
-        it("surface errors when interacting with unknown fields", async () => {
-                const { ref } = renderHookHarness()
+	it("surface errors when interacting with unknown fields", async () => {
+		const { ref } = renderHookHarness()
 
-                expect(() => ref.current!.getField("missing" as never)).toThrowError('Field "missing" not found')
+		expect(() => ref.current!.getField("missing" as never)).toThrowError('Field "missing" not found')
 
-                await expect(ref.current!.setField("missing" as never, "value")).rejects.toThrowError(
-                        'Field "missing" not found',
-                )
+		await expect(ref.current!.setField("missing" as never, "value")).rejects.toThrowError('Field "missing" not found')
 
-                expect(() => ref.current!.setError("missing" as never, "Boom")).toThrowError('Field "missing" not found')
-        })
+		expect(() => ref.current!.setError("missing" as never, "Boom")).toThrowError('Field "missing" not found')
+	})
 
 	it("setError allows manual control over field errors", async () => {
 		const { ref } = renderHookHarness()
@@ -202,10 +199,10 @@ describe("useStandardSchema (basic)", () => {
 		})
 	})
 
-        it("full form validate reports errors for multiple fields", async () => {
-                const { ref } = renderHookHarness()
+	it("full form validate reports errors for multiple fields", async () => {
+		const { ref } = renderHookHarness()
 
-                // Intentionally set email to an invalid value (missing "@") before validating
+		// Intentionally set email to an invalid value (missing "@") before validating
 		await act(async () => {
 			await ref.current!.setField("contact.email", "no-at-sign")
 		})
@@ -214,45 +211,45 @@ describe("useStandardSchema (basic)", () => {
 			const allErrors = ref.current!.getErrors()
 			// email should be present in errors
 			expect(allErrors.some((e: ErrorEntry) => e.name === "contact.email")).toBe(true)
-                })
-        })
+		})
+	})
 
-        it("ignores stale async validation results for the same field", async () => {
-                const asyncForm = defineForm({
-                        name: { label: "Name", defaultValue: "Joe", validate: delayed("Async required", 30) },
-                })
+	it("ignores stale async validation results for the same field", async () => {
+		const asyncForm = defineForm({
+			name: { label: "Name", defaultValue: "Joe", validate: delayed("Async required", 30) },
+		})
 
-                type AsyncForm = typeof asyncForm
+		type AsyncForm = typeof asyncForm
 
-                const HookHarness = forwardRef<UseStandardSchemaReturn<AsyncForm> | null, { formDef: AsyncForm }>(
-                        function HookHarness(props, ref) {
-                                const api = useStandardSchema(props.formDef)
-                                useImperativeHandle(ref, () => api, [api])
-                                return null
-                        },
-                )
+		const HookHarness = forwardRef<UseStandardSchemaReturn<AsyncForm> | null, { formDef: AsyncForm }>(
+			function HookHarness(props, ref) {
+				const api = useStandardSchema(props.formDef)
+				useImperativeHandle(ref, () => api, [api])
+				return null
+			},
+		)
 
-                const ref = React.createRef<UseStandardSchemaReturn<AsyncForm> | null>()
-                render(<HookHarness ref={ref} formDef={asyncForm} />)
+		const ref = React.createRef<UseStandardSchemaReturn<AsyncForm> | null>()
+		render(<HookHarness ref={ref} formDef={asyncForm} />)
 
-                await act(async () => {
-                        const slow = ref.current!.setField("name", "")
-                        const fast = ref.current!.setField("name", "Grace")
-                        await fast
-                        await slow
-                })
+		await act(async () => {
+			const slow = ref.current!.setField("name", "")
+			const fast = ref.current!.setField("name", "Grace")
+			await fast
+			await slow
+		})
 
-                await waitFor(() => {
-                        const field = ref.current!.getField("name")
-                        expect(field.defaultValue).toBe("Grace")
-                        expect(field.error).toBe("")
-                })
-        })
+		await waitFor(() => {
+			const field = ref.current!.getField("name")
+			expect(field.defaultValue).toBe("Grace")
+			expect(field.error).toBe("")
+		})
+	})
 
-        it("handles validators that throw errors without crashing", async () => {
-                const { ref } = renderHookHarness(makeThrowingForm())
+	it("handles validators that throw errors without crashing", async () => {
+		const { ref } = renderHookHarness(makeThrowingForm())
 
-                let thrown: unknown
+		let thrown: unknown
 		await act(async () => {
 			try {
 				await ref.current!.setField("name", "")

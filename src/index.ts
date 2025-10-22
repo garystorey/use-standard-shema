@@ -51,22 +51,22 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	const formDefinitionKeys = useMemo(() => Object.keys(flatFormDefinition), [flatFormDefinition])
 
 	// State
-        const [data, setData] = useState<FormValues>(initialValues)
-        const [errors, setErrors] = useState<Errors>({})
-        const [touched, setTouched] = useState<Flags>({})
-        const [dirty, setDirty] = useState<Flags>({})
+	const [data, setData] = useState<FormValues>(initialValues)
+	const [errors, setErrors] = useState<Errors>({})
+	const [touched, setTouched] = useState<Flags>({})
+	const [dirty, setDirty] = useState<Flags>({})
 
-        const validationTokensRef = useRef<Record<string, number>>({})
-        const validationRunId = useRef(0)
+	const validationTokensRef = useRef<Record<string, number>>({})
+	const validationRunId = useRef(0)
 
-        useEffect(() => {
-                setData(initialValues)
-                setErrors({})
-                setTouched({})
-                setDirty({})
-                validationTokensRef.current = {}
-                validationRunId.current += 1
-        }, [initialValues])
+	useEffect(() => {
+		setData(initialValues)
+		setErrors({})
+		setTouched({})
+		setDirty({})
+		validationTokensRef.current = {}
+		validationRunId.current += 1
+	}, [initialValues])
 
 	// --- Pure per-field validator (no state updates)
 	const validateFieldValue = useCallback(
@@ -88,104 +88,104 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	)
 
 	// --- Single-field validate (updates state for that field)
-        const validateField = useCallback(
-                async (field: string, value: string) => {
-                        const runId = validationRunId.current
-                        const token = (validationTokensRef.current[field] ?? 0) + 1
-                        validationTokensRef.current[field] = token
+	const validateField = useCallback(
+		async (field: string, value: string) => {
+			const runId = validationRunId.current
+			const token = (validationTokensRef.current[field] ?? 0) + 1
+			validationTokensRef.current[field] = token
 
-                        const message = await validateFieldValue(field, value)
+			const message = await validateFieldValue(field, value)
 
-                        if (validationRunId.current !== runId || validationTokensRef.current[field] !== token) {
-                                return false
-                        }
+			if (validationRunId.current !== runId || validationTokensRef.current[field] !== token) {
+				return false
+			}
 
-                        setErrors((prev) => (prev[field] === message ? prev : { ...prev, [field]: message }))
-                        return message === ""
-                },
-                [validateFieldValue],
-        )
+			setErrors((prev) => (prev[field] === message ? prev : { ...prev, [field]: message }))
+			return message === ""
+		},
+		[validateFieldValue],
+	)
 
 	// --- Full-form validate (batch state update, no flicker)
-        const validateForm = useCallback(
-                async (values?: FormValues) => {
-                        const sourceValues = values ?? data
-                        const runId = validationRunId.current
-                        const newErrors: Errors = {}
-                        const tokensForRun: Record<string, number> = {}
+	const validateForm = useCallback(
+		async (values?: FormValues) => {
+			const sourceValues = values ?? data
+			const runId = validationRunId.current
+			const newErrors: Errors = {}
+			const tokensForRun: Record<string, number> = {}
 
-                        await Promise.all(
-                                formDefinitionKeys.map(async (key) => {
-                                        const token = (validationTokensRef.current[key] ?? 0) + 1
-                                        validationTokensRef.current[key] = token
-                                        tokensForRun[key] = token
-                                        newErrors[key] = await validateFieldValue(key, sourceValues[key] ?? "")
-                                }),
-                        )
+			await Promise.all(
+				formDefinitionKeys.map(async (key) => {
+					const token = (validationTokensRef.current[key] ?? 0) + 1
+					validationTokensRef.current[key] = token
+					tokensForRun[key] = token
+					newErrors[key] = await validateFieldValue(key, sourceValues[key] ?? "")
+				}),
+			)
 
-                        if (validationRunId.current !== runId) {
-                                return false
-                        }
+			if (validationRunId.current !== runId) {
+				return false
+			}
 
-                        setErrors((prev) => {
-                                if (validationRunId.current !== runId) return prev
+			setErrors((prev) => {
+				if (validationRunId.current !== runId) return prev
 
-                                let changed = false
-                                const next: Errors = {}
+				let changed = false
+				const next: Errors = {}
 
-                                for (const key of formDefinitionKeys) {
-                                        const prevValue = prev[key] ?? ""
+				for (const key of formDefinitionKeys) {
+					const prevValue = prev[key] ?? ""
 
-                                        if (validationTokensRef.current[key] !== tokensForRun[key]) {
-                                                next[key] = prevValue
-                                                continue
-                                        }
+					if (validationTokensRef.current[key] !== tokensForRun[key]) {
+						next[key] = prevValue
+						continue
+					}
 
-                                        const message = newErrors[key] ?? ""
-                                        next[key] = message
-                                        if (prevValue !== message) {
-                                                changed = true
-                                        }
-                                }
+					const message = newErrors[key] ?? ""
+					next[key] = message
+					if (prevValue !== message) {
+						changed = true
+					}
+				}
 
-                                if (!changed) {
-                                        for (const key of Object.keys(prev)) {
-                                                if (!formDefinitionKeys.includes(key)) {
-                                                        changed = true
-                                                        break
-                                                }
-                                        }
-                                        if (!changed) return prev
-                                }
+				if (!changed) {
+					for (const key of Object.keys(prev)) {
+						if (!formDefinitionKeys.includes(key)) {
+							changed = true
+							break
+						}
+					}
+					if (!changed) return prev
+				}
 
-                                return next
-                        })
+				return next
+			})
 
-                        let isValid = true
-                        for (const key of formDefinitionKeys) {
-                                if (validationTokensRef.current[key] !== tokensForRun[key]) {
-                                        isValid = false
-                                        continue
-                                }
+			let isValid = true
+			for (const key of formDefinitionKeys) {
+				if (validationTokensRef.current[key] !== tokensForRun[key]) {
+					isValid = false
+					continue
+				}
 
-                                if (newErrors[key] !== "") {
-                                        isValid = false
-                                }
-                        }
+				if (newErrors[key] !== "") {
+					isValid = false
+				}
+			}
 
-                        return isValid
-                },
-                [formDefinitionKeys, data, validateFieldValue],
-        )
+			return isValid
+		},
+		[formDefinitionKeys, data, validateFieldValue],
+	)
 
-        const resetForm = useCallback(() => {
-                setData(initialValues)
-                setErrors({})
-                setTouched({})
-                setDirty({})
-                validationTokensRef.current = {}
-                validationRunId.current += 1
-        }, [initialValues])
+	const resetForm = useCallback(() => {
+		setData(initialValues)
+		setErrors({})
+		setTouched({})
+		setDirty({})
+		validationTokensRef.current = {}
+		validationRunId.current += 1
+	}, [initialValues])
 
 	const getForm = useCallback(
 		(onSubmitHandler: (data: TypeFromDefinition<typeof formDefinition>) => void) => {
@@ -315,14 +315,14 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		[flatFormDefinition, data, errors, touched, dirty],
 	)
 
-        const setField = useCallback(
-                async (name: FieldKey, value: string) => {
-                        const field = name as string
-                        if (!(field in flatFormDefinition)) {
-                                throw new Error(`Field "${field}" not found`)
-                        }
-                        const initialValue = initialValueStrings[field] ?? ""
-                        const isDirty = value !== initialValue
+	const setField = useCallback(
+		async (name: FieldKey, value: string) => {
+			const field = name as string
+			if (!(field in flatFormDefinition)) {
+				throw new Error(`Field "${field}" not found`)
+			}
+			const initialValue = initialValueStrings[field] ?? ""
+			const isDirty = value !== initialValue
 
 			setData((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }))
 			setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }))
@@ -340,10 +340,10 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 				return next
 			})
 
-                        await validateField(field, value)
-                },
-                [flatFormDefinition, validateField, initialValueStrings],
-        )
+			await validateField(field, value)
+		},
+		[flatFormDefinition, validateField, initialValueStrings],
+	)
 
 	const setError = useCallback(
 		(name: FieldKey, info: ErrorInfo) => {
