@@ -1,6 +1,13 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec"
 import { describe, expect, it } from "vitest"
-import { defineForm, flattenDefaults, flattenFormDefinition, isFieldDefinition, toFormData } from "../src/helpers"
+import {
+	defineForm,
+	deriveValidationMessage,
+	flattenDefaults,
+	flattenFormDefinition,
+	isFieldDefinition,
+	toFormData,
+} from "../src/helpers"
 import type { FormValues } from "../src/types"
 
 interface StringSchema extends StandardSchemaV1<string> {
@@ -74,5 +81,14 @@ describe("helpers", () => {
 			["age", "42"],
 			["empty", ""],
 		])
+	})
+
+	it("deriveValidationMessage falls back to the top-level message when issue message is blank", () => {
+		const message = deriveValidationMessage({
+			issues: [{ message: "" }],
+			message: "Fallback",
+		})
+
+		expect(message).toBe("Fallback")
 	})
 })
