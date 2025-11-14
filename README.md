@@ -109,6 +109,7 @@ Additional examples are available.
 - [Dependent Fields example](examples/dependent-field-validation.tsx) - An example that keeps two related fields in sync using `setField` and `setError`.
 - [Custom Component example](examples/custom-field-component.tsx) - Share reusable inputs via `FieldData`.
 - [Valibot example](examples/valibot-login.tsx) - Build a simple login form powered by Valibot validators.
+- [Shadcn Field example](examples/shadcn-field.tsx) - Wire `useStandardSchema` metadata into the shadcn/ui `Field` primitives.
 
 ### Nested object fields
 
