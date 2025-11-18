@@ -57,7 +57,7 @@
     "author": "Gary Storey <garystoreydev@gmail.com>",
     "license": "MIT",
     "peerDependencies": {
-        "react": "^19.2.0"
+        "react": "^18.0.0 || ^19.0.0"
     },
     "devDependencies": {
         "@biomejs/biome": "2.2.6",
