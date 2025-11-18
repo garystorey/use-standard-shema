@@ -1,12 +1,13 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec"
 import { describe, expect, it } from "vitest"
 import {
-	defineForm,
-	deriveValidationMessage,
-	flattenDefaults,
-	flattenFormDefinition,
-	isFieldDefinition,
-	toFormData,
+        defineForm,
+        deriveThrownMessage,
+        deriveValidationMessage,
+        flattenDefaults,
+        flattenFormDefinition,
+        isFieldDefinition,
+        toFormData,
 } from "../src/helpers"
 import type { FormValues } from "../src/types"
 
@@ -83,12 +84,28 @@ describe("helpers", () => {
 		])
 	})
 
-	it("deriveValidationMessage falls back to the top-level message when issue message is blank", () => {
-		const message = deriveValidationMessage({
-			issues: [{ message: "" }],
-			message: "Fallback",
-		})
+        it("deriveValidationMessage falls back to the top-level message when issue message is blank", () => {
+                const message = deriveValidationMessage({
+                        issues: [{ message: "" }],
+                        message: "Fallback",
+                })
 
-		expect(message).toBe("Fallback")
-	})
+                expect(message).toBe("Fallback")
+        })
+
+        describe("deriveThrownMessage", () => {
+                it("returns the message when an Error instance is thrown", () => {
+                        const error = new Error("boom")
+                        expect(deriveThrownMessage(error)).toBe("boom")
+                })
+
+                it("handles thrown strings by trimming to determine truthiness", () => {
+                        expect(deriveThrownMessage("   with padding   ")).toBe("   with padding   ")
+                })
+
+                it("falls back to the default message for empty or non-string errors", () => {
+                        expect(deriveThrownMessage("   ")).toBe("validation failed")
+                        expect(deriveThrownMessage(null)).toBe("validation failed")
+                })
+        })
 })
