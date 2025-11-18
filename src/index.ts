@@ -18,9 +18,11 @@ import type {
 	FieldDefinition,
 	Flags,
 	FormDefinition,
+	FormSnapshot,
 	FormValues,
 	TypeFromDefinition,
 	UseStandardSchemaReturn,
+	WatchValuesCallback,
 } from "./types"
 
 /**
@@ -56,6 +58,11 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	const [touched, setTouched] = useState<Flags>({})
 	const [dirty, setDirty] = useState<Flags>({})
 
+	// Subscribers live in a ref-backed Set so we can add/remove listeners without triggering rerenders.
+	type WatchEntry = { fields?: string[]; callback: (values: FormValues) => void }
+	const watchEntriesRef = useRef<Set<WatchEntry>>(new Set())
+	const previousDataRef = useRef<FormValues>(initialValues)
+
 	const validationTokensRef = useRef<Record<string, number>>({})
 	const validationRunId = useRef(0)
 
@@ -67,6 +74,41 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		validationTokensRef.current = {}
 		validationRunId.current += 1
 	}, [initialValues])
+
+	// Dispatch watchValues listeners whenever canonical data mutates.
+	useEffect(() => {
+		const prev = previousDataRef.current
+		if (prev === data) return
+
+		previousDataRef.current = data
+		if (watchEntriesRef.current.size === 0) return
+
+		const snapshot = data
+		const entries = Array.from(watchEntriesRef.current)
+
+		for (const entry of entries) {
+			const { fields } = entry
+			if (fields && fields.length > 0) {
+				let relevantChange = false
+				for (const field of fields) {
+					if ((prev[field] ?? "") !== (snapshot[field] ?? "")) {
+						relevantChange = true
+						break
+					}
+				}
+				if (!relevantChange) continue
+
+				const selection: FormValues = {}
+				for (const field of fields) {
+					selection[field] = snapshot[field] ?? ""
+				}
+				entry.callback(selection)
+				continue
+			}
+
+			entry.callback(snapshot)
+		}
+	}, [data])
 
 	// --- Pure per-field validator (no state updates)
 	const validateFieldValue = useCallback(
@@ -425,6 +467,43 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		[dirty],
 	)
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Rebind when schema shape changes so new field guards run.
+	const watchValues = useCallback(
+		((
+			first: FieldKey | readonly FieldKey[] | ((values: FormSnapshot<T>) => void),
+			second?: (values: FormSnapshot<T>) => void,
+		) => {
+			const hasExplicitTargets = typeof first !== "function"
+			const targets = hasExplicitTargets ? (Array.isArray(first) ? [...first] : [first]) : undefined
+			const callback = hasExplicitTargets ? second : (first as (values: FormSnapshot<T>) => void)
+
+			if (typeof callback !== "function") {
+				throw new Error("watchValues requires a callback")
+			}
+
+			if (targets) {
+				for (const field of targets) {
+					if (!((field as string) in flatFormDefinition)) {
+						throw new Error(`Field "${String(field)}" not found`)
+					}
+				}
+			}
+
+			const entry: WatchEntry = {
+				fields: targets?.map((key) => key as string),
+				callback: (values) => {
+					callback(values as FormSnapshot<T>)
+				},
+			}
+
+			watchEntriesRef.current.add(entry)
+			return () => {
+				watchEntriesRef.current.delete(entry)
+			}
+		}) as WatchValuesCallback<T>,
+		[flatFormDefinition],
+	)
+
 	return {
 		resetForm,
 		getForm,
@@ -434,6 +513,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		setError,
 		isTouched,
 		isDirty,
+		watchValues,
 	}
 }
 
@@ -445,4 +525,5 @@ export type {
 	FormDefinition,
 	TypeFromDefinition,
 	UseStandardSchemaReturn,
+	WatchValuesCallback,
 } from "./types"

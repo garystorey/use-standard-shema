@@ -1,8 +1,9 @@
-import * as React from "react"
-
 declare module "@/components/ui/field" {
+        import type * as React from "react"
+
         export interface FieldProps extends React.ComponentPropsWithoutRef<"div"> {
                 invalid?: boolean
+                name?: string
         }
 
         export const Field: React.ForwardRefExoticComponent<
