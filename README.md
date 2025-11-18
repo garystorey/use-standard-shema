@@ -290,10 +290,9 @@ If you encounter issues or have feature requests, [open an issue](https://github
 ## Changelog
 
 - **v0.4.2**
-  - Hardened `setField` and async validation flows so unknown fields are rejected and stale validator responses are ignored.
-  - Improved validation message derivation to fall back to the schema-level message whenever issue entries are blank.
-  - Added a shadcn/ui Field example that shows how to wire hook metadata into third-party form primitives.
-  - Expanded helper and form tests (including `toFormData`) to cover additional error-handling scenarios.
+  - React 19 is now supported, and `ErrorInfo` is exported so the docs example works out of the box.
+  - Field updates are safer, validation errors fall back to helpful defaults, and async checks no longer overwrite newer input.
+  - Added a shadcn/ui Field example plus broader helper tests (including `toFormData`) to keep real-world flows covered.
 - **v0.4.1** - Minor code fixes and documentation updates
 - **v0.4.0** - Improved form state synchronization, renamed the `FieldDefinitionProps` type to `FieldData`, and ensured programmatic updates stay validated while tracking touched/dirty status.
 - [View the full changelog](./CHANGELOG.md) for earlier releases.
