@@ -240,6 +240,21 @@ const hasEditedAnything = isDirty()
 const isEmailTouched = isTouched("email")
 ```
 
+### `watchValues(targets?, callback)`
+
+Subscribe to canonical form values without forcing extra React renders. Call `watchValues(callback)` to observe the entire form or
+pass a field (or array of fields) to receive a minimal object with only those keys. The function returns an `unsubscribe` helper
+so you can stop listening inside `useEffect` cleanups.
+
+```tsx
+useEffect(() => {
+  const unsubscribe = watchValues(["plan", "seats"], ({ plan, seats }) => {
+    previewChannel.postMessage({ quote: calculateQuote(plan, Number(seats)) })
+  })
+  return unsubscribe
+}, [watchValues])
+```
+
 ### `toFormData(data)`
 
 Helper that converts a values object into a browser `FormData` instance for interoperability with fetch/XHR uploads.

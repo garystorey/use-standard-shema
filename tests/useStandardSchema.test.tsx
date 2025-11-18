@@ -407,6 +407,83 @@ describe("useStandardSchema getForm handlers (inline)", () => {
 		})
 	})
 
+	it("watchValues notifies subscribers only when tracked fields change", async () => {
+		const { ref } = renderHookHarness()
+
+		const allSpy = vi.fn()
+		const emailSpy = vi.fn()
+
+		const unsubscribeAll = ref.current!.watchValues(allSpy)
+		const unsubscribeEmail = ref.current!.watchValues("contact.email", emailSpy)
+
+		await act(async () => {
+			await ref.current!.setField("name", "Alice")
+		})
+
+		await waitFor(() => {
+			expect(allSpy).toHaveBeenCalledTimes(1)
+			expect(allSpy.mock.calls[0][0]["name"]).toBe("Alice")
+		})
+
+		await waitFor(() => {
+			expect(emailSpy).toHaveBeenCalledTimes(0)
+		})
+
+		await act(async () => {
+			await ref.current!.setField("contact.email", "alice@example.com")
+		})
+
+		await waitFor(() => {
+			expect(allSpy).toHaveBeenCalledTimes(2)
+			expect(allSpy.mock.calls[1][0]["contact.email"]).toBe("alice@example.com")
+		})
+
+		await waitFor(() => {
+			expect(emailSpy).toHaveBeenCalledTimes(1)
+			expect(emailSpy.mock.calls[0][0]).toEqual({ "contact.email": "alice@example.com" })
+		})
+
+		unsubscribeAll()
+		unsubscribeEmail()
+
+		const allCallCount = allSpy.mock.calls.length
+		await act(async () => {
+			await ref.current!.setField("name", "Bob")
+		})
+
+		await waitFor(() => {
+			expect(allSpy).toHaveBeenCalledTimes(allCallCount)
+			expect(emailSpy).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	it("watchValues returns subsets keyed by the requested fields", async () => {
+		const { ref } = renderHookHarness()
+
+		const subsetSpy = vi.fn()
+		ref.current!.watchValues(["name", "contact.email"], subsetSpy)
+
+		await act(async () => {
+			await ref.current!.setField("name", "Trudy")
+		})
+
+		await waitFor(() => {
+			expect(subsetSpy).toHaveBeenCalledTimes(1)
+			expect(subsetSpy.mock.calls[0][0]).toEqual({ name: "Trudy", "contact.email": "" })
+		})
+
+		const nameSpy = vi.fn()
+		ref.current!.watchValues("name", nameSpy)
+
+		await act(async () => {
+			await ref.current!.setField("contact.email", "trudy@example.com")
+		})
+
+		await waitFor(() => {
+			expect(nameSpy).toHaveBeenCalledTimes(0)
+		})
+	})
+
 	it("onReset restores defaults and clears flags", async () => {
 		const spy = vi.fn()
 		const { ref } = renderFormHarness({ formDef: makeForm(), onSubmitSpy: spy })
