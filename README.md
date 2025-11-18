@@ -132,8 +132,9 @@ const addressForm = defineForm({
 `useStandardSchema` returns the `getErrors` method that returns all of the current validations errors. This can be useful for giving all form error messages in one location. Additionally, the `getField` method returns the errors for the given field.
 
 ```tsx
+import type { ErrorInfo } from "use-standard-schema"
 
-const { getErrors, type ErrorInfo } = useStandardSchema(loginForm)
+const { getErrors } = useStandardSchema(loginForm)
 const errors = getErrors()
 
 {errors.length > 0 && (
