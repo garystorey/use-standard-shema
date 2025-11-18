@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.4.1
+
+- Broaden React peer dependency support to include React 18.
+
 ## 0.4.0
 
 - Improve form state synchronization and ergonomics.
