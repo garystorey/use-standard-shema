@@ -22,7 +22,7 @@
         "format": "biome format --write",
         "fix": "tsc --noEmit && biome check --fix",
         "all": "npm run check:strict && npm run test && npm run fix && npm run format && npm run build",
-        "publish": "npm run all && npm publish --access public",
+        "pub": "npm run all && npm publish --access public",
         "test": "vitest",
         "check:no-any": "node ./tools/check-no-any.js",
         "check:strict": "npx tsc --noEmit && node ./tools/check-no-any.js",
