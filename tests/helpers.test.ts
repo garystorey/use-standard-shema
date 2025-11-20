@@ -1,6 +1,15 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec"
 import { describe, expect, it } from "vitest"
-import { defineForm, flattenDefaults, flattenFormDefinition, isFieldDefinition, toFormData } from "../src/helpers"
+import {
+	defineForm,
+	deriveThrownMessage,
+	deriveValidationMessage,
+	flattenDefaults,
+	flattenFormDefinition,
+	isFieldDefinition,
+	toFormData,
+} from "../src/helpers"
+import type { FormValues } from "../src/types"
 
 interface StringSchema extends StandardSchemaV1<string> {
 	type: "string"
@@ -45,18 +54,58 @@ describe("helpers", () => {
 		})
 	})
 
-	it("toFormData includes only defined values and stringifies", () => {
-		// provide only defined string values; other keys omitted
-		const fd = toFormData({ a: "1", b: "2" })
-		expect(fd.get("a")).toBe("1")
-		expect(fd.get("b")).toBe("2")
-		expect(fd.get("c")).toBeNull() // omitted
-		expect(fd.get("d")).toBeNull() // omitted
-	})
-
 	it("isFieldDefinition correctly detects FieldDefinition shape", () => {
 		expect(isFieldDefinition({ label: "X", validate: noopString() })).toBe(true)
 		expect(isFieldDefinition({ label: "X" })).toBe(false)
 		expect(isFieldDefinition(null)).toBe(false)
+	})
+
+	it("toFormData stringifies defined values and excludes nullish entries", () => {
+		const values = {
+			username: "alice",
+			age: 42,
+			empty: "",
+			city: null,
+			optional: undefined,
+		} satisfies Record<string, string | number | null | undefined>
+
+		const formData = toFormData(values as unknown as FormValues)
+		const entries: Array<[string, string]> = []
+
+		for (const [key, value] of formData.entries()) {
+			entries.push([key, value as string])
+			expect(typeof value).toBe("string")
+		}
+
+		expect(entries).toEqual([
+			["username", "alice"],
+			["age", "42"],
+			["empty", ""],
+		])
+	})
+
+	it("deriveValidationMessage falls back to the top-level message when issue message is blank", () => {
+		const message = deriveValidationMessage({
+			issues: [{ message: "" }],
+			message: "Fallback",
+		})
+
+		expect(message).toBe("Fallback")
+	})
+
+	describe("deriveThrownMessage", () => {
+		it("returns the message when an Error instance is thrown", () => {
+			const error = new Error("boom")
+			expect(deriveThrownMessage(error)).toBe("boom")
+		})
+
+		it("handles thrown strings by trimming to determine truthiness", () => {
+			expect(deriveThrownMessage("   with padding   ")).toBe("   with padding   ")
+		})
+
+		it("falls back to the default message for empty or non-string errors", () => {
+			expect(deriveThrownMessage("   ")).toBe("validation failed")
+			expect(deriveThrownMessage(null)).toBe("validation failed")
+		})
 	})
 })

@@ -115,12 +115,19 @@ export function deriveValidationMessage(result: unknown): string {
 	const resultRecord = result as Record<string, unknown> & { issues?: unknown; message?: unknown }
 	const issues = Array.isArray(resultRecord.issues) ? resultRecord.issues : []
 	for (const issue of issues) {
-		if (isRecord(issue) && typeof issue.message === "string") {
-			return issue.message
+		if (!isRecord(issue)) continue
+
+		const message = (issue as { message?: unknown }).message
+		if (typeof message === "string" && message.trim().length > 0) {
+			return message
 		}
 	}
 
-	return typeof resultRecord.message === "string" ? resultRecord.message : ""
+	if (typeof resultRecord.message === "string") {
+		return resultRecord.message.trim().length > 0 ? resultRecord.message : ""
+	}
+
+	return ""
 }
 
 export function deriveThrownMessage(error: unknown): string {

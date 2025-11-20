@@ -103,12 +103,13 @@ export function SubscriptionForm() {
 
 ## Examples
 
-Additonal examples are available.
+Additional examples are available.
 
 - [CodeSandbox Demo](https://codesandbox.io/p/sandbox/use-standard-schema-vthys3?file=%2Fsrc%2FApp.tsx) - Try the hook in a live React playground.
 - [Dependent Fields example](examples/dependent-field-validation.tsx) - An example that keeps two related fields in sync using `setField` and `setError`.
 - [Custom Component example](examples/custom-field-component.tsx) - Share reusable inputs via `FieldData`.
 - [Valibot example](examples/valibot-login.tsx) - Build a simple login form powered by Valibot validators.
+- [Shadcn Field example](examples/shadcn-field.tsx) - Wire `useStandardSchema` metadata into the shadcn/ui `Field` primitives.
 
 ### Nested object fields
 
@@ -131,8 +132,9 @@ const addressForm = defineForm({
 `useStandardSchema` returns the `getErrors` method that returns all of the current validations errors. This can be useful for giving all form error messages in one location. Additionally, the `getField` method returns the errors for the given field.
 
 ```tsx
+import type { ErrorInfo } from "use-standard-schema"
 
-const { getErrors, type ErrorInfo } = useStandardSchema(loginForm)
+const { getErrors } = useStandardSchema(loginForm)
 const errors = getErrors()
 
 {errors.length > 0 && (
@@ -183,7 +185,7 @@ const formDefinition = defineForm({
 Create the hook by passing a `defineForm` definition. The return value exposes the rest of the helpers documented below.
 
 ```ts
-const { getForm, getField, getErrors, setField, setError, resetForm, isTouched, isDirty } =
+const { getForm, getField, getErrors, setField, setError, resetForm, isTouched, isDirty, watchValues } =
   useStandardSchema(myFormDefinition)
 ```
 
@@ -239,6 +241,29 @@ const hasEditedAnything = isDirty()
 const isEmailTouched = isTouched("email")
 ```
 
+### `watchValues(targets?, callback)`
+
+Subscribe to canonical form values without forcing extra React renders. The callback executes whenever any watched key changes and
+receives an object scoped to those fields.
+
+#### Parameters
+
+- `targets` *(optional)*: a single field name or array of field names. Omit to observe every value in the form.
+- `callback(values)`: invoked with the latest values for the watched fields.
+
+#### Returns
+
+- `unsubscribe()`: stop listening inside `useEffect` cleanups or teardown handlers.
+
+```tsx
+useEffect(() => {
+  const unsubscribe = watchValues(["plan", "seats"], ({ plan, seats }) => {
+    previewChannel.postMessage({ quote: calculateQuote(plan, Number(seats)) })
+  })
+  return unsubscribe
+}, [watchValues])
+```
+
 ### `toFormData(data)`
 
 Helper that converts a values object into a browser `FormData` instance for interoperability with fetch/XHR uploads.
@@ -258,8 +283,7 @@ setField("address.postalCode", nextPostalCode)
 
 ### `setError(name, error)`
 
-Sets a manual error message for any field. Pass `null` or `undefined` to clear it.
-**IMPORTANT NOTE**: You do not need to call this manually in most situations. It will occur automatically.
+Sets a manual error message for any field  (*for dependent fields, custom widgets, or multi-step wizards*). Pass `null` or `undefined` to clear it. **IMPORTANT NOTE**: You do not need to call this manually in most situations. It will occur automatically.
 
 ```ts
 setError("email", new Error("Email already registered"))
@@ -273,6 +297,12 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## Changelog
 
+- **v0.4.2**
+  - Added `watchValues` for monitoring value changes without rerender.
+  - Fixed issue with `ErrorInfo` not being exported.
+  - Field updates are safer, validation errors fall back to helpful defaults, and async checks no longer overwrite newer input.
+  - Added a shadcn/ui Field example
+  - Added additional tests to keep real-world flows covered.
 - **v0.4.1** - Minor code fixes and documentation updates
 - **v0.4.0** - Improved form state synchronization, renamed the `FieldDefinitionProps` type to `FieldData`, and ensured programmatic updates stay validated while tracking touched/dirty status.
 - [View the full changelog](./CHANGELOG.md) for earlier releases.

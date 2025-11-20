@@ -77,7 +77,18 @@ export type TypeFromDefinition<T extends FormDefinition> = {
 	[K in keyof DotPathsToValues<T>]: DotPathsToValues<T>[K]
 }
 
+export type FormSnapshot<T extends FormDefinition> = Record<DotPaths<T>, string>
+
 export type ErrorEntry = { name: string; error: string; label: string }
+
+export type WatchValuesCallback<T extends FormDefinition> = {
+	(callback: (values: FormSnapshot<T>) => void): () => void
+	<Name extends DotPaths<T>>(name: Name, callback: (values: Pick<FormSnapshot<T>, Name>) => void): () => void
+	<Names extends readonly DotPaths<T>[]>(
+		names: Names,
+		callback: (values: Pick<FormSnapshot<T>, Names[number]>) => void,
+	): () => void
+}
 
 /* =============================================================================
  * Unicode-aware key validation (no whitespace; "." reserved as path separator)
@@ -193,4 +204,5 @@ export interface UseStandardSchemaReturn<T extends FormDefinition> {
 	setError: (name: DotPaths<T>, info: ErrorInfo) => void
 	isTouched: (name?: DotPaths<T>) => boolean
 	isDirty: (name?: DotPaths<T>) => boolean
+	watchValues: WatchValuesCallback<T>
 }

@@ -1,4 +1,4 @@
-import { type FocusEvent, type FormEvent, useCallback, useEffect, useMemo, useState } from "react"
+import { type FocusEvent, type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
 	defineForm,
 	deriveThrownMessage,
@@ -18,9 +18,11 @@ import type {
 	FieldDefinition,
 	Flags,
 	FormDefinition,
+	FormSnapshot,
 	FormValues,
 	TypeFromDefinition,
 	UseStandardSchemaReturn,
+	WatchValuesCallback,
 } from "./types"
 
 /**
@@ -56,12 +58,57 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	const [touched, setTouched] = useState<Flags>({})
 	const [dirty, setDirty] = useState<Flags>({})
 
+	// Subscribers live in a ref-backed Set so we can add/remove listeners without triggering rerenders.
+	type WatchEntry = { fields?: string[]; callback: (values: FormValues) => void }
+	const watchEntriesRef = useRef<Set<WatchEntry>>(new Set())
+	const previousDataRef = useRef<FormValues>(initialValues)
+
+	const validationTokensRef = useRef<Record<string, number>>({})
+	const validationRunId = useRef(0)
+
 	useEffect(() => {
 		setData(initialValues)
 		setErrors({})
 		setTouched({})
 		setDirty({})
+		validationTokensRef.current = {}
+		validationRunId.current += 1
 	}, [initialValues])
+
+	// Dispatch watchValues listeners whenever canonical data mutates.
+	useEffect(() => {
+		const prev = previousDataRef.current
+		if (prev === data) return
+
+		previousDataRef.current = data
+		if (watchEntriesRef.current.size === 0) return
+
+		const snapshot = data
+		const entries = Array.from(watchEntriesRef.current)
+
+		for (const entry of entries) {
+			const { fields } = entry
+			if (fields && fields.length > 0) {
+				let relevantChange = false
+				for (const field of fields) {
+					if ((prev[field] ?? "") !== (snapshot[field] ?? "")) {
+						relevantChange = true
+						break
+					}
+				}
+				if (!relevantChange) continue
+
+				const selection: FormValues = {}
+				for (const field of fields) {
+					selection[field] = snapshot[field] ?? ""
+				}
+				entry.callback(selection)
+				continue
+			}
+
+			entry.callback(snapshot)
+		}
+	}, [data])
 
 	// --- Pure per-field validator (no state updates)
 	const validateFieldValue = useCallback(
@@ -85,7 +132,16 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	// --- Single-field validate (updates state for that field)
 	const validateField = useCallback(
 		async (field: string, value: string) => {
+			const runId = validationRunId.current
+			const token = (validationTokensRef.current[field] ?? 0) + 1
+			validationTokensRef.current[field] = token
+
 			const message = await validateFieldValue(field, value)
+
+			if (validationRunId.current !== runId || validationTokensRef.current[field] !== token) {
+				return false
+			}
+
 			setErrors((prev) => (prev[field] === message ? prev : { ...prev, [field]: message }))
 			return message === ""
 		},
@@ -96,16 +152,70 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	const validateForm = useCallback(
 		async (values?: FormValues) => {
 			const sourceValues = values ?? data
+			const runId = validationRunId.current
 			const newErrors: Errors = {}
+			const tokensForRun: Record<string, number> = {}
 
 			await Promise.all(
 				formDefinitionKeys.map(async (key) => {
+					const token = (validationTokensRef.current[key] ?? 0) + 1
+					validationTokensRef.current[key] = token
+					tokensForRun[key] = token
 					newErrors[key] = await validateFieldValue(key, sourceValues[key] ?? "")
 				}),
 			)
 
-			setErrors(newErrors)
-			return Object.values(newErrors).every((msg) => msg === "")
+			if (validationRunId.current !== runId) {
+				return false
+			}
+
+			setErrors((prev) => {
+				if (validationRunId.current !== runId) return prev
+
+				let changed = false
+				const next: Errors = {}
+
+				for (const key of formDefinitionKeys) {
+					const prevValue = prev[key] ?? ""
+
+					if (validationTokensRef.current[key] !== tokensForRun[key]) {
+						next[key] = prevValue
+						continue
+					}
+
+					const message = newErrors[key] ?? ""
+					next[key] = message
+					if (prevValue !== message) {
+						changed = true
+					}
+				}
+
+				if (!changed) {
+					for (const key of Object.keys(prev)) {
+						if (!formDefinitionKeys.includes(key)) {
+							changed = true
+							break
+						}
+					}
+					if (!changed) return prev
+				}
+
+				return next
+			})
+
+			let isValid = true
+			for (const key of formDefinitionKeys) {
+				if (validationTokensRef.current[key] !== tokensForRun[key]) {
+					isValid = false
+					continue
+				}
+
+				if (newErrors[key] !== "") {
+					isValid = false
+				}
+			}
+
+			return isValid
 		},
 		[formDefinitionKeys, data, validateFieldValue],
 	)
@@ -115,6 +225,8 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		setErrors({})
 		setTouched({})
 		setDirty({})
+		validationTokensRef.current = {}
+		validationRunId.current += 1
 	}, [initialValues])
 
 	const getForm = useCallback(
@@ -248,6 +360,9 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	const setField = useCallback(
 		async (name: FieldKey, value: string) => {
 			const field = name as string
+			if (!(field in flatFormDefinition)) {
+				throw new Error(`Field "${field}" not found`)
+			}
 			const initialValue = initialValueStrings[field] ?? ""
 			const isDirty = value !== initialValue
 
@@ -269,7 +384,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 
 			await validateField(field, value)
 		},
-		[validateField, initialValueStrings],
+		[flatFormDefinition, validateField, initialValueStrings],
 	)
 
 	const setError = useCallback(
@@ -352,6 +467,43 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		[dirty],
 	)
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Rebind when schema shape changes so new field guards run.
+	const watchValues = useCallback(
+		((
+			first: FieldKey | readonly FieldKey[] | ((values: FormSnapshot<T>) => void),
+			second?: (values: FormSnapshot<T>) => void,
+		) => {
+			const hasExplicitTargets = typeof first !== "function"
+			const targets = hasExplicitTargets ? (Array.isArray(first) ? [...first] : [first]) : undefined
+			const callback = hasExplicitTargets ? second : (first as (values: FormSnapshot<T>) => void)
+
+			if (typeof callback !== "function") {
+				throw new Error("watchValues requires a callback")
+			}
+
+			if (targets) {
+				for (const field of targets) {
+					if (!((field as string) in flatFormDefinition)) {
+						throw new Error(`Field "${String(field)}" not found`)
+					}
+				}
+			}
+
+			const entry: WatchEntry = {
+				fields: targets?.map((key) => key as string),
+				callback: (values) => {
+					callback(values as FormSnapshot<T>)
+				},
+			}
+
+			watchEntriesRef.current.add(entry)
+			return () => {
+				watchEntriesRef.current.delete(entry)
+			}
+		}) as WatchValuesCallback<T>,
+		[flatFormDefinition],
+	)
+
 	return {
 		resetForm,
 		getForm,
@@ -361,15 +513,18 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		setError,
 		isTouched,
 		isDirty,
+		watchValues,
 	}
 }
 
 export { useStandardSchema, defineForm, toFormData }
 export type {
 	ErrorEntry,
+	ErrorInfo,
 	FieldData,
 	FieldDefinition,
 	FormDefinition,
 	TypeFromDefinition,
 	UseStandardSchemaReturn,
+	WatchValuesCallback,
 } from "./types"

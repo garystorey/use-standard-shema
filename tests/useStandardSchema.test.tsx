@@ -1,32 +1,39 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { act } from "react"
+import React, { act, forwardRef, useImperativeHandle } from "react"
 import { describe, expect, it, vi } from "vitest"
-import type { ErrorEntry } from "../src/types"
+import { useStandardSchema } from "../src"
+import { defineForm } from "../src/helpers"
+import type { ErrorEntry, UseStandardSchemaReturn } from "../src/types"
 import { makeForm, makeThrowingForm, renderFormHarness, renderHookHarness } from "./test-utils"
+import { delayed } from "./test-validation-lib"
 
 describe("useStandardSchema (basic)", () => {
-	it("getField returns metadata and default value", () => {
+	it("getField surfaces metadata, accessibility ids, and default flags", () => {
 		const { ref } = renderHookHarness()
 
-		const field = ref.current!.getField("name")
-		expect(field.name).toBe("name")
-		expect(field.label).toBe("Name")
-		expect(field.defaultValue).toBe("Joe")
-		expect(field.error).toBe("")
+		const nameField = ref.current!.getField("name")
+		expect(nameField.name).toBe("name")
+		expect(nameField.label).toBe("Name")
+		expect(nameField.defaultValue).toBe("Joe")
+		expect(nameField.error).toBe("")
+		expect(nameField.describedById).toBe("name-description")
+		expect(nameField.errorId).toBe("name-error")
+		expect(nameField.touched).toBe(false)
+		expect(nameField.dirty).toBe(false)
+
+		const emailField = ref.current!.getField("contact.email")
+		expect(emailField.name).toBe("contact.email")
+		expect(emailField.label).toBe("Email")
+		expect(emailField.defaultValue).toBe("")
+		expect(emailField.error).toBe("")
+		expect(emailField.describedById).toBe("contact.email-description")
+		expect(emailField.errorId).toBe("contact.email-error")
+		expect(emailField.touched).toBe(false)
+		expect(emailField.dirty).toBe(false)
 	})
 
-	it("getField surfaces accessibility ids and flag defaults", () => {
-		const { ref } = renderHookHarness()
-
-		const field = ref.current!.getField("contact.email")
-		expect(field.describedById).toBe("contact.email-description")
-		expect(field.errorId).toBe("contact.email-error")
-		expect(field.touched).toBe(false)
-		expect(field.dirty).toBe(false)
-	})
-
-	it("validate a missing required field produces an error and isDirty/isTouched are set", async () => {
+	it("records validation errors and exposes them through getErrors helpers", async () => {
 		const { ref } = renderHookHarness()
 
 		// Defaults are valid with no errors reported
@@ -39,29 +46,16 @@ describe("useStandardSchema (basic)", () => {
 		})
 
 		await waitFor(() => {
+			const field = ref.current!.getField("name")
+			expect(field.defaultValue).toBe("")
+			expect(field.error).toBe("Required")
+
 			const errs = ref.current!.getErrors("name")
 			expect(errs.length).toBe(1)
 			expect(errs[0].error).toBe("Required")
 
-			const field = ref.current!.getField("name")
-			expect(field.defaultValue).toBe("")
-			expect(field.error).toBe("Required")
-		})
-
-		expect(ref.current!.isDirty("name")).toBe(true)
-		expect(ref.current!.isTouched("name")).toBe(true)
-	})
-
-	it("getErrors aggregates field metadata when collecting all errors", async () => {
-		const { ref } = renderHookHarness()
-
-		await act(async () => {
-			await ref.current!.setField("name", "")
-		})
-
-		await waitFor(() => {
-			const errors = ref.current!.getErrors()
-			expect(errors).toEqual([
+			const aggregate = ref.current!.getErrors()
+			expect(aggregate).toEqual([
 				{
 					name: "name",
 					error: "Required",
@@ -69,9 +63,12 @@ describe("useStandardSchema (basic)", () => {
 				},
 			])
 		})
+
+		expect(ref.current!.isDirty("name")).toBe(true)
+		expect(ref.current!.isTouched("name")).toBe(true)
 	})
 
-	it("setting a valid value clears the error and updates data; resetForm restores defaults", async () => {
+	it("setField updates values, manages dirty tracking, and resetForm restores defaults", async () => {
 		const { ref } = renderHookHarness()
 
 		// Set a valid name
@@ -83,10 +80,31 @@ describe("useStandardSchema (basic)", () => {
 			const field = ref.current!.getField("name")
 			expect(field.defaultValue).toBe("Alice")
 			expect(field.error).toBe("")
+			expect(ref.current!.isDirty("name")).toBe(true)
+			expect(ref.current!.isTouched("name")).toBe(true)
 		})
 
-		expect(ref.current!.isDirty("name")).toBe(true)
-		expect(ref.current!.isTouched("name")).toBe(true)
+		// Reverting back to the default should clear the dirty flag
+		await act(async () => {
+			await ref.current!.setField("name", "Joe")
+		})
+
+		await waitFor(() => {
+			const field = ref.current!.getField("name")
+			expect(field.defaultValue).toBe("Joe")
+			expect(ref.current!.isDirty("name")).toBe(false)
+		})
+
+		// Update again so that resetForm has state to clear
+		await act(async () => {
+			await ref.current!.setField("name", "Grace")
+		})
+
+		await waitFor(() => {
+			const field = ref.current!.getField("name")
+			expect(field.defaultValue).toBe("Grace")
+			expect(ref.current!.isDirty("name")).toBe(true)
+		})
 
 		// Reset and ensure defaults come back
 		act(() => {
@@ -101,26 +119,14 @@ describe("useStandardSchema (basic)", () => {
 		})
 	})
 
-	it("programmatic updates clear dirty flag when value matches default", async () => {
+	it("surface errors when interacting with unknown fields", async () => {
 		const { ref } = renderHookHarness()
 
-		await act(async () => {
-			await ref.current!.setField("name", "Alice")
-		})
+		expect(() => ref.current!.getField("missing" as never)).toThrowError('Field "missing" not found')
 
-		await waitFor(() => {
-			expect(ref.current!.isDirty("name")).toBe(true)
-		})
+		await expect(ref.current!.setField("missing" as never, "value")).rejects.toThrowError('Field "missing" not found')
 
-		await act(async () => {
-			await ref.current!.setField("name", "Joe")
-		})
-
-		await waitFor(() => {
-			expect(ref.current!.isDirty("name")).toBe(false)
-			const field = ref.current!.getField("name")
-			expect(field.defaultValue).toBe("Joe")
-		})
+		expect(() => ref.current!.setError("missing" as never, "Boom")).toThrowError('Field "missing" not found')
 	})
 
 	it("setError allows manual control over field errors", async () => {
@@ -196,7 +202,7 @@ describe("useStandardSchema (basic)", () => {
 	it("full form validate reports errors for multiple fields", async () => {
 		const { ref } = renderHookHarness()
 
-		// Ensure email is invalid by default (empty, email requires @)
+		// Intentionally set email to an invalid value (missing "@") before validating
 		await act(async () => {
 			await ref.current!.setField("contact.email", "no-at-sign")
 		})
@@ -205,6 +211,38 @@ describe("useStandardSchema (basic)", () => {
 			const allErrors = ref.current!.getErrors()
 			// email should be present in errors
 			expect(allErrors.some((e: ErrorEntry) => e.name === "contact.email")).toBe(true)
+		})
+	})
+
+	it("ignores stale async validation results for the same field", async () => {
+		const asyncForm = defineForm({
+			name: { label: "Name", defaultValue: "Joe", validate: delayed("Async required", 30) },
+		})
+
+		type AsyncForm = typeof asyncForm
+
+		const HookHarness = forwardRef<UseStandardSchemaReturn<AsyncForm> | null, { formDef: AsyncForm }>(
+			function HookHarness(props, ref) {
+				const api = useStandardSchema(props.formDef)
+				useImperativeHandle(ref, () => api, [api])
+				return null
+			},
+		)
+
+		const ref = React.createRef<UseStandardSchemaReturn<AsyncForm> | null>()
+		render(<HookHarness ref={ref} formDef={asyncForm} />)
+
+		await act(async () => {
+			const slow = ref.current!.setField("name", "")
+			const fast = ref.current!.setField("name", "Grace")
+			await fast
+			await slow
+		})
+
+		await waitFor(() => {
+			const field = ref.current!.getField("name")
+			expect(field.defaultValue).toBe("Grace")
+			expect(field.error).toBe("")
 		})
 	})
 
@@ -233,7 +271,7 @@ describe("useStandardSchema (basic)", () => {
 describe("useStandardSchema getForm handlers (inline)", () => {
 	it("onSubmit calls handler when form valid", async () => {
 		const spy = vi.fn()
-		const { ref } = renderFormHarness({ formDef: makeForm(), onSubmitSpy: spy })
+		renderFormHarness({ formDef: makeForm(), onSubmitSpy: spy })
 
 		const user = userEvent.setup()
 		const email = screen.getByLabelText("Email") as HTMLInputElement
@@ -366,6 +404,83 @@ describe("useStandardSchema getForm handlers (inline)", () => {
 			const field = ref.current!.getField("name")
 			expect(field.defaultValue).toBe("Joe")
 			expect(ref.current!.isDirty("name")).toBe(false)
+		})
+	})
+
+	it("watchValues notifies subscribers only when tracked fields change", async () => {
+		const { ref } = renderHookHarness()
+
+		const allSpy = vi.fn()
+		const emailSpy = vi.fn()
+
+		const unsubscribeAll = ref.current!.watchValues(allSpy)
+		const unsubscribeEmail = ref.current!.watchValues("contact.email", emailSpy)
+
+		await act(async () => {
+			await ref.current!.setField("name", "Alice")
+		})
+
+		await waitFor(() => {
+			expect(allSpy).toHaveBeenCalledTimes(1)
+			expect(allSpy.mock.calls[0][0]["name"]).toBe("Alice")
+		})
+
+		await waitFor(() => {
+			expect(emailSpy).toHaveBeenCalledTimes(0)
+		})
+
+		await act(async () => {
+			await ref.current!.setField("contact.email", "alice@example.com")
+		})
+
+		await waitFor(() => {
+			expect(allSpy).toHaveBeenCalledTimes(2)
+			expect(allSpy.mock.calls[1][0]["contact.email"]).toBe("alice@example.com")
+		})
+
+		await waitFor(() => {
+			expect(emailSpy).toHaveBeenCalledTimes(1)
+			expect(emailSpy.mock.calls[0][0]).toEqual({ "contact.email": "alice@example.com" })
+		})
+
+		unsubscribeAll()
+		unsubscribeEmail()
+
+		const allCallCount = allSpy.mock.calls.length
+		await act(async () => {
+			await ref.current!.setField("name", "Bob")
+		})
+
+		await waitFor(() => {
+			expect(allSpy).toHaveBeenCalledTimes(allCallCount)
+			expect(emailSpy).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	it("watchValues returns subsets keyed by the requested fields", async () => {
+		const { ref } = renderHookHarness()
+
+		const subsetSpy = vi.fn()
+		ref.current!.watchValues(["name", "contact.email"], subsetSpy)
+
+		await act(async () => {
+			await ref.current!.setField("name", "Trudy")
+		})
+
+		await waitFor(() => {
+			expect(subsetSpy).toHaveBeenCalledTimes(1)
+			expect(subsetSpy.mock.calls[0][0]).toEqual({ name: "Trudy", "contact.email": "" })
+		})
+
+		const nameSpy = vi.fn()
+		ref.current!.watchValues("name", nameSpy)
+
+		await act(async () => {
+			await ref.current!.setField("contact.email", "trudy@example.com")
+		})
+
+		await waitFor(() => {
+			expect(nameSpy).toHaveBeenCalledTimes(0)
 		})
 	})
 
