@@ -246,11 +246,13 @@ const isEmailTouched = isTouched("email")
 Subscribe to canonical form values without forcing extra React renders. The callback executes whenever any watched key changes and
 receives an object scoped to those fields.
 
-**Parameters**
+#### Parameters
+
 - `targets` *(optional)*: a single field name or array of field names. Omit to observe every value in the form.
 - `callback(values)`: invoked with the latest values for the watched fields.
 
-**Returns**
+#### Returns
+
 - `unsubscribe()`: stop listening inside `useEffect` cleanups or teardown handlers.
 
 ```tsx
