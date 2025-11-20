@@ -290,7 +290,7 @@ If you encounter issues or have feature requests, [open an issue](https://github
 ## Changelog
 
 - **v0.4.2**
-  - Added `watchValues` for handling monitoring of value changes without rerender.
+  - Added `watchValues` for monitoring value changes without rerender.
   - Fixed issue with `ErrorInfo` not being exported.
   - Field updates are safer, validation errors fall back to helpful defaults, and async checks no longer overwrite newer input.
   - Added a shadcn/ui Field example
