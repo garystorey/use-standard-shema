@@ -290,9 +290,11 @@ If you encounter issues or have feature requests, [open an issue](https://github
 ## Changelog
 
 - **v0.4.2**
-  - React 19 is now supported, and `ErrorInfo` is exported so the docs example works out of the box.
+  - Added `watchValues` for handling monitoring of value changes without rerender.
+  - Fixed issue with `ErrorInfo` not being exported.
   - Field updates are safer, validation errors fall back to helpful defaults, and async checks no longer overwrite newer input.
-  - Added a shadcn/ui Field example plus broader helper tests (including `toFormData`) to keep real-world flows covered.
+  - Added a shadcn/ui Field example
+  - Added additional tests to keep real-world flows covered.
 - **v0.4.1** - Minor code fixes and documentation updates
 - **v0.4.0** - Improved form state synchronization, renamed the `FieldDefinitionProps` type to `FieldData`, and ensured programmatic updates stay validated while tracking touched/dirty status.
 - [View the full changelog](./CHANGELOG.md) for earlier releases.
