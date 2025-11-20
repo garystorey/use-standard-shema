@@ -185,7 +185,7 @@ const formDefinition = defineForm({
 Create the hook by passing a `defineForm` definition. The return value exposes the rest of the helpers documented below.
 
 ```ts
-const { getForm, getField, getErrors, setField, setError, resetForm, isTouched, isDirty } =
+const { getForm, getField, getErrors, setField, setError, resetForm, isTouched, isDirty, watchValues } =
   useStandardSchema(myFormDefinition)
 ```
 
@@ -243,9 +243,15 @@ const isEmailTouched = isTouched("email")
 
 ### `watchValues(targets?, callback)`
 
-Subscribe to canonical form values without forcing extra React renders. Call `watchValues(callback)` to observe the entire form or
-pass a field (or array of fields) to receive a minimal object with only those keys. The function returns an `unsubscribe` helper
-so you can stop listening inside `useEffect` cleanups.
+Subscribe to canonical form values without forcing extra React renders. The callback executes whenever any watched key changes and
+receives an object scoped to those fields.
+
+**Parameters**
+- `targets` *(optional)*: a single field name or array of field names. Omit to observe every value in the form.
+- `callback(values)`: invoked with the latest values for the watched fields.
+
+**Returns**
+- `unsubscribe()`: stop listening inside `useEffect` cleanups or teardown handlers.
 
 ```tsx
 useEffect(() => {
