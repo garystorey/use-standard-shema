@@ -1,34 +1,34 @@
 declare module "@/components/ui/field" {
-        import type * as React from "react"
+    import type * as React from "react"
 
-        export interface FieldProps extends React.ComponentPropsWithoutRef<"div"> {
-                invalid?: boolean
-                name?: string
-        }
+    export interface FieldProps extends React.ComponentPropsWithoutRef<"div"> {
+        invalid?: boolean
+        name?: string
+    }
 
-        export const Field: React.ForwardRefExoticComponent<
-                FieldProps & React.RefAttributes<HTMLDivElement>
-        >
+    export const Field: React.ForwardRefExoticComponent<
+        FieldProps & React.RefAttributes<HTMLDivElement>
+    >
 
-        export const Fieldset: React.ForwardRefExoticComponent<
-                React.ComponentPropsWithoutRef<"fieldset"> &
-                        React.RefAttributes<HTMLFieldSetElement>
-        >
+    export const Fieldset: React.ForwardRefExoticComponent<
+        React.ComponentPropsWithoutRef<"fieldset"> &
+        React.RefAttributes<HTMLFieldSetElement>
+    >
 
-        export const FieldLabel: React.ForwardRefExoticComponent<
-                React.ComponentPropsWithoutRef<"label"> &
-                        React.RefAttributes<HTMLLabelElement>
-        >
+    export const FieldLabel: React.ForwardRefExoticComponent<
+        React.ComponentPropsWithoutRef<"label"> &
+        React.RefAttributes<HTMLLabelElement>
+    >
 
-        export const FieldControl: React.ForwardRefExoticComponent<
-                React.ComponentPropsWithoutRef<"div"> & React.RefAttributes<HTMLDivElement>
-        >
+    export const FieldControl: React.ForwardRefExoticComponent<
+        React.ComponentPropsWithoutRef<"div"> & React.RefAttributes<HTMLDivElement>
+    >
 
-        export const FieldDescription: React.ForwardRefExoticComponent<
-                React.ComponentPropsWithoutRef<"p"> & React.RefAttributes<HTMLParagraphElement>
-        >
+    export const FieldDescription: React.ForwardRefExoticComponent<
+        React.ComponentPropsWithoutRef<"p"> & React.RefAttributes<HTMLParagraphElement>
+    >
 
-        export const FieldError: React.ForwardRefExoticComponent<
-                React.ComponentPropsWithoutRef<"p"> & React.RefAttributes<HTMLParagraphElement>
-        >
+    export const FieldError: React.ForwardRefExoticComponent<
+        React.ComponentPropsWithoutRef<"p"> & React.RefAttributes<HTMLParagraphElement>
+    >
 }
