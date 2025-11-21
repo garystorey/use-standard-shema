@@ -8,8 +8,8 @@ import type { AssertValidFormKeysDeep, UseStandardSchemaReturn } from "../src/ty
 type Validator = StandardSchemaV1<string>
 
 type TestFormDefinition = AssertValidFormKeysDeep<{
-	foo: {
-		label: "Foo"
+        foo: {
+                label: "Foo"
 		defaultValue: ""
 		validate: Validator
 	}
@@ -19,5 +19,32 @@ type Hook = typeof useStandardSchema extends (formDefinition: TestFormDefinition
 
 // Assert Hook matches exported UseStandardSchemaReturn<TestFormDefinition>
 export type HookMatches = Hook extends UseStandardSchemaReturn<TestFormDefinition> ? true : never
+
+// TypeFromDefinition should map every path to string even when defaultValue is missing
+type DefaultlessFormDefinition = AssertValidFormKeysDeep<{
+        foo: {
+                label: "Foo"
+                validate: Validator
+        }
+        nested: {
+                bar: {
+                        label: "Bar"
+                        defaultValue: "prepopulated"
+                        validate: Validator
+                }
+        }
+}>
+
+type DefaultlessValues = TypeFromDefinition<DefaultlessFormDefinition>
+type ExpectedDefaultlessValues = {
+        foo: string
+        "nested.bar": string
+}
+
+export type TypeFromDefinitionEmitsStrings = [DefaultlessValues] extends [ExpectedDefaultlessValues]
+        ? [ExpectedDefaultlessValues] extends [DefaultlessValues]
+                ? true
+                : never
+        : never
 
 export {}
