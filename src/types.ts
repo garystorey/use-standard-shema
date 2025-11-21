@@ -53,34 +53,32 @@ type Dec<D extends Depth> = DecMap[D]
  * Depth-limited so TS doesn’t infinitely expand on generics.
  */
 type DotFold<
-        T,
-        Prev extends string = "",
-        Mode extends "paths" | "values" = "paths",
-        Value = string,
-        D extends Depth = 10,
-> = [
-        D,
-] extends [0]
-        ? never
-        : {
-                        [K in keyof T]: T[K] extends FieldDefinition
-                                ? Mode extends "paths"
-                                        ? `${Prev}${K & string}`
-                                        : { [P in `${Prev}${K & string}`]: Value }
-                                : T[K] extends FormDefinition
-                                        ? DotFold<T[K], `${Prev}${K & string}.`, Mode, Value, Dec<D>>
-                                        : never
-                }[keyof T]
+	T,
+	Prev extends string = "",
+	Mode extends "paths" | "values" = "paths",
+	Value = string,
+	D extends Depth = 10,
+> = [D] extends [0]
+	? never
+	: {
+			[K in keyof T]: T[K] extends FieldDefinition
+				? Mode extends "paths"
+					? `${Prev}${K & string}`
+					: { [P in `${Prev}${K & string}`]: Value }
+				: T[K] extends FormDefinition
+					? DotFold<T[K], `${Prev}${K & string}.`, Mode, Value, Dec<D>>
+					: never
+		}[keyof T]
 
 /** Public aliases */
 export type DotPaths<T, Prev extends string = "", D extends Depth = 10> = DotFold<T, Prev, "paths", string, D>
 
 type DotPathsToValues<T, Prev extends string = "", Value = string, D extends Depth = 10> = UnionToIntersection<
-        DotFold<T, Prev, "values", Value, D>
+	DotFold<T, Prev, "values", Value, D>
 >
 
 export type TypeFromDefinition<T extends FormDefinition, Value = string> = {
-        [K in keyof DotPathsToValues<T, "", Value>]: DotPathsToValues<T, "", Value>[K]
+	[K in keyof DotPathsToValues<T, "", Value>]: DotPathsToValues<T, "", Value>[K]
 }
 
 export type FormSnapshot<T extends FormDefinition> = Record<DotPaths<T>, string>

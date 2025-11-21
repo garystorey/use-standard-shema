@@ -69,10 +69,11 @@ const subscriptionForm = defineForm({
   },
 })
 
-type SubscriptionForm = TypeFromDefinition<typeof subscriptionForm>
-const onSubmitHandler = (values: SubscriptionForm) => console.log("Submitted:", values)
+function onSubmitHandler (values: TypeFromDefinition<typeof subscriptionForm>) {
+    console.log("Submitted:", values)
+}
 
-export function SubscriptionForm() {
+export function SubscriptionPage() {
 
   const { getForm, getField } = useStandardSchema(subscriptionForm)
   const formHandlers = getForm(onSubmitHandler)
@@ -86,6 +87,7 @@ export function SubscriptionForm() {
         id={email.name}
         name={email.name}
         defaultValue={email.defaultValue}
+        // value={defaultValue}
         aria-describedby={email.describedById}
         aria-errormessage={email.errorId}
       />
@@ -106,10 +108,10 @@ export function SubscriptionForm() {
 Additional examples are available.
 
 - [CodeSandbox Demo](https://codesandbox.io/p/sandbox/use-standard-schema-vthys3?file=%2Fsrc%2FApp.tsx) - Try the hook in a live React playground.
-- [Dependent Fields example](examples/dependent-field-validation.tsx) - An example that keeps two related fields in sync using `setField` and `setError`.
-- [Custom Component example](examples/custom-field-component.tsx) - Share reusable inputs via `FieldData`.
-- [Valibot example](examples/valibot-login.tsx) - Build a simple login form powered by Valibot validators.
-- [Shadcn Field example](examples/shadcn-field.tsx) - Wire `useStandardSchema` metadata into the shadcn/ui `Field` primitives.
+- [Dependent Fields example](https://github.com/garystorey/use-standard-shema/tree/main/examples/dependent-field-validation.tsx) - An example that keeps two related fields in sync using `setField` and `setError`.
+- [Custom Component example](https://github.com/garystorey/use-standard-shema/tree/main/examples/custom-field-component.tsx) - Share reusable inputs via `FieldData`.
+- [Valibot example](https://github.com/garystorey/use-standard-shema/tree/main/examples/valibot-login.tsx) - Build a simple login form powered by Valibot validators.
+- [Shadcn Field example](https://github.com/garystorey/use-standard-shema/tree/main/examples/shadcn-field.tsx) - Wire `useStandardSchema` metadata into the shadcn/ui `Field` primitives.
 
 ### Nested object fields
 
@@ -129,7 +131,7 @@ const addressForm = defineForm({
 
 ### Error handling
 
-`useStandardSchema` returns the `getErrors` method that returns all of the current validations errors. This can be useful for giving all form error messages in one location. Additionally, the `getField` method returns the errors for the given field.
+`useStandardSchema` returns the `getErrors` method that returns all of the current validations errors. This can be useful for giving all form error messages in one location. **NOTE**: This is in addition to the `getField` method which returns the errors for a given field.
 
 ```tsx
 import type { ErrorEntry } from "use-standard-schema"
@@ -178,11 +180,11 @@ const formDefinition = defineForm({
 
 ## API
 
-`useStandardSchema` returns a toolbox of helpers for wiring form elements, reading state, and issuing manual updates.
+`useStandardSchema` returns a helpers for wiring form elements, reading state, and issuing manual updates.
 
 ### `useStandardSchema(formDefinition)`
 
-Create the hook by passing a `defineForm` definition. The return value exposes the rest of the helpers documented below.
+Passing a form definition using `defineForm` and pass the definition to the hook. The return value exposes the rest of the helpers documented below.
 
 ```ts
 const { getForm, getField, getErrors, setField, setError, resetForm, isTouched, isDirty, watchValues } =
@@ -191,7 +193,7 @@ const { getForm, getField, getErrors, setField, setError, resetForm, isTouched, 
 
 ### `getForm(onSubmit)`
 
-Returns the props you spread onto `<form>`. It validates all fields and only invokes your handler when everything passes.
+Returns the event handlers for the `<form>`. It validates all fields and only invokes your handler when everything passes.
 
 ```tsx
 const form = getForm((values) => console.log(values))
@@ -201,7 +203,7 @@ return <form {...form}>...</form>
 
 ### `getField(name)`
 
-Returns metadata for a specific field so you can wire inputs, labels, and helper text.
+Returns metadata for a specific field for wiring inputs, labels, and helper text.
 
 ```tsx
 const email = getField("email")
@@ -211,7 +213,9 @@ const email = getField("email")
   defaultValue={email.defaultValue}
   aria-describedby={email.describedById}
   aria-errormessage={email.errorId}
+  aria-invalid={!!email.error}
 />
+<span id={email.describedById}>Enter your email address</span>
 <span id={email.errorId}>{email.error}</span>
 ```
 
@@ -226,10 +230,10 @@ const emailErrors = getErrors("email")
 
 ### `resetForm()`
 
-Clears errors, touched/dirty flags, and restores the original defaults. The hook calls this automatically after a successful submit, but you can use it for explicit "Start over" buttons.
+Clears errors, touched/dirty flags, and restores the original defaults. **Note**: The hook calls this automatically after a successful submit.
 
-```ts
-resetForm()
+```html
+<button type="reset" onClick={resetForm}>Reset<button>
 ```
 
 ### `isTouched(name?)` and `isDirty(name?)`
@@ -256,11 +260,17 @@ receives an object scoped to those fields.
 - `unsubscribe()`: stop listening inside `useEffect` cleanups or teardown handlers.
 
 ```tsx
+const postToPreview = ({ plan, seats }) => {
+    previewChannel.postMessage({ 
+        quote: calculateQuote(plan, Number(seats)) 
+    })
+}
+
 useEffect(() => {
-  const unsubscribe = watchValues(["plan", "seats"], ({ plan, seats }) => {
-    previewChannel.postMessage({ quote: calculateQuote(plan, Number(seats)) })
-  })
+
+  const unsubscribe = watchValues(["plan", "seats"], postToPreview)
   return unsubscribe
+
 }, [watchValues])
 ```
 
@@ -275,7 +285,7 @@ const formData = toFormData(values)
 ### `setField(name, value)`
 
 Updates a field's value (*for dependent fields, custom widgets, or multi-step wizards*) and re-validates it.
-**IMPORTANT NOTE**: You do not need to call this manually in most situations. It will occur automatically.
+**NOTE**: You do not need to call this manually in most situations. It will occur automatically.
 
 ```ts
 setField("address.postalCode", nextPostalCode)
@@ -283,7 +293,7 @@ setField("address.postalCode", nextPostalCode)
 
 ### `setError(name, error)`
 
-Sets a manual error message for any field  (*for dependent fields, custom widgets, or multi-step wizards*). Pass `null` or `undefined` to clear it. **IMPORTANT NOTE**: You do not need to call this manually in most situations. It will occur automatically.
+Sets a manual error message for any field  (*for dependent fields, custom widgets, or multi-step wizards*). Pass `null` or `undefined` to clear it. **NOTE**: You do not need to call this manually in most situations. It will occur automatically.
 
 ```ts
 setError("email", new Error("Email already registered"))
@@ -297,6 +307,9 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## Changelog
 
+- **v0.4.3**
+  - Fixed documentation issues.
+  - Fixed missing `ErrorEntry` export.
 - **v0.4.2**
   - Added `watchValues` for monitoring value changes without rerender.
   - Fixed issue with `ErrorInfo` not being exported.

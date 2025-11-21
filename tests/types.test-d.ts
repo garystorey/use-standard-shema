@@ -3,13 +3,13 @@
 
 import type { StandardSchemaV1 } from "@standard-schema/spec"
 import { useStandardSchema } from "../src"
-import type { AssertValidFormKeysDeep, UseStandardSchemaReturn } from "../src/types"
+import type { AssertValidFormKeysDeep, TypeFromDefinition, UseStandardSchemaReturn } from "../src/types"
 
 type Validator = StandardSchemaV1<string>
 
 type TestFormDefinition = AssertValidFormKeysDeep<{
-        foo: {
-                label: "Foo"
+	foo: {
+		label: "Foo"
 		defaultValue: ""
 		validate: Validator
 	}
@@ -22,29 +22,29 @@ export type HookMatches = Hook extends UseStandardSchemaReturn<TestFormDefinitio
 
 // TypeFromDefinition should map every path to string even when defaultValue is missing
 type DefaultlessFormDefinition = AssertValidFormKeysDeep<{
-        foo: {
-                label: "Foo"
-                validate: Validator
-        }
-        nested: {
-                bar: {
-                        label: "Bar"
-                        defaultValue: "prepopulated"
-                        validate: Validator
-                }
-        }
+	foo: {
+		label: "Foo"
+		validate: Validator
+	}
+	nested: {
+		bar: {
+			label: "Bar"
+			defaultValue: "prepopulated"
+			validate: Validator
+		}
+	}
 }>
 
 type DefaultlessValues = TypeFromDefinition<DefaultlessFormDefinition>
 type ExpectedDefaultlessValues = {
-        foo: string
-        "nested.bar": string
+	foo: string
+	"nested.bar": string
 }
 
 export type TypeFromDefinitionEmitsStrings = [DefaultlessValues] extends [ExpectedDefaultlessValues]
-        ? [ExpectedDefaultlessValues] extends [DefaultlessValues]
-                ? true
-                : never
-        : never
+	? [ExpectedDefaultlessValues] extends [DefaultlessValues]
+		? true
+		: never
+	: never
 
 export {}
