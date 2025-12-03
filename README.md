@@ -100,7 +100,7 @@ export function SubscriptionPage() {
 }
 ```
 
-- **`getForm(onSubmit)`**: Returns event handlers for the `<form>`. `onSubmit` only runs when valid.
+- **`getForm(onSubmit?, action?)`**: Returns event handlers for the `<form>`. Supply at least one handler; pass an `action` to opt into `<form action>` workflows while still receiving validation, resets, and metadata.
 - **`getField(name)`**: Returns the given field's metadata.
 
 ## Examples
@@ -112,6 +112,7 @@ Additional examples are available.
 - [Custom Component example](https://github.com/garystorey/use-standard-schema/tree/main/examples/custom-field-component.tsx) - Share reusable inputs via `FieldData`.
 - [Valibot example](https://github.com/garystorey/use-standard-schema/tree/main/examples/valibot-login.tsx) - Build a simple login form powered by Valibot validators.
 - [Shadcn Field example](https://github.com/garystorey/use-standard-schema/tree/main/examples/shadcn-field.tsx) - Wire `useStandardSchema` metadata into the shadcn/ui `Field` primitives.
+- [Action-driven submission example](https://github.com/garystorey/use-standard-schema/tree/main/examples/action-driven-submission.tsx) - Pair `getForm` with an `action` handler and `useFormStatus` while keeping aria wiring intact.
 
 ### Nested object fields
 
@@ -191,15 +192,27 @@ const { getForm, getField, getErrors, setField, setError, resetForm, isTouched, 
   useStandardSchema(myFormDefinition)
 ```
 
-### `getForm(onSubmit)`
+The hook also exposes `submissionError` for surfacing thrown action or submit errors.
 
-Returns the event handlers for the `<form>`. It validates all fields and only invokes your handler when everything passes.
+### `getForm(onSubmit?, action?)`
+
+Returns the event handlers for the `<form>` plus action metadata. It validates all fields and only invokes your handler or action when everything passes.
 
 ```tsx
-const form = getForm((values) => console.log(values))
+const form = getForm(
+  (values) => console.log(values),
+  async (values, formData) => submitWithAction(values, formData),
+)
 
-return <form {...form}>...</form>
+return <form {...form} action={form.action}>...</form>
 ```
+
+The returned object includes:
+
+- `onSubmit?`: A submit handler that prevents default when provided (omit if you prefer `<form action>`)
+- `action`: The function passed to the form's `action` attribute
+- `pending`: A boolean reflecting the `useActionState` pending status
+- `error`: Any error string thrown from the action handler
 
 ### `getField(name)`
 

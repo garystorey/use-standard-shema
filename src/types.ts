@@ -85,6 +85,13 @@ export type FormSnapshot<T extends FormDefinition> = Record<DotPaths<T>, string>
 
 export type ErrorEntry = { name: string; error: string; label: string }
 
+export type FormSubmitHandler<T extends FormDefinition> = (data: TypeFromDefinition<T>) => void | Promise<void>
+
+export type FormActionHandler<T extends FormDefinition> = (
+        data: TypeFromDefinition<T>,
+        formData: FormData,
+) => unknown | Promise<unknown>
+
 export type WatchValuesCallback<T extends FormDefinition> = {
 	(callback: (values: FormSnapshot<T>) => void): () => void
 	<Name extends DotPaths<T>>(name: Name, callback: (values: Pick<FormSnapshot<T>, Name>) => void): () => void
@@ -192,21 +199,30 @@ export interface FieldData {
 	error: string
 }
 
+export interface FormHandlers {
+        onSubmit?: (e: FormEvent) => Promise<void>
+        onFocus: (e: FocusEvent<HTMLFormElement>) => void
+        onBlur: (e: FocusEvent<HTMLFormElement>) => Promise<void>
+        onReset: () => void
+        action?: (formData: FormData) => void
+        pending: boolean
+        error: string | null
+}
+
 export interface UseStandardSchemaReturn<T extends FormDefinition> {
-	resetForm: () => void
-	getForm: (onSubmitHandler: (data: TypeFromDefinition<T>) => void) => {
-		onSubmit: (e: FormEvent) => Promise<void>
-		onFocus: (e: FocusEvent<HTMLFormElement>) => void
-		onBlur: (e: FocusEvent<HTMLFormElement>) => Promise<void>
-		onReset: () => void
-	}
-	getField: (
-		name: DotPaths<T>,
-	) => Partial<FieldData> & { defaultValue?: string; error: string; touched?: boolean; dirty?: boolean }
-	getErrors: (name?: DotPaths<T>) => ErrorEntry[]
-	setField: (name: DotPaths<T>, value: string) => Promise<void>
-	setError: (name: DotPaths<T>, info: ErrorInfo) => void
-	isTouched: (name?: DotPaths<T>) => boolean
-	isDirty: (name?: DotPaths<T>) => boolean
-	watchValues: WatchValuesCallback<T>
+        resetForm: () => void
+        getForm: {
+                (onSubmitHandler: FormSubmitHandler<T>, actionHandler?: FormActionHandler<T>): FormHandlers
+                (onSubmitHandler: undefined, actionHandler: FormActionHandler<T>): FormHandlers
+        }
+        getField: (
+                name: DotPaths<T>,
+        ) => Partial<FieldData> & { defaultValue?: string; error: string; touched?: boolean; dirty?: boolean }
+        getErrors: (name?: DotPaths<T>) => ErrorEntry[]
+        setField: (name: DotPaths<T>, value: string) => Promise<void>
+        setError: (name: DotPaths<T>, info: ErrorInfo) => void
+        isTouched: (name?: DotPaths<T>) => boolean
+        isDirty: (name?: DotPaths<T>) => boolean
+        watchValues: WatchValuesCallback<T>
+        submissionError: string | null
 }

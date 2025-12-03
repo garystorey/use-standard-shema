@@ -1,4 +1,13 @@
-import { type FocusEvent, type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+        type FocusEvent,
+        type FormEvent,
+        useActionState,
+        useCallback,
+        useEffect,
+        useMemo,
+        useRef,
+        useState,
+} from "react"
 import {
 	defineForm,
 	deriveThrownMessage,
@@ -53,10 +62,15 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	const formDefinitionKeys = useMemo(() => Object.keys(flatFormDefinition), [flatFormDefinition])
 
 	// State
-	const [data, setData] = useState<FormValues>(initialValues)
-	const [errors, setErrors] = useState<Errors>({})
-	const [touched, setTouched] = useState<Flags>({})
-	const [dirty, setDirty] = useState<Flags>({})
+        const [data, setData] = useState<FormValues>(initialValues)
+        const [errors, setErrors] = useState<Errors>({})
+        const [touched, setTouched] = useState<Flags>({})
+        const [dirty, setDirty] = useState<Flags>({})
+        const [submissionError, setSubmissionError] = useState<string | null>(null)
+        const actionHandlerRef = useRef<
+                | ((values: TypeFromDefinition<typeof formDefinition>, formData: FormData) => unknown | Promise<unknown>)
+                | undefined
+        >()
 
 	// Subscribers live in a ref-backed Set so we can add/remove listeners without triggering rerenders.
 	type WatchEntry = { fields?: string[]; callback: (values: FormValues) => void }
@@ -246,73 +260,137 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		[formDefinitionKeys, data, validateFieldValue],
 	)
 
-	const resetForm = useCallback(() => {
-		setData(initialValues)
-		setErrors({})
-		setTouched({})
-		setDirty({})
-		validationTokensRef.current = {}
-		validationRunId.current += 1
-	}, [initialValues])
+        const resetForm = useCallback(() => {
+                setData(initialValues)
+                setErrors({})
+                setTouched({})
+                setDirty({})
+                validationTokensRef.current = {}
+                validationRunId.current += 1
+        }, [initialValues])
 
-	const getForm = useCallback(
-		(onSubmitHandler: (data: TypeFromDefinition<typeof formDefinition>) => void) => {
-			const onSubmit = async (e: FormEvent) => {
-				const formEl = e.currentTarget as HTMLFormElement
-				e.preventDefault()
+        const resolveFormValues = useCallback(
+                (formData: FormData): { finalValues: FormValues; hasChanges: boolean } => {
+                        const submissionEntries = new Map<string, string>()
+                        for (const [key, rawValue] of formData.entries()) {
+                                if (!submissionEntries.has(key)) {
+                                        submissionEntries.set(key, typeof rawValue === "string" ? rawValue : String(rawValue))
+                                }
+                        }
 
-				const submissionEntries = new Map<string, string>()
-				for (const [key, rawValue] of new FormData(formEl).entries()) {
-					if (!submissionEntries.has(key)) {
-						submissionEntries.set(key, typeof rawValue === "string" ? rawValue : String(rawValue))
-					}
-				}
+                        const updates: Record<string, string> = {}
+                        let hasChanges = false
 
-				const updates: Record<string, string> = {}
-				let hasChanges = false
+                        for (const key of formDefinitionKeys) {
+                                const stateValue = data[key]
+                                const stateString = toInputString(stateValue)
+                                const initialString = initialValueStrings[key] ?? ""
+                                const submissionValue = submissionEntries.get(key)
 
-				for (const key of formDefinitionKeys) {
-					const stateValue = data[key]
-					const stateString = toInputString(stateValue)
-					const initialString = initialValueStrings[key] ?? ""
-					const submissionValue = submissionEntries.get(key)
+                                let resolvedValue = stateValue
 
-					let resolvedValue = stateValue
+                                if (submissionValue !== undefined) {
+                                        const shouldPreferState = stateString !== initialString && submissionValue === initialString
 
-					if (submissionValue !== undefined) {
-						const shouldPreferState = stateString !== initialString && submissionValue === initialString
+                                        // When a user edits a field and then reverts it back to the
+                                        // default inside the DOM before submit, FormData reports the
+                                        // default string. Earlier versions overwrote programmatic
+                                        // updates in that scenario which meant consumers received stale
+                                        // values. The extra guard preserves the latest state value
+                                        // unless the DOM truly diverges from what we already hold.
+                                        if (!shouldPreferState) {
+                                                resolvedValue = submissionValue
+                                        }
+                                }
 
-						// When a user edits a field and then reverts it back to the
-						// default inside the DOM before submit, FormData reports the
-						// default string. Earlier versions overwrote programmatic
-						// updates in that scenario which meant consumers received stale
-						// values. The extra guard preserves the latest state value
-						// unless the DOM truly diverges from what we already hold.
+                                if (!Object.is(stateValue, resolvedValue)) {
+                                        updates[key] = resolvedValue
+                                        hasChanges = true
+                                }
+                        }
 
-						if (!shouldPreferState) {
-							resolvedValue = submissionValue
-						}
-					}
+                        const finalValues: FormValues = hasChanges ? { ...data, ...updates } : data
 
-					if (!Object.is(stateValue, resolvedValue)) {
-						updates[key] = resolvedValue
-						hasChanges = true
-					}
-				}
+                        return { finalValues, hasChanges }
+                },
+                [data, formDefinitionKeys, initialValueStrings],
+        )
 
-				const finalValues: FormValues = hasChanges ? { ...data, ...updates } : data
+        const applySubmissionSideEffects = useCallback(
+                async (formData: FormData) => {
+                        const { finalValues, hasChanges } = resolveFormValues(formData)
 
-				if (hasChanges) {
-					setData(finalValues)
-				}
+                        if (hasChanges) {
+                                setData(finalValues)
+                        }
 
-				const isValid = await validateForm(finalValues)
-				if (isValid) {
-					onSubmitHandler(finalValues as TypeFromDefinition<typeof formDefinition>)
-					resetForm()
-					formEl.reset()
-				}
-			}
+                        const isValid = await validateForm(finalValues)
+
+                        if (!isValid) {
+                                return null
+                        }
+
+                        return finalValues as TypeFromDefinition<typeof formDefinition>
+                },
+                [resolveFormValues, validateForm],
+        )
+
+        const [actionStateError, formAction, actionPending] = useActionState(
+                async (_prevState: string | null, formData: FormData) => {
+                        setSubmissionError(null)
+                        const finalValues = await applySubmissionSideEffects(formData)
+                        if (!finalValues) return null
+
+                        const handler = actionHandlerRef.current
+                        if (!handler) return null
+
+                        try {
+                                await handler(finalValues, formData)
+                                resetForm()
+                                return null
+                        } catch (error) {
+                                return deriveThrownMessage(error)
+                        }
+                },
+                null,
+        )
+
+        useEffect(() => {
+                setSubmissionError(actionStateError)
+        }, [actionStateError])
+
+        const getForm = useCallback(
+                (
+                        onSubmitHandler?: (data: TypeFromDefinition<typeof formDefinition>) => void | Promise<void>,
+                        actionHandler?: (
+                                data: TypeFromDefinition<typeof formDefinition>,
+                                formData: FormData,
+                        ) => unknown | Promise<unknown>,
+                ) => {
+                        if (!onSubmitHandler && !actionHandler) {
+                                throw new Error("getForm requires either an onSubmit or action handler")
+                        }
+
+                        actionHandlerRef.current = actionHandler
+                        const onSubmit =
+                                typeof onSubmitHandler === "function"
+                                        ? async (e: FormEvent) => {
+                                                  const formEl = e.currentTarget as HTMLFormElement
+                                                  e.preventDefault()
+                                                  setSubmissionError(null)
+
+                                                  try {
+                                                          const finalValues = await applySubmissionSideEffects(new FormData(formEl))
+                                                          if (!finalValues) return
+
+                                                          await onSubmitHandler(finalValues)
+                                                          resetForm()
+                                                          formEl.reset()
+                                                  } catch (error) {
+                                                          setSubmissionError(deriveThrownMessage(error))
+                                                  }
+                                          }
+                                        : undefined
 
 			const onFocus = (e: FocusEvent<HTMLFormElement>) => {
 				const field = e.target.name
@@ -338,22 +416,31 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 				await validateField(field, value)
 			}
 
-			const onReset = () => resetForm()
+                        const onReset = () => resetForm()
 
-			return { onSubmit, onFocus, onBlur, onReset }
-		},
-		[
-			flatFormDefinition,
-			data,
-			initialValueStrings,
-			resetForm,
-			validateField,
-			formDefinitionKeys,
-			validateForm,
-			ensureTouched,
-			updateDirtyFlags,
-		],
-	)
+                        return {
+                                onSubmit,
+                                onFocus,
+                                onBlur,
+                                onReset,
+                                action: actionHandler ? formAction : undefined,
+                                pending: actionHandler ? actionPending : false,
+                                error: submissionError,
+                        }
+                },
+                [
+                        flatFormDefinition,
+                        resetForm,
+                        applySubmissionSideEffects,
+                        validateField,
+                        initialValueStrings,
+                        ensureTouched,
+                        updateDirtyFlags,
+                        formAction,
+                        actionPending,
+                        submissionError,
+                ],
+        )
 
 	const getField = useCallback(
 		(name: FieldKey) => {
@@ -509,27 +596,31 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		[assertFieldExists],
 	)
 
-	return {
-		resetForm,
-		getForm,
-		getField,
-		getErrors,
-		setField,
-		setError,
-		isTouched,
-		isDirty,
-		watchValues,
-	}
+        return {
+                resetForm,
+                getForm,
+                getField,
+                getErrors,
+                setField,
+                setError,
+                isTouched,
+                isDirty,
+                watchValues,
+                submissionError,
+        }
 }
 
 export { useStandardSchema, defineForm, toFormData }
 export type {
-	ErrorEntry,
-	ErrorInfo,
-	FieldData,
-	FieldDefinition,
-	FormDefinition,
-	TypeFromDefinition,
-	UseStandardSchemaReturn,
-	WatchValuesCallback,
+        ErrorEntry,
+        ErrorInfo,
+        FieldData,
+        FieldDefinition,
+        FormActionHandler,
+        FormHandlers,
+        FormSubmitHandler,
+        FormDefinition,
+        TypeFromDefinition,
+        UseStandardSchemaReturn,
+        WatchValuesCallback,
 } from "./types"
