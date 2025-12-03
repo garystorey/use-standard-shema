@@ -63,34 +63,34 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	const watchEntriesRef = useRef<Set<WatchEntry>>(new Set())
 	const previousDataRef = useRef<FormValues>(initialValues)
 
-        const validationTokensRef = useRef<Record<string, number>>({})
-        const validationRunId = useRef(0)
+	const validationTokensRef = useRef<Record<string, number>>({})
+	const validationRunId = useRef(0)
 
-        const ensureTouched = useCallback((prev: Flags, field: string) => {
-                return prev[field] ? prev : { ...prev, [field]: true }
-        }, [])
+	const ensureTouched = useCallback((prev: Flags, field: string) => {
+		return prev[field] ? prev : { ...prev, [field]: true }
+	}, [])
 
-        const updateDirtyFlags = useCallback((prev: Flags, field: string, isDirty: boolean) => {
-                const wasDirty = Boolean(prev[field])
-                if (isDirty) {
-                        return wasDirty ? prev : { ...prev, [field]: true }
-                }
+	const updateDirtyFlags = useCallback((prev: Flags, field: string, isDirty: boolean) => {
+		const wasDirty = Boolean(prev[field])
+		if (isDirty) {
+			return wasDirty ? prev : { ...prev, [field]: true }
+		}
 
-                if (!wasDirty) return prev
+		if (!wasDirty) return prev
 
-                const next = { ...prev }
-                delete next[field]
-                return next
-        }, [])
+		const next = { ...prev }
+		delete next[field]
+		return next
+	}, [])
 
-        const assertFieldExists = useCallback(
-                (field: string) => {
-                        if (!(field in flatFormDefinition)) {
-                                throw new Error(`Field "${field}" not found`)
-                        }
-                },
-                [flatFormDefinition],
-        )
+	const assertFieldExists = useCallback(
+		(field: string) => {
+			if (!(field in flatFormDefinition)) {
+				throw new Error(`Field "${field}" not found`)
+			}
+		},
+		[flatFormDefinition],
+	)
 
 	useEffect(() => {
 		setData(initialValues)
@@ -314,26 +314,26 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 				}
 			}
 
-                        const onFocus = (e: FocusEvent<HTMLFormElement>) => {
-                                const field = e.target.name
-                                if (!field || !(field in flatFormDefinition)) return
+			const onFocus = (e: FocusEvent<HTMLFormElement>) => {
+				const field = e.target.name
+				if (!field || !(field in flatFormDefinition)) return
 
-                                setTouched((prev) => ensureTouched(prev, field))
-                                setErrors((prev) => (prev[field] === "" ? prev : { ...prev, [field]: "" }))
-                        }
+				setTouched((prev) => ensureTouched(prev, field))
+				setErrors((prev) => (prev[field] === "" ? prev : { ...prev, [field]: "" }))
+			}
 
 			const onBlur = async (e: FocusEvent<HTMLFormElement>) => {
 				const field = e.target.name
 				if (!field || !(field in flatFormDefinition)) return
 
-                                const value = e.target.value
-                                const initialValue = initialValueStrings[field] ?? ""
-                                const isDirty = value !== initialValue
+				const value = e.target.value
+				const initialValue = initialValueStrings[field] ?? ""
+				const isDirty = value !== initialValue
 
-                                setTouched((prev) => ensureTouched(prev, field))
-                                setData((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }))
+				setTouched((prev) => ensureTouched(prev, field))
+				setData((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }))
 
-                                setDirty((prev) => updateDirtyFlags(prev, field, isDirty))
+				setDirty((prev) => updateDirtyFlags(prev, field, isDirty))
 
 				await validateField(field, value)
 			}
@@ -342,83 +342,83 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 
 			return { onSubmit, onFocus, onBlur, onReset }
 		},
-                [
-                        flatFormDefinition,
-                        data,
-                        initialValueStrings,
-                        resetForm,
-                        validateField,
-                        formDefinitionKeys,
-                        validateForm,
-                        ensureTouched,
-                        updateDirtyFlags,
-                ],
-        )
+		[
+			flatFormDefinition,
+			data,
+			initialValueStrings,
+			resetForm,
+			validateField,
+			formDefinitionKeys,
+			validateForm,
+			ensureTouched,
+			updateDirtyFlags,
+		],
+	)
 
-        const getField = useCallback(
-                (name: FieldKey) => {
-                        const key = name as string
+	const getField = useCallback(
+		(name: FieldKey) => {
+			const key = name as string
 
-                        assertFieldExists(key)
-                        const def = flatFormDefinition[key]
-                        const describedById = `${key}-description`
-                        const errorId = `${key}-error`
+			assertFieldExists(key)
+			const def = flatFormDefinition[key]
+			const describedById = `${key}-description`
+			const errorId = `${key}-error`
 
-                        const { validate: _validate, ...fieldDef } = def
+			const { validate: _validate, ...fieldDef } = def
 
-                        return {
-                                ...fieldDef,
-                                name: key,
-                                defaultValue: data[key] ?? "",
-                                error: errors[key] ?? "",
-                                touched: touched[key] ?? false,
-                                dirty: dirty[key] ?? false,
-                                describedById,
-                                errorId,
-                        }
-                },
-                [flatFormDefinition, data, errors, touched, dirty, assertFieldExists],
-        )
+			return {
+				...fieldDef,
+				name: key,
+				defaultValue: data[key] ?? "",
+				error: errors[key] ?? "",
+				touched: touched[key] ?? false,
+				dirty: dirty[key] ?? false,
+				describedById,
+				errorId,
+			}
+		},
+		[flatFormDefinition, data, errors, touched, dirty, assertFieldExists],
+	)
 
-        const setField = useCallback(
-                async (name: FieldKey, value: string) => {
-                        const field = name as string
-                        assertFieldExists(field)
-                        const initialValue = initialValueStrings[field] ?? ""
-                        const isDirty = value !== initialValue
+	const setField = useCallback(
+		async (name: FieldKey, value: string) => {
+			const field = name as string
+			assertFieldExists(field)
+			const initialValue = initialValueStrings[field] ?? ""
+			const isDirty = value !== initialValue
 
-                        setData((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }))
-                        setTouched((prev) => ensureTouched(prev, field))
-                        setDirty((prev) => updateDirtyFlags(prev, field, isDirty))
+			setData((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }))
+			setTouched((prev) => ensureTouched(prev, field))
+			setDirty((prev) => updateDirtyFlags(prev, field, isDirty))
 
-                        await validateField(field, value)
-                },
-                [validateField, initialValueStrings, assertFieldExists, ensureTouched, updateDirtyFlags],
-        )
+			await validateField(field, value)
+		},
+		[validateField, initialValueStrings, assertFieldExists, ensureTouched, updateDirtyFlags],
+	)
 
-        const setError = useCallback(
-                (name: FieldKey, info: ErrorInfo) => {
-                        const field = name as string
+	const setError = useCallback(
+		(name: FieldKey, info: ErrorInfo) => {
+			const field = name as string
 
-                        assertFieldExists(field)
+			assertFieldExists(field)
 
-                        const message = resolveManualErrorMessage(info)
+			const message = resolveManualErrorMessage(info)
 
-                        setErrors((prev) => {
-                                const current = prev[field]
+			setErrors((prev) => {
+				const current = prev[field]
 
-                                if (message == null) {
-                                        if (current === undefined) return prev
-                                        const next = { ...prev }
-                                        delete next[field]
-                                        return next
-                                }
+				if (message == null) {
+					if (current === undefined) return prev
+					const next = { ...prev }
+					delete next[field]
+					return next
+				}
 
-                                return current === message ? prev : { ...prev, [field]: message }
-                        })
-                },
-                [assertFieldExists],
-        )
+				return current === message ? prev : { ...prev, [field]: message }
+			})
+		},
+		[assertFieldExists],
+	)
 
 	const getErrors = useCallback(
 		(name?: FieldKey): ErrorEntry[] => {
@@ -474,40 +474,40 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		[dirty],
 	)
 
-        // biome-ignore lint/correctness/useExhaustiveDependencies: Rebind when schema shape changes so new field guards run.
-        const watchValues = useCallback(
-                ((
-                        first: FieldKey | readonly FieldKey[] | ((values: FormSnapshot<T>) => void),
-                        second?: (values: FormSnapshot<T>) => void,
-                ) => {
-                        const hasExplicitTargets = typeof first !== "function"
-                        const targets = hasExplicitTargets ? (Array.isArray(first) ? [...first] : [first]) : undefined
-                        const callback = hasExplicitTargets ? second : (first as (values: FormSnapshot<T>) => void)
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Rebind when schema shape changes so new field guards run.
+	const watchValues = useCallback(
+		((
+			first: FieldKey | readonly FieldKey[] | ((values: FormSnapshot<T>) => void),
+			second?: (values: FormSnapshot<T>) => void,
+		) => {
+			const hasExplicitTargets = typeof first !== "function"
+			const targets = hasExplicitTargets ? (Array.isArray(first) ? [...first] : [first]) : undefined
+			const callback = hasExplicitTargets ? second : (first as (values: FormSnapshot<T>) => void)
 
-                        if (typeof callback !== "function") {
-                                throw new Error("watchValues requires a callback")
-                        }
+			if (typeof callback !== "function") {
+				throw new Error("watchValues requires a callback")
+			}
 
-                        if (targets) {
-                                for (const field of targets) {
-                                        assertFieldExists(field as string)
-                                }
-                        }
+			if (targets) {
+				for (const field of targets) {
+					assertFieldExists(field as string)
+				}
+			}
 
-                        const entry: WatchEntry = {
-                                fields: targets?.map((key) => key as string),
-                                callback: (values) => {
-                                        callback(values as FormSnapshot<T>)
-                                },
-                        }
+			const entry: WatchEntry = {
+				fields: targets?.map((key) => key as string),
+				callback: (values) => {
+					callback(values as FormSnapshot<T>)
+				},
+			}
 
-                        watchEntriesRef.current.add(entry)
-                        return () => {
-                                watchEntriesRef.current.delete(entry)
-                        }
-                }) as WatchValuesCallback<T>,
-                [assertFieldExists],
-        )
+			watchEntriesRef.current.add(entry)
+			return () => {
+				watchEntriesRef.current.delete(entry)
+			}
+		}) as WatchValuesCallback<T>,
+		[assertFieldExists],
+	)
 
 	return {
 		resetForm,
