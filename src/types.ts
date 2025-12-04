@@ -92,6 +92,11 @@ export type FormActionHandler<T extends FormDefinition> = (
         formData: FormData,
 ) => unknown | Promise<unknown>
 
+export interface FormStatus {
+        pending: boolean
+        lastError: string | null
+}
+
 export type WatchValuesCallback<T extends FormDefinition> = {
 	(callback: (values: FormSnapshot<T>) => void): () => void
 	<Name extends DotPaths<T>>(name: Name, callback: (values: Pick<FormSnapshot<T>, Name>) => void): () => void
@@ -215,6 +220,7 @@ export interface UseStandardSchemaReturn<T extends FormDefinition> {
                 (onSubmitHandler: FormSubmitHandler<T>, actionHandler?: FormActionHandler<T>): FormHandlers
                 (onSubmitHandler: undefined, actionHandler: FormActionHandler<T>): FormHandlers
         }
+        getStatus: () => FormStatus
         getField: (
                 name: DotPaths<T>,
         ) => Partial<FieldData> & { defaultValue?: string; error: string; touched?: boolean; dirty?: boolean }

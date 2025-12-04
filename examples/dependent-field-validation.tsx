@@ -45,9 +45,10 @@ export function DependentFieldValidationExample() {
         console.log("Location submitted:", values);
     };
 
-    const { getForm, getField, setField, setError } =
+    const { getForm, getField, getStatus, setField, setError } =
         useStandardSchema(locationForm);
     const handlers = getForm(submitHandler);
+    const status = getStatus();
 
     const country = getField("country");
     const state = getField("state");
@@ -112,7 +113,10 @@ export function DependentFieldValidationExample() {
                 {state.error}
             </p>
 
-            <button type="submit">Submit</button>
+            <button type="submit" disabled={status.pending}>
+                {status.pending ? "Submitting..." : "Submit"}
+            </button>
+            {status.lastError ? <p role="alert">{status.lastError}</p> : null}
         </form>
     );
 }

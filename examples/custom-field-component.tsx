@@ -81,14 +81,18 @@ const submitHandler = (values: ProfileFormData) => {
 };
 
 export function CustomFieldFormExample() {
-    const { getForm, getField } = useStandardSchema(profileForm);
+    const { getForm, getField, getStatus } = useStandardSchema(profileForm);
     const handlers = getForm(submitHandler);
+    const status = getStatus();
 
     return (
         <form {...handlers}>
             <TextField {...getField("firstName")} className="field-input" />
             <TextField {...getField("lastName")} className="field-input" />
-            <button type="submit">Save</button>
+            <button type="submit" disabled={status.pending}>
+                {status.pending ? "Saving..." : "Save"}
+            </button>
+            {status.lastError ? <p role="alert">{status.lastError}</p> : null}
         </form>
     );
 }

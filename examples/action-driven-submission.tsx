@@ -1,4 +1,3 @@
-import { useFormStatus } from "react-dom"
 import {
   defineForm,
   type TypeFromDefinition,
@@ -23,19 +22,19 @@ async function submitSubscription(
   await sendSubscription(values, formData)
 }
 
-function SubmitButton({ disabled }: { disabled: boolean }) {
-  const status = useFormStatus()
+function SubmitButton({ pending }: { pending: boolean }) {
   return (
-    <button type="submit" disabled={disabled || status.pending}>
+    <button type="submit" disabled={pending}>
       Subscribe
     </button>
   )
 }
 
 export function ActionDrivenSubscriptionForm() {
-  const { getForm, getField, submissionError } = useStandardSchema(subscriptionForm)
+  const { getForm, getField, getStatus } = useStandardSchema(subscriptionForm)
   const form = getForm(undefined, submitSubscription)
   const email = getField("email")
+  const status = getStatus()
   const describedBy = email.description ? email.describedById : undefined
 
   return (
@@ -54,8 +53,8 @@ export function ActionDrivenSubscriptionForm() {
       <p id={email.errorId} role="alert" aria-live="polite">
         {email.error}
       </p>
-      <SubmitButton disabled={form.pending} />
-      {submissionError ? <p role="alert">{submissionError}</p> : null}
+      <SubmitButton pending={status.pending} />
+      {status.lastError ? <p role="alert">{status.lastError}</p> : null}
     </form>
   )
 }

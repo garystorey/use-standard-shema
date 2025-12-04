@@ -1,12 +1,23 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import React, { act, forwardRef, useImperativeHandle } from "react"
+import React, { act, forwardRef, startTransition, useImperativeHandle } from "react"
 import { describe, expect, it, vi } from "vitest"
 import { useStandardSchema } from "../src"
 import { defineForm } from "../src/helpers"
 import type { ErrorEntry, UseStandardSchemaReturn } from "../src/types"
 import { makeForm, makeThrowingForm, renderFormHarness, renderHookHarness } from "./test-utils"
 import { delayed } from "./test-validation-lib"
+
+function createDeferred<T>() {
+        let resolve!: (value: T | PromiseLike<T>) => void
+        let reject!: (reason?: unknown) => void
+        const promise = new Promise<T>((res, rej) => {
+                resolve = res
+                reject = rej
+        })
+
+        return { promise, resolve, reject }
+}
 
 describe("useStandardSchema (basic)", () => {
 	it("getField surfaces metadata, accessibility ids, and default flags", () => {
@@ -457,8 +468,8 @@ describe("useStandardSchema getForm handlers (inline)", () => {
 		})
 	})
 
-	it("watchValues returns subsets keyed by the requested fields", async () => {
-		const { ref } = renderHookHarness()
+        it("watchValues returns subsets keyed by the requested fields", async () => {
+                const { ref } = renderHookHarness()
 
 		const subsetSpy = vi.fn()
 		ref.current!.watchValues(["name", "contact.email"], subsetSpy)
@@ -479,13 +490,83 @@ describe("useStandardSchema getForm handlers (inline)", () => {
 			await ref.current!.setField("contact.email", "trudy@example.com")
 		})
 
-		await waitFor(() => {
-			expect(nameSpy).toHaveBeenCalledTimes(0)
-		})
-	})
+                await waitFor(() => {
+                        expect(nameSpy).toHaveBeenCalledTimes(0)
+                })
+        })
 
-	it("onReset restores defaults and clears flags", async () => {
-		const spy = vi.fn()
+        it("getStatus reports pending while legacy submit handlers resolve", async () => {
+                const deferred = createDeferred<void>()
+                const onSubmitSpy = vi.fn(() => deferred.promise)
+                const { ref } = renderFormHarness({ onSubmitSpy })
+
+                const user = userEvent.setup()
+                const email = screen.getByLabelText("Email") as HTMLInputElement
+                await user.clear(email)
+                await user.type(email, "valid@example.com")
+
+                await user.click(screen.getByText("Submit"))
+
+                await waitFor(() => {
+                        expect(ref.current!.getStatus().pending).toBe(true)
+                })
+
+                await act(async () => {
+                        deferred.resolve()
+                        await deferred.promise
+                })
+
+                await waitFor(() => {
+                        expect(ref.current!.getStatus().pending).toBe(false)
+                })
+        })
+
+        it("getStatus propagates action errors and clears pending when rejected", async () => {
+                const deferred = createDeferred<void>()
+                const actionHandler = vi.fn(async () => {
+                        await deferred.promise
+                        throw new Error("Action failed")
+                })
+
+                const { ref } = renderHookHarness()
+                await act(async () => {
+                        await ref.current!.setField("contact.email", "user@example.com")
+                })
+
+                const handlers = ref.current!.getForm(undefined, actionHandler)
+                expect(handlers.action).toBeDefined()
+
+                let actionPromise: Promise<unknown> | undefined
+                await act(async () => {
+                        startTransition(() => {
+                                actionPromise = handlers.action!(new FormData())
+                        })
+                })
+
+                await waitFor(() => {
+                        expect(ref.current!.getStatus().pending).toBe(true)
+                })
+
+                await act(async () => {
+                        deferred.reject(new Error("Action failed"))
+                        try {
+                                await actionPromise
+                        } catch (error) {
+                                // expected
+                        }
+                })
+
+                await waitFor(() => {
+                        const status = ref.current!.getStatus()
+                        expect(status.pending).toBe(false)
+                        expect(status.lastError).toBe("Action failed")
+                })
+
+                expect(actionHandler).toHaveBeenCalledTimes(1)
+        })
+
+        it("onReset restores defaults and clears flags", async () => {
+                const spy = vi.fn()
 		const { ref } = renderFormHarness({ formDef: makeForm(), onSubmitSpy: spy })
 
 		const user = userEvent.setup()

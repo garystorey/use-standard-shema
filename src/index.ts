@@ -67,10 +67,13 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
         const [touched, setTouched] = useState<Flags>({})
         const [dirty, setDirty] = useState<Flags>({})
         const [submissionError, setSubmissionError] = useState<string | null>(null)
+        const [legacyPending, setLegacyPending] = useState(false)
+        const legacySubmitPromiseRef = useRef<Promise<unknown> | null>(null)
         const actionHandlerRef = useRef<
                 | ((values: TypeFromDefinition<typeof formDefinition>, formData: FormData) => unknown | Promise<unknown>)
                 | undefined
         >()
+        const statusRef = useRef<{ pending: boolean; lastError: string | null }>({ pending: false, lastError: null })
 
 	// Subscribers live in a ref-backed Set so we can add/remove listeners without triggering rerenders.
 	type WatchEntry = { fields?: string[]; callback: (values: FormValues) => void }
@@ -359,6 +362,18 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
                 setSubmissionError(actionStateError)
         }, [actionStateError])
 
+        const getStatus = useCallback(() => {
+                const pending = actionHandlerRef.current ? actionPending : legacyPending
+                const lastError = submissionError
+                const current = statusRef.current
+
+                if (current.pending !== pending || current.lastError !== lastError) {
+                        statusRef.current = { pending, lastError }
+                }
+
+                return statusRef.current
+        }, [actionPending, legacyPending, submissionError])
+
         const getForm = useCallback(
                 (
                         onSubmitHandler?: (data: TypeFromDefinition<typeof formDefinition>) => void | Promise<void>,
@@ -371,24 +386,40 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
                                 throw new Error("getForm requires either an onSubmit or action handler")
                         }
 
+                        const hasActionHandler = Boolean(actionHandler)
                         actionHandlerRef.current = actionHandler
                         const onSubmit =
                                 typeof onSubmitHandler === "function"
-                                        ? async (e: FormEvent) => {
+                                        ? (e: FormEvent) => {
                                                   const formEl = e.currentTarget as HTMLFormElement
                                                   e.preventDefault()
                                                   setSubmissionError(null)
 
-                                                  try {
-                                                          const finalValues = await applySubmissionSideEffects(new FormData(formEl))
-                                                          if (!finalValues) return
+                                                  const submissionPromise = (async () => {
+                                                          try {
+                                                                  const finalValues = await applySubmissionSideEffects(
+                                                                          new FormData(formEl),
+                                                                  )
+                                                                  if (!finalValues) return
 
-                                                          await onSubmitHandler(finalValues)
-                                                          resetForm()
-                                                          formEl.reset()
-                                                  } catch (error) {
-                                                          setSubmissionError(deriveThrownMessage(error))
-                                                  }
+                                                                  await onSubmitHandler(finalValues)
+                                                                  resetForm()
+                                                                  formEl.reset()
+                                                          } catch (error) {
+                                                                  setSubmissionError(deriveThrownMessage(error))
+                                                          }
+                                                  })()
+
+                                                  legacySubmitPromiseRef.current = submissionPromise
+                                                  setLegacyPending(true)
+
+                                                  submissionPromise.finally(() => {
+                                                          if (legacySubmitPromiseRef.current === submissionPromise) {
+                                                                  setLegacyPending(false)
+                                                          }
+                                                  })
+
+                                                  return submissionPromise
                                           }
                                         : undefined
 
@@ -424,7 +455,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
                                 onBlur,
                                 onReset,
                                 action: actionHandler ? formAction : undefined,
-                                pending: actionHandler ? actionPending : false,
+                                pending: hasActionHandler ? actionPending : legacyPending,
                                 error: submissionError,
                         }
                 },
@@ -439,6 +470,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
                         formAction,
                         actionPending,
                         submissionError,
+                        legacyPending,
                 ],
         )
 
@@ -607,6 +639,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
                 isDirty,
                 watchValues,
                 submissionError,
+                getStatus,
         }
 }
 
@@ -618,6 +651,7 @@ export type {
         FieldDefinition,
         FormActionHandler,
         FormHandlers,
+        FormStatus,
         FormSubmitHandler,
         FormDefinition,
         TypeFromDefinition,
