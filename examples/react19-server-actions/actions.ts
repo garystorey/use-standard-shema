@@ -16,7 +16,7 @@ async function authenticateUser(email: string, password: string) {
 }
 
 export async function login(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-        const result = await validateForm(serverActionForm, Object.fromEntries(formData.entries()))
+        const result = await validateForm(serverActionForm, formData)
 
         if (!result.success) {
                 return { error: "Check your email and password." }

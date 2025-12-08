@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 - Added a React 19 + Server Actions example demonstrating shared validation between client and server.
 - Updated the README to document the React 19 server action flow and point to the dedicated example.
-- Exposed `validateField` and `validateForm` helpers for reusing form validators outside the React hook.
+- Exposed `validateField` and `validateForm` helpers for reusing form validators outside the React hook, including direct `FormData` submissions for server actions.
 
 ## 0.4.3
 

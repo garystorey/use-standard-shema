@@ -3,11 +3,12 @@ import { describe, expect, it } from "vitest"
 import {
 	defineForm,
 	deriveThrownMessage,
-	deriveValidationMessage,
-	flattenDefaults,
-	flattenFormDefinition,
-	isFieldDefinition,
-	toFormData,
+        deriveValidationMessage,
+        flattenDefaults,
+        flattenFormDefinition,
+        isFieldDefinition,
+        toFormData,
+        validateForm,
 } from "../src/helpers"
 import type { FormValues } from "../src/types"
 
@@ -84,14 +85,31 @@ describe("helpers", () => {
 		])
 	})
 
-	it("deriveValidationMessage falls back to the top-level message when issue message is blank", () => {
-		const message = deriveValidationMessage({
-			issues: [{ message: "" }],
-			message: "Fallback",
-		})
+        it("deriveValidationMessage falls back to the top-level message when issue message is blank", () => {
+                const message = deriveValidationMessage({
+                        issues: [{ message: "" }],
+                        message: "Fallback",
+                })
 
-		expect(message).toBe("Fallback")
-	})
+                expect(message).toBe("Fallback")
+        })
+
+        it("validateForm accepts FormData", async () => {
+                const result = await validateForm(form, toFormData({
+                        a: "alpha",
+                        "group.b": "bravo",
+                        "group.c": "charlie",
+                }))
+
+                expect(result).toEqual({
+                        success: true,
+                        data: {
+                                a: "alpha",
+                                "group.b": "bravo",
+                                "group.c": "charlie",
+                        },
+                })
+        })
 
 	describe("deriveThrownMessage", () => {
 		it("returns the message when an Error instance is thrown", () => {

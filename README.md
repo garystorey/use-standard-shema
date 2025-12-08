@@ -314,7 +314,7 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## Changelog
 
-- **v0.4.4** – Added a React 19 + Server Actions example, refreshed the documentation to point to it, and exposed `validateField`/`validateForm` for reuse outside the hook.
+- **v0.4.4** – Added a React 19 + Server Actions example, refreshed the documentation to point to it, and exposed `validateField`/`validateForm` for reuse outside the hook (including FormData submissions).
 - **v0.4.3** – Fixed documentation issues and restored the missing `ErrorEntry` export.
 - [View the full changelog](./CHANGELOG.md) for earlier releases.
 
