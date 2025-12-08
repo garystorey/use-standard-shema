@@ -376,7 +376,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 		(name: FieldKey): FieldData => {
 			const key = name as string
 			assertFieldExists(key)
-			
+
 			const def = flatFormDefinition[key]
 			const describedById = `${key}-description`
 			const errorId = `${key}-error`
@@ -518,7 +518,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 				watchEntriesRef.current.delete(entry)
 			}
 		}) as WatchValuesCallback<T>,
-		[assertFieldExists],
+		[],
 	)
 
 	return {

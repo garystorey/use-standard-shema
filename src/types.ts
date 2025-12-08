@@ -10,16 +10,16 @@ export type Flags = Record<string, boolean>
 export type Errors = Record<string, string>
 
 export type ErrorDetails = {
-    message?: string | null
+	message?: string | null
 }
 
 export type ErrorInfo = string | Error | ErrorDetails | null | undefined
 
 export interface FieldDefinition {
-    label: string
-    description?: string
-    defaultValue?: string
-    validate: StandardSchemaV1
+	label: string
+	description?: string
+	defaultValue?: string
+	validate: StandardSchemaV1
 }
 
 export type SchemaValidator = FieldDefinition["validate"]["~standard"]["validate"]
@@ -27,7 +27,7 @@ export type StandardValidator = SchemaValidator | ((value: string) => unknown | 
 
 /** A form schema tree: keys map to either fields or nested groups. */
 export type FormDefinition = {
-    [key: string]: FieldDefinition | FormDefinition
+	[key: string]: FieldDefinition | FormDefinition
 }
 
 /* =============================================================================
@@ -46,31 +46,31 @@ type DecMap = { 0: 0; 1: 0; 2: 1; 3: 2; 4: 3; 5: 4; 6: 5; 7: 6; 8: 7; 9: 8; 10: 
 type Dec<D extends Depth> = DecMap[D]
 
 type DotFold<
-    T,
-    Prev extends string = "",
-    Mode extends "paths" | "values" = "paths",
-    Value = string,
-    D extends Depth = 10,
+	T,
+	Prev extends string = "",
+	Mode extends "paths" | "values" = "paths",
+	Value = string,
+	D extends Depth = 10,
 > = [D] extends [0]
-    ? never
-    : {
-        [K in keyof T]: T[K] extends FieldDefinition
-        ? Mode extends "paths"
-        ? `${Prev}${K & string}`
-        : { [P in `${Prev}${K & string}`]: Value }
-        : T[K] extends FormDefinition
-        ? DotFold<T[K], `${Prev}${K & string}.`, Mode, Value, Dec<D>>
-        : never
-    }[keyof T]
+	? never
+	: {
+			[K in keyof T]: T[K] extends FieldDefinition
+				? Mode extends "paths"
+					? `${Prev}${K & string}`
+					: { [P in `${Prev}${K & string}`]: Value }
+				: T[K] extends FormDefinition
+					? DotFold<T[K], `${Prev}${K & string}.`, Mode, Value, Dec<D>>
+					: never
+		}[keyof T]
 
 export type DotPaths<T, Prev extends string = "", D extends Depth = 10> = DotFold<T, Prev, "paths", string, D>
 
 type DotPathsToValues<T, Prev extends string = "", Value = string, D extends Depth = 10> = UnionToIntersection<
-    DotFold<T, Prev, "values", Value, D>
+	DotFold<T, Prev, "values", Value, D>
 >
 
 export type TypeFromDefinition<T extends FormDefinition, Value = string> = {
-    [K in keyof DotPathsToValues<T, "", Value>]: DotPathsToValues<T, "", Value>[K]
+	[K in keyof DotPathsToValues<T, "", Value>]: DotPathsToValues<T, "", Value>[K]
 }
 
 export type FormSnapshot<T extends FormDefinition> = Record<DotPaths<T>, string>
@@ -78,12 +78,12 @@ export type FormSnapshot<T extends FormDefinition> = Record<DotPaths<T>, string>
 export type ErrorEntry = { name: string; error: string; label: string }
 
 export type WatchValuesCallback<T extends FormDefinition> = {
-    (callback: (values: FormSnapshot<T>) => void): () => void
-    <Name extends DotPaths<T>>(name: Name, callback: (values: Pick<FormSnapshot<T>, Name>) => void): () => void
-    <Names extends readonly DotPaths<T>[]>(
-        names: Names,
-        callback: (values: Pick<FormSnapshot<T>, Names[number]>) => void,
-    ): () => void
+	(callback: (values: FormSnapshot<T>) => void): () => void
+	<Name extends DotPaths<T>>(name: Name, callback: (values: Pick<FormSnapshot<T>, Name>) => void): () => void
+	<Names extends readonly DotPaths<T>[]>(
+		names: Names,
+		callback: (values: Pick<FormSnapshot<T>, Names[number]>) => void,
+	): () => void
 }
 
 /* =============================================================================
@@ -91,91 +91,91 @@ export type WatchValuesCallback<T extends FormDefinition> = {
  * ========================================================================== */
 
 type WhiteSpaceChar =
-    | " "
-    | "\t"
-    | "\n"
-    | "\r"
-    | "\v"
-    | "\f"
-    | "\u00A0"
-    | "\u1680"
-    | "\u2000"
-    | "\u2001"
-    | "\u2002"
-    | "\u2003"
-    | "\u2004"
-    | "\u2005"
-    | "\u2006"
-    | "\u2007"
-    | "\u2008"
-    | "\u2009"
-    | "\u200A"
-    | "\u2028"
-    | "\u2029"
-    | "\u202F"
-    | "\u205F"
-    | "\u3000"
-    | "\uFEFF"
+	| " "
+	| "\t"
+	| "\n"
+	| "\r"
+	| "\v"
+	| "\f"
+	| "\u00A0"
+	| "\u1680"
+	| "\u2000"
+	| "\u2001"
+	| "\u2002"
+	| "\u2003"
+	| "\u2004"
+	| "\u2005"
+	| "\u2006"
+	| "\u2007"
+	| "\u2008"
+	| "\u2009"
+	| "\u200A"
+	| "\u2028"
+	| "\u2029"
+	| "\u202F"
+	| "\u205F"
+	| "\u3000"
+	| "\uFEFF"
 
 type _IsValidSegment<S extends string> = S extends ""
-    ? false
-    : S extends `${string}${WhiteSpaceChar}${string}`
-    ? false
-    : S extends `${string}.${string}`
-    ? false
-    : true
+	? false
+	: S extends `${string}${WhiteSpaceChar}${string}`
+		? false
+		: S extends `${string}.${string}`
+			? false
+			: true
 
 export type FormPathKey<S extends string> = S extends `${infer Head}.${infer Tail}`
-    ? _IsValidSegment<Head> extends true
-    ? FormPathKey<Tail>
-    : never
-    : _IsValidSegment<S> extends true
-    ? S
-    : never
+	? _IsValidSegment<Head> extends true
+		? FormPathKey<Tail>
+		: never
+	: _IsValidSegment<S> extends true
+		? S
+		: never
 
 export type AnyFormPathKey = FormPathKey<string>
 
 type _HasInvalidKeys<T> = {
-    [K in keyof T]: K extends string
-    ? string extends K
-    ? false
-    : FormPathKey<K> extends never
-    ? true
-    : T[K] extends FormDefinition
-    ? _HasInvalidKeys<T[K]>
-    : false
-    : false
+	[K in keyof T]: K extends string
+		? string extends K
+			? false
+			: FormPathKey<K> extends never
+				? true
+				: T[K] extends FormDefinition
+					? _HasInvalidKeys<T[K]>
+					: false
+		: false
 }[keyof T]
 
 export type AssertValidFormKeysDeep<T extends FormDefinition> = true extends _HasInvalidKeys<T>
-    ? never
-    : { [K in keyof T]: T[K] extends FormDefinition ? AssertValidFormKeysDeep<T[K]> : T[K] }
+	? never
+	: { [K in keyof T]: T[K] extends FormDefinition ? AssertValidFormKeysDeep<T[K]> : T[K] }
 
 export interface FieldData {
-    name: string
-    label: string
-    description?: string
-    defaultValue: string // Enforce string for stability
-    errorId: string
-    describedById: string
-    touched: boolean
-    dirty: boolean
-    error: string
+	name: string
+	label: string
+	description?: string
+	defaultValue: string // Enforce string for stability
+	errorId: string
+	describedById: string
+	touched: boolean
+	dirty: boolean
+	error: string
 }
 
 export interface UseStandardSchemaReturn<T extends FormDefinition> {
-    resetForm: () => void
-    getForm: (onSubmitHandler: (data: TypeFromDefinition<T>) => void) => {
-        onSubmit: (e: FormEvent) => Promise<void>
-        onFocus: (e: FocusEvent<HTMLFormElement>) => void
-        onBlur: (e: FocusEvent<HTMLFormElement>) => Promise<void>
-        onReset: () => void
-    }
-    getField: (name: DotPaths<T>) => FieldData
-    getErrors: (name?: DotPaths<T>) => ErrorEntry[]
-    setField: (name: DotPaths<T>, value: string) => Promise<void>
-    setError: (name: DotPaths<T>, info: ErrorInfo) => void
-    isTouched: (name?: DotPaths<T>) => boolean
-    isDirty: (name?: DotPaths<T>) => boolean
-    watchValues: WatchValuesCallback<T>
+	resetForm: () => void
+	getForm: (onSubmitHandler: (data: TypeFromDefinition<T>) => void) => {
+		onSubmit: (e: FormEvent) => Promise<void>
+		onFocus: (e: FocusEvent<HTMLFormElement>) => void
+		onBlur: (e: FocusEvent<HTMLFormElement>) => Promise<void>
+		onReset: () => void
+	}
+	getField: (name: DotPaths<T>) => FieldData
+	getErrors: (name?: DotPaths<T>) => ErrorEntry[]
+	setField: (name: DotPaths<T>, value: string) => Promise<void>
+	setError: (name: DotPaths<T>, info: ErrorInfo) => void
+	isTouched: (name?: DotPaths<T>) => boolean
+	isDirty: (name?: DotPaths<T>) => boolean
+	watchValues: WatchValuesCallback<T>
 }
