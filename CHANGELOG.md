@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.4.4
+
+- Added a React 19 + Server Actions example demonstrating shared validation between client and server.
+- Updated the README to document the React 19 server action flow and point to the dedicated example.
+
+## 0.4.3
+
+- Fixed documentation issues.
+- Restored the missing `ErrorEntry` export.
+
+## 0.4.2
+
+- Added `watchValues` for monitoring value changes without rerender.
+- Fixed issue with `ErrorInfo` not being exported.
+- Made field updates safer, provided default fallbacks for validation errors, and prevented async checks from overwriting newer input.
+- Added a shadcn/ui Field example.
+- Added additional tests to keep real-world flows covered.
+
 ## 0.4.1
 
 - Broaden React peer dependency support to include React 18.

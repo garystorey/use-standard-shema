@@ -112,6 +112,13 @@ Additional examples are available.
 - [Custom Component example](https://github.com/garystorey/use-standard-schema/tree/main/examples/custom-field-component.tsx) - Share reusable inputs via `FieldData`.
 - [Valibot example](https://github.com/garystorey/use-standard-schema/tree/main/examples/valibot-login.tsx) - Build a simple login form powered by Valibot validators.
 - [Shadcn Field example](https://github.com/garystorey/use-standard-schema/tree/main/examples/shadcn-field.tsx) - Wire `useStandardSchema` metadata into the shadcn/ui `Field` primitives.
+- [React 19 + Server Actions](https://github.com/garystorey/use-standard-schema/tree/main/examples/react19-server-actions) - Client-side validation with `useStandardSchema` feeding a React Server Action on a login form.
+
+### React 19 + Server Actions
+
+See the [React 19 + Server Actions example](https://github.com/garystorey/use-standard-schema/tree/main/examples/react19-server-actions)
+for the full `useStandardSchema` + `useActionState` walkthrough. The example shows how to share validators between the
+client component and the server action and submit the validated data with `toFormData` on a basic sign-in flow.
 
 ### Nested object fields
 
@@ -307,17 +314,8 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## Changelog
 
-- **v0.4.3**
-  - Fixed documentation issues.
-  - Fixed missing `ErrorEntry` export.
-- **v0.4.2**
-  - Added `watchValues` for monitoring value changes without rerender.
-  - Fixed issue with `ErrorInfo` not being exported.
-  - Field updates are safer, validation errors fall back to helpful defaults, and async checks no longer overwrite newer input.
-  - Added a shadcn/ui Field example
-  - Added additional tests to keep real-world flows covered.
-- **v0.4.1** - Minor code fixes and documentation updates
-- **v0.4.0** - Improved form state synchronization, renamed the `FieldDefinitionProps` type to `FieldData`, and ensured programmatic updates stay validated while tracking touched/dirty status.
+- **v0.4.4** – Added a React 19 + Server Actions example and refreshed the documentation to point to it.
+- **v0.4.3** – Fixed documentation issues and restored the missing `ErrorEntry` export.
 - [View the full changelog](./CHANGELOG.md) for earlier releases.
 
 ---
