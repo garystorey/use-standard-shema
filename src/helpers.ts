@@ -8,6 +8,12 @@ import type {
         FormValues,
         TypeFromDefinition,
         StandardValidator,
+        ValidateFieldFailure,
+        ValidateFieldResult,
+        ValidateFieldSuccess,
+        ValidateFormFailure,
+        ValidateFormResult,
+        ValidateFormSuccess,
 } from "./types"
 
 /** Define and return the form definition as is. */
@@ -194,13 +200,6 @@ export function flattenDefaults(formDefinition: FormDefinition, parentPath = "")
 
 // ---------------- Lightweight validation helpers ----------------
 
-type ValidateFieldSuccess<T extends FormDefinition, K extends DotPaths<T>> = {
-        success: true
-        data: TypeFromDefinition<T>[K]
-}
-
-type ValidateFieldFailure = { success: false; error: string }
-
 /**
  * Validate a single field using its configured validator.
  */
@@ -208,7 +207,7 @@ export async function validateField<T extends FormDefinition, K extends DotPaths
         formDefinition: T,
         field: K,
         value: unknown,
-): Promise<ValidateFieldSuccess<T, K> | ValidateFieldFailure> {
+): Promise<ValidateFieldResult<T, K>> {
         const flatFormDefinition = flattenFormDefinition(formDefinition) as Record<string, FieldDefinition>
         const fieldDef = flatFormDefinition[field as string]
 
@@ -230,16 +229,13 @@ export async function validateField<T extends FormDefinition, K extends DotPaths
         }
 }
 
-type ValidateFormSuccess<T extends FormDefinition> = { success: true; data: TypeFromDefinition<T> }
-type ValidateFormFailure = { success: false; errors: Record<string, string> }
-
 /**
  * Validate an object of values against a form definition.
  */
 export async function validateForm<T extends FormDefinition>(
         formDefinition: T,
         values: Partial<Record<DotPaths<T>, unknown>>,
-): Promise<ValidateFormSuccess<T> | ValidateFormFailure> {
+): Promise<ValidateFormResult<T>> {
         const flatFormDefinition = flattenFormDefinition(formDefinition) as Record<string, FieldDefinition>
         const errors: Record<string, string> = {}
         const parsed = {} as TypeFromDefinition<T>

@@ -78,10 +78,23 @@ type DotPathsToValues<T, Prev extends string = "", Value = string, D extends Dep
 >
 
 export type TypeFromDefinition<T extends FormDefinition, Value = string> = {
-	[K in keyof DotPathsToValues<T, "", Value>]: DotPathsToValues<T, "", Value>[K]
+        [K in keyof DotPathsToValues<T, "", Value>]: DotPathsToValues<T, "", Value>[K]
 }
 
 export type FormSnapshot<T extends FormDefinition> = Record<DotPaths<T>, string>
+export type ValidateFieldSuccess<T extends FormDefinition, K extends DotPaths<T>> = {
+        success: true
+        data: TypeFromDefinition<T>[K]
+}
+export type ValidateFieldFailure = { success: false; error: string }
+export type ValidateFieldResult<T extends FormDefinition, K extends DotPaths<T>> =
+        | ValidateFieldSuccess<T, K>
+        | ValidateFieldFailure
+export type ValidateFormSuccess<T extends FormDefinition> = { success: true; data: TypeFromDefinition<T> }
+export type ValidateFormFailure = { success: false; errors: Record<string, string> }
+export type ValidateFormResult<T extends FormDefinition> =
+        | ValidateFormSuccess<T>
+        | ValidateFormFailure
 
 export type ErrorEntry = { name: string; error: string; label: string }
 
