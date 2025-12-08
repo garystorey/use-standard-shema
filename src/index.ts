@@ -522,11 +522,12 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	}
 }
 
-export { useStandardSchema, defineForm, toFormData }
+export { defineForm, toFormData, validateField, validateForm } from "./helpers"
+export { useStandardSchema }
 export type {
-	ErrorEntry,
-	ErrorInfo,
-	FieldData,
+        ErrorEntry,
+        ErrorInfo,
+        FieldData,
 	FieldDefinition,
 	FormDefinition,
 	TypeFromDefinition,

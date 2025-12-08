@@ -1,12 +1,13 @@
 import type {
-	AnyFormPathKey,
-	AssertValidFormKeysDeep,
-	DotPaths,
-	ErrorInfo,
-	FieldDefinition,
-	FormDefinition,
-	FormValues,
-	StandardValidator,
+        AnyFormPathKey,
+        AssertValidFormKeysDeep,
+        DotPaths,
+        ErrorInfo,
+        FieldDefinition,
+        FormDefinition,
+        FormValues,
+        TypeFromDefinition,
+        StandardValidator,
 } from "./types"
 
 /** Define and return the form definition as is. */
@@ -189,4 +190,74 @@ export function flattenDefaults(formDefinition: FormDefinition, parentPath = "")
 	}
 
 	return flattened
+}
+
+// ---------------- Lightweight validation helpers ----------------
+
+type ValidateFieldSuccess<T extends FormDefinition, K extends DotPaths<T>> = {
+        success: true
+        data: TypeFromDefinition<T>[K]
+}
+
+type ValidateFieldFailure = { success: false; error: string }
+
+/**
+ * Validate a single field using its configured validator.
+ */
+export async function validateField<T extends FormDefinition, K extends DotPaths<T>>(
+        formDefinition: T,
+        field: K,
+        value: unknown,
+): Promise<ValidateFieldSuccess<T, K> | ValidateFieldFailure> {
+        const flatFormDefinition = flattenFormDefinition(formDefinition) as Record<string, FieldDefinition>
+        const fieldDef = flatFormDefinition[field as string]
+
+        if (!fieldDef) return { success: false, error: `Field "${String(field)}" not found` }
+
+        const validator = extractValidator(fieldDef.validate)
+        if (!validator) return { success: false, error: "validator not available" }
+
+        try {
+                const result = await validator(toInputString(value))
+                const message = deriveValidationMessage(result)
+                if (message) {
+                        return { success: false, error: message }
+                }
+
+                return { success: true, data: toInputString(value) as TypeFromDefinition<T>[K] }
+        } catch (error) {
+                return { success: false, error: deriveThrownMessage(error) }
+        }
+}
+
+type ValidateFormSuccess<T extends FormDefinition> = { success: true; data: TypeFromDefinition<T> }
+type ValidateFormFailure = { success: false; errors: Record<string, string> }
+
+/**
+ * Validate an object of values against a form definition.
+ */
+export async function validateForm<T extends FormDefinition>(
+        formDefinition: T,
+        values: Partial<Record<DotPaths<T>, unknown>>,
+): Promise<ValidateFormSuccess<T> | ValidateFormFailure> {
+        const flatFormDefinition = flattenFormDefinition(formDefinition) as Record<string, FieldDefinition>
+        const errors: Record<string, string> = {}
+        const parsed = {} as TypeFromDefinition<T>
+
+        await Promise.all(
+                Object.keys(flatFormDefinition).map(async (key) => {
+                        const result = await validateField(formDefinition, key as DotPaths<T>, values[key])
+                        if (!result.success) {
+                                errors[key] = result.error
+                                return
+                        }
+                        parsed[key as keyof TypeFromDefinition<T>] = result.data
+                }),
+        )
+
+        if (Object.keys(errors).length > 0) {
+                return { success: false, errors }
+        }
+
+        return { success: true, data: parsed }
 }
