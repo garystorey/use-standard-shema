@@ -1,21 +1,19 @@
 "use server"
 
-import { validateForm, type TypeFromDefinition } from "use-standard-schema"
+import {
+        toFormData,
+        validateForm,
+        type TypeFromDefinition,
+} from "use-standard-schema"
 import { serverActionForm } from "./form-definition"
 
 type ActionState = { message?: string; error?: string }
 
 function formDataToValues<TDefinition extends Record<string, unknown>>(
         definition: TDefinition,
-        formData: FormData,
-): TypeFromDefinition<TDefinition> {
-        const values: Record<string, unknown> = {}
-
-        for (const fieldName of Object.keys(definition)) {
-                values[fieldName] = formData.get(fieldName)
-        }
-
-        return values as TypeFromDefinition<TDefinition>
+        values: TypeFromDefinition<TDefinition>,
+): FormData {
+        return toFormData(definition, values)
 }
 
 async function authenticateUser(email: string, password: string) {
@@ -29,11 +27,17 @@ async function authenticateUser(email: string, password: string) {
 }
 
 export async function login(_prevState: ActionState, formData: FormData): Promise<ActionState> {
-        const result = await validateForm(serverActionForm, formDataToValues(serverActionForm, formData))
+        const incomingValues = Object.fromEntries(formData.entries())
+        const result = await validateForm(serverActionForm, incomingValues)
 
         if (!result.success) {
                 return { error: "Check your email and password." }
         }
 
-        return authenticateUser(result.data.email, result.data.password)
+        const sanitizedSubmission = formDataToValues(serverActionForm, result.data)
+
+        return authenticateUser(
+                sanitizedSubmission.get("email") as string,
+                sanitizedSubmission.get("password") as string,
+        )
 }
