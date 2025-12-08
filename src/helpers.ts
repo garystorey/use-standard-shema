@@ -238,18 +238,15 @@ type ValidateFormFailure = { success: false; errors: Record<string, string> }
  */
 export async function validateForm<T extends FormDefinition>(
         formDefinition: T,
-        values: Partial<Record<DotPaths<T>, unknown>> | FormData,
+        values: Partial<Record<DotPaths<T>, unknown>>,
 ): Promise<ValidateFormSuccess<T> | ValidateFormFailure> {
         const flatFormDefinition = flattenFormDefinition(formDefinition) as Record<string, FieldDefinition>
         const errors: Record<string, string> = {}
         const parsed = {} as TypeFromDefinition<T>
 
-        const valueLookup: Partial<Record<DotPaths<T>, unknown>> =
-                values instanceof FormData ? Object.fromEntries(values.entries()) : values
-
         await Promise.all(
                 Object.keys(flatFormDefinition).map(async (key) => {
-                        const result = await validateField(formDefinition, key as DotPaths<T>, valueLookup[key as DotPaths<T>])
+                        const result = await validateField(formDefinition, key as DotPaths<T>, values[key as DotPaths<T>])
                         if (!result.success) {
                                 errors[key] = result.error
                                 return

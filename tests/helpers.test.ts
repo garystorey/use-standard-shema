@@ -94,26 +94,9 @@ describe("helpers", () => {
                 expect(message).toBe("Fallback")
         })
 
-        it("validateForm accepts FormData", async () => {
-                const result = await validateForm(form, toFormData({
-                        a: "alpha",
-                        "group.b": "bravo",
-                        "group.c": "charlie",
-                }))
-
-                expect(result).toEqual({
-                        success: true,
-                        data: {
-                                a: "alpha",
-                                "group.b": "bravo",
-                                "group.c": "charlie",
-                        },
-                })
-        })
-
-	describe("deriveThrownMessage", () => {
-		it("returns the message when an Error instance is thrown", () => {
-			const error = new Error("boom")
+        describe("deriveThrownMessage", () => {
+                it("returns the message when an Error instance is thrown", () => {
+                        const error = new Error("boom")
 			expect(deriveThrownMessage(error)).toBe("boom")
 		})
 

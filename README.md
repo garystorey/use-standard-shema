@@ -118,7 +118,7 @@ Additional examples are available.
 
 See the [React 19 + Server Actions example](https://github.com/garystorey/use-standard-schema/tree/main/examples/react19-server-actions)
 for the full `useStandardSchema` + `useActionState` walkthrough. The example shows how to share validators between the
-client component and the server action and submit the validated data with `toFormData` on a basic sign-in flow.
+client component and the server action on a basic sign-in flow.
 
 ### Nested object fields
 
@@ -314,7 +314,7 @@ If you encounter issues or have feature requests, [open an issue](https://github
 
 ## Changelog
 
-- **v0.4.4** – Added a React 19 + Server Actions example, refreshed the documentation to point to it, and exposed `validateField`/`validateForm` for reuse outside the hook (including FormData submissions).
+- **v0.4.4** – Added a React 19 + Server Actions example, refreshed the documentation to point to it, and exposed `validateField`/`validateForm` for reuse outside the hook.
 - **v0.4.3** – Fixed documentation issues and restored the missing `ErrorEntry` export.
 - [View the full changelog](./CHANGELOG.md) for earlier releases.
 
