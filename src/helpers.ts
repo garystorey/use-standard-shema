@@ -1,12 +1,13 @@
 import type {
-	AnyFormPathKey,
-	AssertValidFormKeysDeep,
-	DotPaths,
-	ErrorInfo,
-	FieldDefinition,
-	FormDefinition,
-	FormValues,
-	StandardValidator,
+        AnyFormPathKey,
+        AssertValidFormKeysDeep,
+        DotPaths,
+        ErrorEntry,
+        ErrorInfo,
+        FieldDefinition,
+        FormDefinition,
+        FormValues,
+        StandardValidator,
 } from "./types"
 
 /** Define and return the form definition as is. */
@@ -172,7 +173,7 @@ export function flattenDefaults<Def extends FormDefinition>(
 export function flattenDefaults(formDefinition: FormDefinition, parentPath?: string): Record<AnyFormPathKey, string>
 
 export function flattenDefaults(formDefinition: FormDefinition, parentPath = ""): Record<string, string> {
-	const flattened: Record<string, string> = {}
+        const flattened: Record<string, string> = {}
 
 	for (const [propertyKey, propertyValue] of Object.entries(formDefinition as Record<string, unknown>)) {
 		const fullPath = parentPath ? `${parentPath}.${propertyKey}` : propertyKey
@@ -185,7 +186,53 @@ export function flattenDefaults(formDefinition: FormDefinition, parentPath = "")
 		if (isPlainObject(propertyValue)) {
 			Object.assign(flattened, flattenDefaults(propertyValue as FormDefinition, fullPath))
 		}
-	}
+        }
 
-	return flattened
+        return flattened
+}
+
+// ---------------- validateForm (server-safe helper) ----------------
+export async function validateForm(
+        formDefinition: FormDefinition,
+        values: FormValues,
+): Promise<{ isValid: boolean; errors: ErrorEntry[] }> {
+        const flatDefinition = flattenFormDefinition(formDefinition)
+        const errors: ErrorEntry[] = []
+
+        await Promise.all(
+                Object.entries(flatDefinition).map(async ([name, fieldDefinition]) => {
+                        const validator = extractValidator(fieldDefinition.validate)
+
+                        if (!validator) {
+                                errors.push({
+                                        name,
+                                        label: fieldDefinition.label ?? name,
+                                        error: "Validator not available",
+                                })
+                                return
+                        }
+
+                        const value = (values as Record<string, unknown>)[name] ?? ""
+
+                        try {
+                                const result = await validator(value)
+                                const message = deriveValidationMessage(result)
+                                if (message !== "") {
+                                        errors.push({
+                                                name,
+                                                label: fieldDefinition.label ?? name,
+                                                error: message,
+                                        })
+                                }
+                        } catch (error) {
+                                errors.push({
+                                        name,
+                                        label: fieldDefinition.label ?? name,
+                                        error: deriveThrownMessage(error),
+                                })
+                        }
+                }),
+        )
+
+        return { isValid: errors.length === 0, errors }
 }
