@@ -111,6 +111,7 @@ Additional examples are available.
 - [Dependent Fields example](https://github.com/garystorey/use-standard-schema/tree/main/examples/dependent-field-validation.tsx) - An example that keeps two related fields in sync using `setField` and `setError`.
 - [Custom Component example](https://github.com/garystorey/use-standard-schema/tree/main/examples/custom-field-component.tsx) - Share reusable inputs via `FieldData`.
 - [Valibot example](https://github.com/garystorey/use-standard-schema/tree/main/examples/valibot-login.tsx) - Build a simple login form powered by Valibot validators.
+- [React Server Action example](https://github.com/garystorey/use-standard-schema/tree/main/examples/server-action-login.tsx) - Keep a short login form wired to a server action using Zod.
 - [Shadcn Field example](https://github.com/garystorey/use-standard-schema/tree/main/examples/shadcn-field.tsx) - Wire `useStandardSchema` metadata into the shadcn/ui `Field` primitives.
 
 ### Nested object fields

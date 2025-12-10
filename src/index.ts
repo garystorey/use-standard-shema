@@ -534,7 +534,7 @@ function useStandardSchema<T extends FormDefinition>(formDefinition: T): UseStan
 	}
 }
 
-export { useStandardSchema, defineForm, toFormData }
+export { useStandardSchema, defineForm, toFormData, validateForm }
 export type {
 	ErrorEntry,
 	ErrorInfo,
